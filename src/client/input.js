@@ -1,0 +1,58 @@
+import { wipe } from './transition.js';
+
+// Menus and the dojo are driven by pad-style actions rather than raw keys, so a gamepad or touch pad can feed the same handlers later.
+// The on-screen button icons stand for these: d-pad = up / down / left / right, A = confirm, B = cancel, START = menu.
+export const BINDINGS = {
+  up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'],
+  confirm: ['Enter', 'Space', 'KeyE'], cancel: ['Escape', 'Backspace'], menu: ['Tab', 'KeyM'],
+};
+const ACTION_OF = {};
+for (const [action, codes] of Object.entries(BINDINGS)) for (const code of codes) ACTION_OF[code] = action;
+const REPEATS = new Set(['up', 'down', 'left', 'right']);
+
+// Phaser can hand a scene the same key events again when a key goes down and up within one frame.
+// Each keydown listener filters through its own guard: guard(e) is false for an event it has already seen
+// (a replayed event is never newer than the last one seen for its key).
+export const keyGuard = () => {
+  const seen = {};
+  return (e) => {
+    if (e.timeStamp <= (seen[e.code] ?? -1)) return false;
+    seen[e.code] = e.timeStamp;
+    return true;
+  };
+};
+
+// One per scene. Whatever handler was pushed last gets the actions: { up(), down(), left(), right(), confirm(), cancel(), menu() }.
+export class Actions {
+  constructor(scene) {
+    this.scene = scene;
+    this.stack = [];
+    const kb = scene.input.keyboard;
+    kb.addCapture('SPACE,UP,DOWN,LEFT,RIGHT,TAB,BACKSPACE');
+    const fresh = keyGuard();
+    kb.on('keydown', (e) => {
+      const action = ACTION_OF[e.code];
+      if (action && fresh(e) && (!e.repeat || REPEATS.has(action))) this.fire(action);
+    });
+    this.keys = kb.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT');
+  }
+
+  push(handler) { this.stack.push(handler); return handler; }
+  pop(handler) {
+    const i = this.stack.lastIndexOf(handler);
+    if (i >= 0) this.stack.splice(i, 1);
+  }
+  get top() { return this.stack[this.stack.length - 1]; }
+
+  // Also called by on-screen buttons.
+  fire(action) {
+    if (wipe.busy) return;
+    this.top?.[action]?.();
+  }
+
+  // Held direction, for walking.
+  dir() {
+    const k = this.keys;
+    return [(k.D.isDown || k.RIGHT.isDown) - (k.A.isDown || k.LEFT.isDown), (k.S.isDown || k.DOWN.isDown) - (k.W.isDown || k.UP.isDown)];
+  }
+}

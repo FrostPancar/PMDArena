@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Move Effect Viewer</title>
+<style>
+  :root { --bg:#0e1118; --panel:#161b26; --line:#262e3f; --ink:#dfe6f3; --dim:#8492ab; --acc:#8fd14f; --warn:#f2c94c; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink);
+    font: 12px/1.45 ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  #app { display: grid; grid-template-columns: 300px 1fr; height: 100%; }
+  aside { background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+  header { padding: 12px; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 13px; margin: 0 0 8px; letter-spacing: .08em; color: var(--acc); }
+  h2 { font-size: 10px; margin: 18px 0 6px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); font-weight: 600; }
+  input[type=text], input[type=search], textarea { font: inherit; color: var(--ink); background: #0a0d13; border: 1px solid var(--line);
+    border-radius: 4px; padding: 5px 7px; width: 100%; }
+  input:focus, textarea:focus { outline: none; border-color: var(--acc); }
+  button, a.btn { font: inherit; color: var(--ink); background: #1e2534; border: 1px solid var(--line); border-radius: 4px;
+    padding: 4px 8px; cursor: pointer; text-decoration: none; display: inline-block; }
+  button:hover, a.btn:hover { border-color: var(--acc); }
+  button.on { background: var(--acc); color: #10140a; border-color: var(--acc); }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  #filters { margin-top: 8px; }
+  #count { color: var(--dim); margin-top: 6px; }
+  #list { overflow-y: auto; flex: 1; }
+  .item { display: grid; grid-template-columns: 40px 1fr; gap: 8px; align-items: center; padding: 4px 10px; cursor: pointer;
+    border-bottom: 1px solid #1b2130; }
+  .item:hover { background: #1b2231; }
+  .item.sel { background: #243044; box-shadow: inset 3px 0 0 var(--acc); }
+  .item .thumb { width: 40px; height: 32px; display: flex; align-items: center; justify-content: center; background: #0a0d13; border-radius: 3px; }
+  .item img { max-width: 38px; max-height: 30px; image-rendering: pixelated; }
+  .item .id { color: var(--dim); font-size: 10px; }
+  .item .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item.edited .nm { color: var(--warn); }
+  .tag { font-size: 9px; color: #10140a; background: var(--acc); border-radius: 3px; padding: 0 4px; margin-left: 4px; }
+  main { padding: 16px 20px; overflow-y: auto; min-width: 0; }
+  #title { font-size: 15px; margin: 0; }
+  #sub { color: var(--dim); margin-top: 2px; }
+  #edit { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 12px; max-width: 640px; }
+  #name { font-size: 14px; padding: 7px 9px; }
+  #notes { grid-column: 1 / -1; resize: vertical; min-height: 34px; }
+  #stage { margin-top: 14px; display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+  #big { border: 1px solid var(--line); border-radius: 6px; image-rendering: pixelated; }
+  .bg-dark { background: #0a0d13; } .bg-light { background: #dfe6f3; } .bg-mid { background: #5d6f90; }
+  .bg-check { background: repeating-conic-gradient(#2a3142 0% 25%, #1b2130 0% 50%) 0 0 / 16px 16px; }
+  #ctl { display: grid; gap: 8px; min-width: 240px; }
+  #ctl label { color: var(--dim); display: grid; grid-template-columns: 62px 1fr 44px; gap: 8px; align-items: center; }
+  #seqs { display: flex; flex-wrap: wrap; gap: 8px; }
+  .seq { border: 1px solid var(--line); border-radius: 5px; padding: 4px; cursor: pointer; text-align: center; color: var(--dim); font-size: 10px; }
+  .seq.sel { border-color: var(--acc); color: var(--ink); }
+  .seq canvas { display: block; image-rendering: pixelated; margin: 0 auto 2px; border-radius: 3px; }
+  kbd { font: inherit; font-size: 10px; color: var(--dim); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; background: #10141d; }
+  #saved { color: var(--dim); }
+  #help { color: var(--dim); margin-top: 18px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside>
+    <header>
+      <h1>MOVE EFFECT VIEWER</h1>
+      <input type="search" id="q" placeholder="search number, name, notes…" />
+      <div class="row" id="filters">
+        <button data-f="all" class="on">All</button>
+        <button data-f="edited">Renamed</button>
+        <button data-f="todo">Not renamed</button>
+        <button data-f="used">Used in game</button>
+      </div>
+      <div id="count"></div>
+      <div class="row" style="margin-top:8px">
+        <button id="exp-json">Export JSON</button>
+        <button id="exp-csv">Export CSV</button>
+        <a class="btn" href="/">Game</a>
+      </div>
+      <div id="saved" style="margin-top:6px"></div>
+    </header>
+    <div id="list"></div>
+  </aside>
+  <main>
+    <h2 style="margin-top:0">Effect</h2>
+    <p id="title"></p>
+    <div id="sub"></div>
+    <div id="edit">
+      <input type="text" id="name" placeholder="name for this effect" spellcheck="false" />
+      <button id="reset">Reset name</button>
+      <textarea id="notes" placeholder="notes (optional): what move it could be, which sequence is best…"></textarea>
+    </div>
+    <div id="stage">
+      <canvas id="big" class="bg-dark" width="320" height="320"></canvas>
+      <div id="ctl">
+        <div class="row">
+          <button id="play">Pause</button>
+          <button id="prev">◀ frame</button>
+          <button id="next">frame ▶</button>
+        </div>
+        <label>speed <input type="range" id="fps" min="4" max="60" value="30" /> <span id="fpsv">30</span></label>
+        <label>zoom <input type="range" id="zoom" min="1" max="8" value="4" /> <span id="zoomv">4×</span></label>
+        <div class="row" id="bgs">
+          <button data-bg="dark" class="on">Dark</button><button data-bg="mid">Mid</button>
+          <button data-bg="light">Light</button><button data-bg="check">Checker</button>
+        </div>
+        <div id="frameinfo" style="color:var(--dim)"></div>
+      </div>
+    </div>
+    <h2>Sequences</h2>
+    <div id="seqs"></div>
+    <div id="help">
+      <kbd>↑</kbd> <kbd>↓</kbd> previous / next effect &nbsp; <kbd>Enter</kbd> in the name box saves and goes to the next &nbsp;
+      <kbd>Space</kbd> pause &nbsp; <kbd>,</kbd> <kbd>.</kbd> step frames &nbsp; names save automatically to <code>move_VFX/names.json</code>
+    </div>
+  </main>
+</div>
+<script type="module" src="/src/vfx-tool.js"></script>
+</body>
+</html>

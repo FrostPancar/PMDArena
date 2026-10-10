@@ -1,0 +1,18 @@
+{
+ "0113": {
+  "name": "white_laser_vertical",
+  "notes": "001 for charge."
+ },
+ "0239": {
+  "name": "shine_orb",
+  "notes": "003 can be used for parries."
+ },
+ "0245": {
+  "name": "grass_whip",
+  "notes": "000 is whip. 001 is impact."
+ },
+ "0257": {
+  "name": "power_up",
+  "notes": "000 is power down. 001 is power up."
+ }
+}
