@@ -7,11 +7,13 @@ import { PLACE, DOJO_BACKDROP } from '../art.js';
 import { AREAS } from '../areas.js';
 import { Actions } from '../input.js';
 import { go, wipe } from '../transition.js';
-import { session, saveSession, loadoutOf, formOf, publicProfile, LOADOUT_SIZE } from '../session.js';
+import { session, saveSession, loadoutOf, formOf, awaitsChoice, publicProfile, LOADOUT_SIZE } from '../session.js';
 import { net } from '../net.js';
 import { cpuBattle, randomCpu, partnerSpec } from '../modes.js';
 import { MoveMenu } from '../movemenu.js';
 import { ProfileMenu } from '../profilemenu.js';
+import { MapMenu } from '../practicemenu.js';
+import { EvolveMenu } from '../evolvemenu.js';
 import { INK, Hints, Dialog, choose, enterCode, banner, text, panel } from '../ui.js';
 
 const PRESENCE_MS = 100;
@@ -86,9 +88,16 @@ export class Hub extends Phaser.Scene {
     this.hadFriend = !!net.friend;
     this.syncParty();
 
-    this.events.once('create', () => banner(this, a.name));
+    // a Pokémon the dream's question mark picked is named the first moment it can be seen
+    const rolled = this.registry.get('reveal'), ally = this.registry.get('revealPartner');
+    this.registry.remove('reveal');
+    this.registry.remove('revealPartner');
+    const who = SPECIES[rolled] ? `You are ${SPECIES[rolled].name}!` : SPECIES[ally] ? `Your partner is ${SPECIES[ally].name}!` : null;
+    this.events.once('create', () => banner(this, who ?? a.name, who ? a.name : undefined));
     // the first time a species walks into the dojo, its moves are put in front of the player
     this.brief = this.areaId === 'dojo' && !session.briefed[session.species];
+    // a branching mon (Eevee) that has grown ready asks which way to go
+    this.evolve = awaitsChoice();
   }
 
   // Mon reports its action frames to the scene; nothing fights here.
@@ -181,7 +190,8 @@ export class Hub extends Phaser.Scene {
     else if (id === 'pillar') this.touchPillar();
     else if (id === 'partner') this.talkPartner();
     else if (id === 'dream') this.sleep();
-    else if (id === 'arch') this.openProfile();
+    else if (id === 'machine') this.openProfile();
+    else if (id === 'console') this.openPractice();
   }
 
   async tell(...lines) {
@@ -210,7 +220,26 @@ export class Hub extends Phaser.Scene {
     this.showHints();
   }
 
-  // Through the skull arch: the records room (name, portrait, flag, how each mon is coming along, battles won).
+  openEvolve() {
+    if (this.menu) return;
+    this.menu = new EvolveMenu(this, this.actions, {
+      species: session.species,
+      onClose: () => { this.menu = null; net.setProfile(publicProfile()); this.showHints(); },
+    });
+    this.showHints();
+  }
+
+  // The lab's console: pick a stage, then drop into its practice arena.
+  openPractice() {
+    if (this.menu) return;
+    this.menu = new MapMenu(this, this.actions, {
+      onPick: (id) => { this.menu = null; this.showHints(); go(this, 'practice', { map: id }); },
+      onClose: () => { this.menu = null; this.showHints(); },
+    });
+    this.showHints();
+  }
+
+  // The lab's machine: the records room (name, portrait, flag, how each mon is coming along, battles won).
   openProfile() {
     if (this.menu) return;
     this.menu = new ProfileMenu(this, this.actions, {
@@ -288,9 +317,9 @@ export class Hub extends Phaser.Scene {
     for (;;) {
       const pick = await this.ask(d, line, [...options, ['Not now', null]]);
       if (!pick) return d.close();
-      if (pick.startsWith('cpu')) { d.close(); return go(this, 'battle', { battle: cpuBattle(pick.slice(4)) }); }
+      if (pick.startsWith('cpu')) { d.close(); return go(this, 'draw', { battle: cpuBattle(pick.slice(4)) }); }
       if (!net.online) { await d.say(OFFLINE); continue; }
-      // from here the relay answers with a match, which main.js turns into the battle
+      // from here the relay answers with a match, which main.js turns into the stage draw
       if (pick === 'duel') net.send('start', { mode: 'duel' });
       else if (pick === 'friends vs cpu') net.send('start', { mode: 'cpu', cpus: [randomCpu(), randomCpu()] });
       else {
@@ -308,6 +337,9 @@ export class Hub extends Phaser.Scene {
     const [vx, vy] = this.free ? this.actions.dir() : [0, 0];
     p.walk(vx, vy, WALK_SPEED, dt);
     p.update(dt);
+    // an evolution just chosen (or reached) changes how the player looks
+    const look = formOf();
+    if (p.species.id !== look && p.free && ensureSpecies(this, look)) p.setSpecies(look);
     this.updateBuddy(dt);
     this.updateFriend(dt);
     this.menu?.update(dt);
@@ -322,6 +354,7 @@ export class Hub extends Phaser.Scene {
     }
     if (!this.free) return;
 
+    if (this.evolve) { this.evolve = false; return this.openEvolve(); }
     if (this.brief) { this.brief = false; return this.openMoves(); }
     const lx = p.x - this.ox;
     const door = this.area.doors.find(({ rect: [x, y, w, h] }) => lx >= x && lx <= x + w && p.y >= y && p.y <= y + h);

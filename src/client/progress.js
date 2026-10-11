@@ -1,6 +1,6 @@
 import { MOVES, movesOf } from '../moves.js';
 import { SPECIES } from '../sprites.js';
-import { EVOLUTIONS } from '../evolutions.js';
+import { EVOLUTIONS, CHOICES } from '../evolutions.js';
 import { typeOf } from './moveinfo.js';
 
 // How a mon grows. Fighting earns EXP, EXP makes levels, and levels do two things: they unlock the stronger half of
@@ -30,12 +30,8 @@ const strength = (mv) => (mv.dmg ?? 0) * (mv.volley?.length ?? 1) + mv.cost * 0.
 const STEP_UP = 12; // how far each weaker relative pushes a move back
 const FIRST_UNLOCK = 2, LAST_UNLOCK = 20;
 
-const plans = {};
-// [{ id, level }] for every move the species can learn: level 1 moves first in their usual order, then the locked
-// ones in the order they unlock.
-export function unlockPlan(species) {
-  if (plans[species]) return plans[species];
-  const ids = movesOf(species).filter((id) => MOVES[id]);
+// the levels a list of moves unlocks at (see above)
+function schedule(ids) {
   const families = {}, place = {};
   for (const id of ids) (families[`${typeOf(id)}:${reachOf(MOVES[id])}`] ??= []).push(id);
   for (const family of Object.values(families)) {
@@ -53,27 +49,52 @@ export function unlockPlan(species) {
   }
   locked.sort((a, b) => a.turn - b.turn || place[a.id] - place[b.id]);
   const step = Math.min(3, Math.max(1, (LAST_UNLOCK - FIRST_UNLOCK) / Math.max(1, locked.length)));
-  return (plans[species] = [
+  return [
     ...ids.filter((id) => open.has(id)).map((id) => ({ id, level: 1 })),
     ...locked.map(({ id }, i) => ({ id, level: FIRST_UNLOCK + Math.floor(i * step) })),
-  ]);
+  ];
 }
 
-export const unlockLevel = (species, id) => unlockPlan(species).find((m) => m.id === id)?.level ?? Infinity;
+const plans = {};
+// [{ id, level }] for every move the species can learn: level 1 moves first in their usual order, then the locked
+// ones in the order they unlock. `branch` is the evolution a branching species has taken (Eevee): that evolution's own
+// moves come on top, opening one by one from the level it evolved at, the weakest first.
+export function unlockPlan(species, branch) {
+  const key = branch ? `${species}:${branch}` : species;
+  if (plans[key]) return plans[key];
+  const own = movesOf(species).filter((id) => MOVES[id]);
+  const plan = schedule(own);
+  if (branch) {
+    const extra = movesOf(species, branch).filter((id) => MOVES[id] && !own.includes(id)).sort((a, b) => strength(MOVES[a]) - strength(MOVES[b]));
+    const from = evolveLevels(species)[0] ?? 1, step = Math.min(2, 16 / Math.max(1, extra.length));
+    extra.forEach((id, i) => plan.push({ id, level: from + Math.floor(i * step) }));
+  }
+  return (plans[key] = plan);
+}
+
+export const unlockLevel = (species, id, branch) => unlockPlan(species, branch).find((m) => m.id === id)?.level ?? Infinity;
 
 // ---- evolution ----
-// Levels at which a species takes its next form: one for a single evolution, two for a line of three.
-export const evolveLevels = (species) => ({ 1: [12], 2: [8, 18] }[EVOLUTIONS[species]?.length] ?? []);
+// The forms a species passes through, in order. A branching species (Eevee) goes through just the one it chose,
+// once it has chosen.
+const pathOf = (species, branch) => (CHOICES[species] ? (CHOICES[species].includes(branch) ? [branch] : []) : EVOLUTIONS[species] ?? []);
+
+// Levels at which a species takes its next form: one for a single evolution, two for a line of three. A branching
+// species has one, whether or not it has chosen yet.
+export const evolveLevels = (species) => ({ 1: [12], 2: [8, 18] }[CHOICES[species] ? 1 : EVOLUTIONS[species]?.length] ?? []);
 
 // The look a species wears at a level: itself, or the evolved form it has reached (if that form's sprites exist).
-export function formAt(species, level) {
+export function formAt(species, level, branch) {
   const stage = evolveLevels(species).filter((at) => level >= at).length;
-  const form = stage ? EVOLUTIONS[species][stage - 1] : species;
+  const form = stage ? pathOf(species, branch)[stage - 1] : species;
   return SPECIES[form] ? form : species;
 }
 
+// Is this a branching species that has reached its evolution level without choosing a form yet?
+export const needsChoice = (species, level, branch) => !!CHOICES[species] && !CHOICES[species].includes(branch) && level >= evolveLevels(species)[0];
+
 // Every look a species can have, base first.
-export const formsOf = (species) => [species, ...(EVOLUTIONS[species] ?? []).filter((id) => SPECIES[id])];
+export const formsOf = (species, branch) => [species, ...pathOf(species, branch).filter((id) => SPECIES[id])];
 
 // ---- what a fight is worth ----
 // won: your side won.  dealt: the share of the other side's health your side took off (0..1).

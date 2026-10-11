@@ -8,6 +8,7 @@ const sheet = (part) => Object.entries(urls).find(([p]) => p.includes(part))[1];
 const SHEETS = {
   'art-bluff': sheet('Sharpedo Bluff'), 'art-dojo': sheet('Dojo'), 'art-font': sheet('- Font'),
   'art-types': sheet('Type Icons'), 'art-icons': sheet('Item Icons'), 'art-dream': sheet('Dreams'), 'art-flags': sheet('Flag Designs'),
+  'art-lab': sheet('Decrepit Lab'),
 };
 // portraits/<species or form>.png, one 40px face each, shown as `face-<id>`
 const faces = import.meta.glob('../../portraits/*.png', { eager: true, query: '?url', import: 'default' });
@@ -59,6 +60,11 @@ const POND = { at: [65, 153], frames: [[343, 256, 22, 16], [370, 256, 22, 16], [
 const BASEMENT = [751, 3, 292, 287];
 const PILLAR = { frames: [[657, 318, 57, 86], [742, 316, 56, 91], [819, 318, 55, 90], [902, 319, 57, 86], [977, 319, 58, 87]], at: [[117, 70], [118, 68], [118, 68], [119, 70], [117, 69]] };
 const SPRING = { frames: [[686, 443, 47, 92], [740, 442, 47, 92], [802, 442, 47, 92], [867, 439, 47, 92], [941, 436, 46, 91]], at: [[50, 71], [50, 71], [50, 71], [50, 71], [51, 72]] };
+// ---- the Decrepit Lab (practice and profile room); positions are in room pixels ----
+const LAB = [0, 0, 480, 312];
+// the machine's dome pulses red to purple: 16 frames in a 4 x 4 block under the room, each 82 x 65 on a 84 x 67 pitch,
+// drawn into the room at (199, 153) exactly as the first one sits there already
+const DOME = { at: [199, 153], size: [82, 65], origin: [2, 314], pitch: [84, 67] };
 const DOJO_BG = [16, 16, 16];
 export const DOJO_BACKDROP = '#101010';
 
@@ -209,6 +215,16 @@ function buildDojo(scene) {
   strip(scene, 'dojo-spring', src, SPRING.frames, SPRING.at, DOJO_BG, 7);
 }
 
+function buildLab(scene) {
+  const [src] = copyOf(scene, 'art-lab');
+  const [c, g] = blank(LAB[2], LAB[3]);
+  g.drawImage(src, -LAB[0], -LAB[1]);
+  scene.textures.addCanvas('lab', c);
+  const { at, size, origin, pitch } = DOME;
+  const frames = Array.from({ length: 16 }, (_, i) => [origin[0] + (i % 4) * pitch[0], origin[1] + Math.floor(i / 4) * pitch[1], ...size]);
+  strip(scene, 'lab-dome', src, frames, frames.map(() => at), [255, 0, 255], 6);
+}
+
 function buildIcons(scene) {
   const tex = scene.textures.get('art-icons');
   for (const [name, [x, y, w, h]] of Object.entries(ICONS)) tex.add(name, 0, x, y, w, h);
@@ -280,12 +296,18 @@ function buildFont(scene) {
 
 // Small things drawn by hand, a character per pixel ('.' is clear): one white pixel, stretched and tinted for bars,
 // shades and backdrops; a white arrowhead, tinted to mark whose side a fighter is on; a padlock for moves not yet
-// earned; and a mouse with its left or right button lit, for the battle HUD.
-const INKS = { '#': '#0a1826', f: '#ffffff', y: '#ffd84a', g: '#8fa3b8' };
+// earned; a mouse with its left or right button lit, for the battle HUD; and the glyphs of the move stats (power,
+// stamina, range, charge time) that the move menu draws beside its bars.
+const INKS = { '#': '#0a1826', f: '#ffffff', y: '#ffd84a', g: '#8fa3b8', r: '#ff7a6a', Y: '#f2c94c', b: '#8fdcff' };
 const DRAWN = {
   tag: ['#######', '#fffff#', '.#fff#.', '..#f#..', '...#...'],
   lock: ['..###..', '.#...#.', '.#...#.', '#######', '#yyyyy#', '#yy#yy#', '#yyyyy#', '#######'],
   mouseL: ['.#######.', '#yyy#ggg#', '#yyy#ggg#', '#yyy#ggg#', '#########', '#fffffff#', '#fffffff#', '#fffffff#', '.#fffff#.', '..#####..'],
+  // a burst, a bolt, an arrow with both ends marked, and a clock face
+  statPower: ['r..#..r', '.r.r.r.', '..rfr..', '#rfffr#', '..rfr..', '.r.r.r.', 'r..#..r'],
+  statStamina: ['....YY.', '...YY..', '..YY...', '.YYYYY.', '...YY..', '..YY...', '.YY....'],
+  statRange: ['.........', '..b...b..', '.bb...bb.', 'bbbbbbbbb', '.bb...bb.', '..b...b..', '.........'],
+  statClock: ['..#####..', '.#fffff#.', '#fff#fff#', '#fff#fff#', '#fff###f#', '#fffffff#', '#fffffff#', '.#fffff#.', '..#####..'],
   mouseR: ['.#######.', '#ggg#yyy#', '#ggg#yyy#', '#ggg#yyy#', '#########', '#fffffff#', '#fffffff#', '#fffffff#', '.#fffff#.', '..#####..'],
 };
 
@@ -325,5 +347,6 @@ export function buildArt(scene) {
   buildBluff(scene);
   buildDream(scene);
   buildDojo(scene);
+  buildLab(scene);
   for (const key of Object.keys(SHEETS)) if (key !== 'art-icons' && key !== 'art-types') scene.textures.remove(key);
 }

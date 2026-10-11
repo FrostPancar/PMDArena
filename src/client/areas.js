@@ -28,14 +28,14 @@ export const AREAS = {
     ],
     anims: ['torch0', 'torch1', 'torch2', 'torch3', 'torch4', 'dojo-pond'],
     props: [],
-    entries: { door: { at: [175, 292], dir: 4 }, cave: { at: [124, 116], dir: 0 } },
+    entries: { door: { at: [175, 292], dir: 4 }, cave: { at: [124, 116], dir: 0 }, arch: { at: [223, 118], dir: 0 } },
     doors: [
-      { rect: [106, 92, 36, 11], to: { area: 'basement', entry: 'stairs' } },
+      { rect: [106, 92, 36, 11], to: { area: 'basement', entry: 'stairs' } }, // down to the pillar
+      { rect: [208, 99, 30, 8], to: { area: 'lab', entry: 'door' } }, // through the skull arch, down to the lab
       { rect: [146, 304, 58, 12], to: { area: 'base', entry: 'door' } },
     ],
     spots: [
       { id: 'ring', at: [174, 180], r: 30, label: 'Pick moves' },
-      { id: 'arch', at: [223, 100], r: 16, label: 'Records room' },
     ],
   },
   basement: {
@@ -47,5 +47,22 @@ export const AREAS = {
     entries: { stairs: { at: [146, 244], dir: 4 }, pillar: { at: [146, 176], dir: 4 } },
     doors: [{ rect: [113, 254, 67, 10], to: { area: 'dojo', entry: 'cave' } }],
     spots: [{ id: 'pillar', at: [146, 156], r: 32, label: 'Touch' }],
+  },
+  // the lab below the arch: the big machine sets your profile, the console behind it sends you to a practice arena
+  lab: {
+    name: 'Decrepit Lab', image: 'lab', size: [480, 312], backdrop: '#0c0a14',
+    walk: [[[100, 124], [160, 116], [176, 108], [304, 108], [318, 116], [372, 118], [400, 124], [430, 136], [446, 152], [447, 250], [440, 262], [424, 296], [56, 296], [40, 262], [34, 250], [33, 152], [50, 134], [78, 126]]],
+    block: [
+      { x: 240, y: 207, rx: 62, ry: 46 }, // the machine
+      { x: 6, y: 254, w: 40, h: 50 }, { x: 436, y: 254, w: 40, h: 50 }, // the white boxes in the corners
+    ],
+    anims: ['lab-dome'],
+    props: [],
+    entries: { door: { at: [240, 284], dir: 4 }, console: { at: [240, 124], dir: 0 } },
+    doors: [{ rect: [196, 286, 88, 9], to: { area: 'dojo', entry: 'arch' } }],
+    spots: [
+      { id: 'machine', at: [240, 266], r: 22, label: 'Profile' },
+      { id: 'console', at: [240, 122], r: 24, label: 'Practice' },
+    ],
   },
 };

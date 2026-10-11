@@ -10,9 +10,10 @@ import { fetchStages, stagesNote, whenStages } from '../stages.js';
 import { cap } from '../moveinfo.js';
 import { DEPTH, INK, Hints, text, icon, typeIcon, panel } from '../ui.js';
 
-const COLS = 5, CELL_W = 24, CELL_H = 24;
-const GRID_X = 250, GRID_Y = 6, GRID_W = COLS * CELL_W + 8;
+const COLS = 6, CELL_W = 24, CELL_H = 24;
+const GRID_X = 228, GRID_Y = 6, GRID_W = COLS * CELL_W + 8;
 const STAND = [125, 118]; // where the dreamed-of mon floats
+const RANDOM = SPECIES_ORDER.length; // the last cell of the grid is not a Pokémon: a question mark that picks one for you
 const BAND_W = 142;
 
 // The dream: wave bands drift down both sides of a soft glow while the player chooses who to be. The same screen
@@ -37,7 +38,7 @@ export class Dream extends Phaser.Scene {
     this.mon = new Mon(this, ...STAND, { team: 'p', species: SPECIES_ORDER[this.index] });
     this.float = 0;
 
-    const rows = Math.ceil(SPECIES_ORDER.length / COLS), gridH = 22 + rows * CELL_H;
+    const rows = Math.ceil((RANDOM + 1) / COLS), gridH = 22 + rows * CELL_H;
     panel(this, GRID_X, GRID_Y, GRID_W, gridH);
     text(this, GRID_X + GRID_W / 2, GRID_Y + 5, this.pickFor === 'partner' ? 'Choose a partner' : 'Choose your Pokémon', INK.gold).setOrigin(0.5, 0);
     this.cursor = panel(this, 0, 0, CELL_W, CELL_H, 'hot').setDepth(DEPTH + 1);
@@ -49,6 +50,16 @@ export class Dream extends Phaser.Scene {
       zone.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); this.select(i); this.pick(); });
       return { id, x, y, img, restY: img.y };
     });
+    {
+      const i = RANDOM, x = GRID_X + 4 + (i % COLS) * CELL_W, y = GRID_Y + 18 + Math.floor(i / COLS) * CELL_H;
+      const img = text(this, x + CELL_W / 2, y + CELL_H / 2 - 1, '?', INK.gold).setOrigin(0.5).setScale(2).setDepth(DEPTH + 2);
+      const zone = this.add.zone(x, y, CELL_W, CELL_H).setOrigin(0).setScrollFactor(0).setDepth(DEPTH + 3).setInteractive({ useHandCursor: true });
+      zone.on('pointerover', () => this.select(i));
+      zone.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); this.select(i); this.pick(); });
+      this.cells.push({ id: null, x, y, img, restY: img.y });
+    }
+    // what stands on the dream's glow while the random cell is picked: nothing you can make out
+    this.mystery = text(this, STAND[0], STAND[1] - 10, '?', INK.gold).setOrigin(0.5).setScale(5).setVisible(false);
 
     // name plate under the grid
     const py = GRID_Y + gridH + 2;
@@ -85,7 +96,7 @@ export class Dream extends Phaser.Scene {
   actionDone() {}
 
   step(dx, dy) {
-    const n = SPECIES_ORDER.length, rows = Math.ceil(n / COLS), col = this.index % COLS;
+    const n = RANDOM + 1, rows = Math.ceil(n / COLS), col = this.index % COLS;
     // sideways runs on through the rows, so left / right alone reaches everyone
     if (dx) return this.select((this.index + dx + n) % n);
     let row = Math.floor(this.index / COLS);
@@ -101,6 +112,16 @@ export class Dream extends Phaser.Scene {
     this.index = i;
     this.cursor.setPosition(cell.x, cell.y);
     this.tweens.add({ targets: cell.img, y: cell.restY - 2, duration: 260, yoyo: true, repeat: -1 });
+    const mystery = cell.id === null;
+    this.mystery.setVisible(mystery);
+    this.mon.hidden = mystery;
+    this.plateType.setVisible(!mystery);
+    if (mystery) {
+      this.plateName.setText('Random Pokémon');
+      this.plateInfo.setText('Shown once you wake.');
+      this.look = null;
+      return;
+    }
     const sp = SPECIES[cell.id];
     this.plateType.setTexture('art-types', sp.type);
     this.plateName.setText(sp.name);
@@ -113,12 +134,16 @@ export class Dream extends Phaser.Scene {
   pick() {
     if (this.picked) return;
     this.picked = true;
-    const id = SPECIES_ORDER[this.index];
+    // the question mark chooses now, and says nothing: who it was shows when the player wakes (the Hub announces it)
+    const mystery = this.index === RANDOM;
+    const id = mystery ? SPECIES_ORDER[Math.floor(Math.random() * SPECIES_ORDER.length)] : SPECIES_ORDER[this.index];
     if (this.pickFor === 'partner') session.partner = id;
     else session.species = id;
+    if (mystery) this.registry.set(this.pickFor === 'partner' ? 'revealPartner' : 'reveal', id);
     saveSession();
-    const cheer = ['Pose', 'Hop'].find((a) => this.mon.species.anims[a]);
+    const cheer = mystery ? null : ['Pose', 'Hop'].find((a) => this.mon.species.anims[a]);
     if (cheer) this.mon.act(cheer);
+    else if (mystery) this.tweens.add({ targets: this.mystery, scale: 6.5, duration: 200, yoyo: true });
     // you wake on your own bed; after choosing a partner you are back beside theirs
     const wake = () => go(this, 'hub', { area: 'base', entry: this.pickFor === 'partner' ? 'beside' : 'bedR' });
     this.time.delayedCall(520, () => {
@@ -142,7 +167,8 @@ export class Dream extends Phaser.Scene {
     // the mon bobs as if afloat
     this.float += dt;
     this.mon.y = STAND[1] + Math.sin(this.float * 2.2) * 2;
-    if (this.mon.species.id !== this.look && this.mon.free && ensureSpecies(this, this.look)) { this.mon.setSpecies(this.look); this.mon.dir = 0; }
+    this.mystery.y = STAND[1] - 10 + Math.sin(this.float * 2.2) * 2;
+    if (this.look && this.mon.species.id !== this.look && this.mon.free && ensureSpecies(this, this.look)) { this.mon.setSpecies(this.look); this.mon.dir = 0; }
     this.mon.update(dt);
     const note = stagesNote(this.game);
     if (note !== this.note.text) this.note.setText(note);

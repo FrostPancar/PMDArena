@@ -3,8 +3,9 @@ import { VIEW_W, VIEW_H } from '../scene.js';
 import { SPECIES, SPECIES_ORDER } from '../sprites.js';
 import { MOVES } from '../moves.js';
 import { FLAG_COUNT } from './art.js';
-import { session, saveSession, progressOf, formOf, faceOf, facesOpen, NAME_LENGTH } from './session.js';
+import { session, saveSession, progressOf, formOf, branchOf, awaitsChoice, faceOf, facesOpen, NAME_LENGTH } from './session.js';
 import { unlockPlan, evolveLevels, formAt } from './progress.js';
+import { EvolveMenu } from './evolvemenu.js';
 import { DEPTH, INK, Group, text, icon, typeIcon, panel, shade } from './ui.js';
 
 const TABS = ['Profile', 'Pokémon', 'Records'];
@@ -39,7 +40,11 @@ export class ProfileMenu {
 
     this.handler = actions.push({
       up: () => this.step(-1), down: () => this.step(1), left: () => this.turn(-1), right: () => this.turn(1),
-      confirm: () => { if (this.tab === 0 && this.row === 0) this.rename(); },
+      confirm: () => {
+        const id = SPECIES_ORDER[this.index];
+        if (this.tab === 0 && this.row === 0) this.rename();
+        else if (this.tab === 1 && awaitsChoice(id)) this.evolve(id);
+      },
       menu: () => this.show((this.tab + 1) % TABS.length),
       cancel: () => this.close(),
     });
@@ -51,7 +56,7 @@ export class ProfileMenu {
     if (this.typing !== null) return [{ key: 'A-Z', label: 'Type a name' }, { icon: 'btnA', key: 'Enter', label: 'Keep', action: 'confirm' }, { icon: 'btnB', key: 'Esc', label: 'Undo', action: 'cancel' }];
     const page = [
       [{ icon: 'dpadUD', key: 'W S', label: 'Choose' }, this.row ? { icon: 'dpadLR', key: 'A D', label: 'Change' } : { icon: 'btnA', key: 'Enter', label: 'Rename', action: 'confirm' }],
-      [{ icon: 'dpadUD', key: 'W S', label: 'Browse' }],
+      [{ icon: 'dpadUD', key: 'W S', label: 'Browse' }, ...(awaitsChoice(SPECIES_ORDER[this.index]) ? [{ icon: 'btnA', key: 'Enter', label: 'Evolve', action: 'confirm' }] : [])],
       [],
     ][this.tab];
     return [...page, { icon: 'start', key: 'Tab', label: 'Next page', action: 'menu' }, { icon: 'btnB', key: 'Esc', label: 'Leave', action: 'cancel' }];
@@ -82,6 +87,11 @@ export class ProfileMenu {
     this.index = Phaser.Math.Clamp(i, 0, SPECIES_ORDER.length - 1);
     this.scroll = Math.max(Math.min(this.scroll, this.index), this.index - ROWS + 1);
     this.draw();
+  }
+
+  // A mon that is ready to evolve and has more than one way to go: let the player pick.
+  evolve(id) {
+    new EvolveMenu(this.scene, this.actions, { species: id, onClose: () => { this.draw(); } });
   }
 
   // Type a new name: letters only, kept on Enter, dropped on Esc.
@@ -151,7 +161,7 @@ export class ProfileMenu {
       const i = this.scroll + r, id = SPECIES_ORDER[i], y = TOP + 5 + r * ROW_H, on = i === this.index, lv = progressOf(id).level;
       if (on) add(shade(scene, 10, y, 142, ROW_H, 0x8fdcff, 0.28).setDepth(DEPTH + 1));
       add(typeIcon(scene, 20, y + 7, SPECIES[id].type));
-      add(text(scene, 31, y + 2, SPECIES[formAt(id, lv)].name, session.mons[id] ? INK.white : INK.dim));
+      add(text(scene, 31, y + 2, SPECIES[formAt(id, lv, branchOf(id))].name, session.mons[id] ? INK.white : INK.dim));
       add(text(scene, 138, y + 2, `Lv ${lv}`, lv > 1 ? INK.mint : INK.off).setOrigin(1, 0));
       const zone = add(pinned(scene.add.zone(10, y, 142, ROW_H).setOrigin(0), 3)).setInteractive({ useHandCursor: true });
       zone.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); this.pick(i); });
@@ -160,8 +170,8 @@ export class ProfileMenu {
     add(icon(scene, 146, TOP + ROWS * ROW_H + 2, 'caretDown').setVisible(this.scroll + ROWS < SPECIES_ORDER.length));
 
     // the highlighted mon
-    const id = SPECIES_ORDER[this.index], prog = progressOf(id), form = formAt(id, prog.level), mon = session.mons[id];
-    const plan = unlockPlan(id), next = plan.find((m) => m.level > prog.level), grows = evolveLevels(id), at = grows.find((l) => l > prog.level);
+    const id = SPECIES_ORDER[this.index], prog = progressOf(id), form = formAt(id, prog.level, branchOf(id)), mon = session.mons[id];
+    const plan = unlockPlan(id, branchOf(id)), next = plan.find((m) => m.level > prog.level), grows = evolveLevels(id), at = grows.find((l) => l > prog.level);
     const x = 160, w = 218;
     add(panel(scene, x, TOP, w, ROWS * ROW_H + 10));
     add(panel(scene, x + 8, TOP + 8, 48, 48, 'dim').setDepth(DEPTH + 1));
@@ -174,7 +184,7 @@ export class ProfileMenu {
     const facts = [
       [`Moves open: ${plan.filter((m) => m.level <= prog.level).length} of ${plan.length}`, INK.white],
       [next ? `Next move at Lv ${next.level}: ${MOVES[next.id].name}` : 'Every move is open', next ? INK.mint : INK.dim],
-      [at ? `Evolves at Lv ${at}` : grows.length ? 'Fully evolved' : 'Does not evolve', at ? INK.sky : INK.dim],
+      [awaitsChoice(id) ? 'Ready to evolve! Press Enter to choose its form' : at ? `Evolves at Lv ${at}` : grows.length ? 'Fully evolved' : 'Does not evolve', at || awaitsChoice(id) ? INK.sky : INK.dim],
       [mon ? `${mon.wins} wins in ${mon.battles} battles` : 'Has not fought yet', INK.dim],
     ];
     facts.forEach(([line, tint], i) => add(text(scene, x + 10, TOP + 66 + i * 15, line, tint)));

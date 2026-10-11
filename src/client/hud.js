@@ -118,12 +118,13 @@ export function controlsCard(scene) {
 // What a finished fight earned: EXP, the level bar, and anything the new level brought (moves, a new form).
 // `earned` is what session.bookBattle returned. Returns its objects.
 export function resultCard(scene, species, earned) {
-  const { exp, from, to, unlocked, evolved } = earned;
+  const { exp, from, to, unlocked, evolved, ready } = earned;
   const lines = [];
   if (to.level > from.level) lines.push([`Level up!  Lv ${from.level} > Lv ${to.level}`, INK.gold]);
   for (const id of unlocked.slice(0, 3)) lines.push([`New move: ${MOVES[id].name}`, INK.mint]);
   if (unlocked.length > 3) lines.push([`...and ${unlocked.length - 3} more moves`, INK.mint]);
   if (evolved) lines.push([`${SPECIES[species].name} evolved into ${SPECIES[evolved].name}!`, INK.sky]);
+  if (ready) lines.push([`${SPECIES[species].name} can evolve now!`, INK.sky], ['Pick its form back home.', INK.dim]);
 
   const w = 220, h = 62 + lines.length * 13 + 18, x = (VIEW_W - w) >> 1, y = (VIEW_H - h) >> 1, d = DEPTH + 10;
   const look = evolved ?? scene.player.species.id, barW = w - 70;

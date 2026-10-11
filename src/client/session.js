@@ -1,6 +1,7 @@
 import { SPECIES, SPECIES_ORDER } from '../sprites.js';
 import { MOVES } from '../moves.js';
-import { levelFor, unlockPlan, formAt, formsOf, battleExp } from './progress.js';
+import { CHOICES } from '../evolutions.js';
+import { levelFor, unlockPlan, formAt, formsOf, needsChoice, battleExp } from './progress.js';
 
 // What the player has chosen and earned, kept between visits.
 const SAVE_KEY = 'pmd-client-v1';
@@ -43,10 +44,21 @@ export function saveSession() {
 // ---- how far a mon has come ----
 export const progressOf = (id = session.species) => levelFor(session.mons[id]?.exp ?? 0);
 export const levelOf = (id = session.species) => progressOf(id).level;
+// The evolution a branching mon (Eevee) has chosen, or undefined while it has not, or if it does not branch.
+export const branchOf = (id = session.species) => (CHOICES[id]?.includes(session.mons[id]?.branch) ? session.mons[id].branch : undefined);
+// Is this mon ready to evolve but still waiting on its player to choose which way?
+export const awaitsChoice = (id = session.species) => needsChoice(id, levelOf(id), branchOf(id));
+// Settle a branching mon's evolution for good. Does nothing if it has already chosen, or `form` is not one of its.
+export function chooseBranch(id, form) {
+  if (!CHOICES[id]?.includes(form) || branchOf(id)) return false;
+  (session.mons[id] ??= { exp: 0, battles: 0, wins: 0 }).branch = form;
+  saveSession();
+  return true;
+}
 // The look it has grown into.
-export const formOf = (id = session.species) => formAt(id, levelOf(id));
+export const formOf = (id = session.species) => formAt(id, levelOf(id), branchOf(id));
 // The moves it may use so far, in menu order.
-export const unlockedMoves = (id = session.species) => unlockPlan(id).filter((m) => m.level <= levelOf(id)).map((m) => m.id);
+export const unlockedMoves = (id = session.species) => unlockPlan(id, branchOf(id)).filter((m) => m.level <= levelOf(id)).map((m) => m.id);
 
 // The moves a species takes to battle. Until the player picks, the first four it has.
 export function loadoutOf(id = session.species) {
@@ -65,7 +77,7 @@ export function setLoadout(id, moves) {
 // The portrait on the profile: the chosen one if it is still allowed, else whoever is being played, as they look now.
 export const faceOf = () => (facesOpen().includes(session.profile.face) ? session.profile.face : formOf());
 // Portraits to choose from: every species, plus the evolved forms the player's mons have reached.
-export const facesOpen = () => SPECIES_ORDER.flatMap((id) => formsOf(id).slice(0, formsOf(id).indexOf(formOf(id)) + 1));
+export const facesOpen = () => SPECIES_ORDER.flatMap((id) => formsOf(id, branchOf(id)).slice(0, formsOf(id, branchOf(id)).indexOf(formOf(id)) + 1));
 
 // What this client tells the relay about its player.
 export const publicProfile = () => ({
@@ -76,10 +88,11 @@ export const publicProfile = () => ({
 // ---- after a fight ----
 // Books a finished battle: EXP for the mon that fought, and the records. `mode` is the label the records file it under
 // ('1v1 vs CPU'...). Returns what changed, for the result screen:
-//   { exp, from, to, unlocked: [move ids], evolved: form id or null }   (from / to are levelFor() results)
+//   { exp, from, to, unlocked: [move ids], evolved: form id or null, ready: true if a branching mon now awaits its choice }
+//   (from / to are levelFor() results)
 export function bookBattle({ mode, won, gaveUp, dealt, kept, seconds, kos }) {
   const id = session.species, mon = (session.mons[id] ??= { exp: 0, battles: 0, wins: 0 });
-  const from = levelFor(mon.exp), look = formAt(id, from.level);
+  const from = levelFor(mon.exp), branch = branchOf(id), look = formAt(id, from.level, branch);
   const exp = battleExp({ won, gaveUp, dealt, kept, seconds });
   mon.exp += exp;
   mon.battles++;
@@ -95,7 +108,8 @@ export function bookBattle({ mode, won, gaveUp, dealt, kept, seconds, kos }) {
   saveSession();
   return {
     exp, from, to,
-    unlocked: unlockPlan(id).filter((u) => u.level > from.level && u.level <= to.level).map((u) => u.id),
-    evolved: formAt(id, to.level) !== look ? formAt(id, to.level) : null,
+    unlocked: unlockPlan(id, branch).filter((u) => u.level > from.level && u.level <= to.level).map((u) => u.id),
+    evolved: formAt(id, to.level, branch) !== look ? formAt(id, to.level, branch) : null,
+    ready: !needsChoice(id, from.level, branch) && needsChoice(id, to.level, branch),
   };
 }

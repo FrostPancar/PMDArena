@@ -2,15 +2,17 @@ import Phaser from 'phaser';
 import { VIEW_W, VIEW_H } from '../scene.js';
 import { SPECIES } from '../sprites.js';
 import { MOVES } from '../moves.js';
-import { loadoutOf, setLoadout, levelOf, LOADOUT_SIZE } from './session.js';
+import { loadoutOf, setLoadout, levelOf, branchOf, formOf, LOADOUT_SIZE } from './session.js';
 import { unlockPlan } from './progress.js';
-import { describe, typeOf, cap } from './moveinfo.js';
-import { DEPTH, INK, Group, text, icon, typeIcon, panel, shade } from './ui.js';
+import { describe, typeOf, cap, METERS, litNotches } from './moveinfo.js';
+import { DEPTH, INK, Group, Meter, text, icon, typeIcon, panel, shade } from './ui.js';
 
 const ROWS = 10, ROW_H = 15, WHEEL_ROW = 50;
 const LIST = { x: 6, y: 5, w: 150, h: 24 + ROWS * ROW_H + 5 };
-const INFO = { x: 160, y: 5, w: 218, h: 124 };
-const SLOTS = { x: 160, y: 132, w: 218, h: 52 };
+const INFO = { x: 160, y: 5, w: 218, h: 128 };
+const SLOTS = { x: 160, y: 136, w: 218, h: 52 };
+// the stat rows of the info panel: glyph, name, notched bar
+const STAT_ROWS = [['power', 'statPower', 'Power'], ['stamina', 'statStamina', 'Stamina'], ['range', 'statRange', 'Range']];
 const PREVIEW = 46;
 
 // Full-screen move picker: everything the mon can learn on the left (the ones it has not earned yet padlocked, with
@@ -20,7 +22,7 @@ export class MoveMenu {
   constructor(scene, actions, { species, onClose }) {
     Object.assign(this, { scene, actions, species, onClose, group: new Group() });
     this.level = levelOf(species);
-    this.needs = Object.fromEntries(unlockPlan(species).map((m) => [m.id, m.level])); // move id -> level that opens it
+    this.needs = Object.fromEntries(unlockPlan(species, branchOf(species)).map((m) => [m.id, m.level])); // move id -> level that opens it
     this.moves = Object.keys(this.needs);
     this.picked = loadoutOf(species);
     this.index = 0;
@@ -32,7 +34,7 @@ export class MoveMenu {
 
     // the list
     add(panel(scene, LIST.x, LIST.y, LIST.w, LIST.h));
-    add(text(scene, LIST.x + 8, LIST.y + 6, `${SPECIES[species].name}  Lv ${this.level}`, INK.gold));
+    add(text(scene, LIST.x + 8, LIST.y + 6, `${SPECIES[formOf(species)].name}  Lv ${this.level}`, INK.gold));
     this.count = add(text(scene, LIST.x + LIST.w - 8, LIST.y + 6, '', INK.mint).setOrigin(1, 0));
     this.bar = add(shade(scene, LIST.x + 4, 0, LIST.w - 8, ROW_H, 0x8fdcff, 0.28).setDepth(DEPTH + 1));
     this.rows = [];
@@ -74,10 +76,21 @@ export class MoveMenu {
     this.infoType = add(typeIcon(scene, INFO.x + 14, INFO.y + 12, 'normal'));
     this.infoName = add(text(scene, INFO.x + 25, INFO.y + 6, '', INK.gold));
     this.infoKind = add(text(scene, INFO.x + 8, INFO.y + 21, '', INK.dim));
-    this.infoStats = add(text(scene, INFO.x + 8, INFO.y + 37, ''));
-    this.infoBody = add(text(scene, INFO.x + 8, INFO.y + 66, '', INK.sky).setMaxWidth(INFO.w - 16));
+    this.stats = STAT_ROWS.map(([key, art, label], i) => {
+      const y = INFO.y + 37 + i * 11;
+      return {
+        key,
+        art: add(scene.add.image(INFO.x + 8, y + 4, art).setOrigin(0, 0.5).setScrollFactor(0).setDepth(DEPTH + 2)),
+        label: add(text(scene, INFO.x + 20, y, label, INK.dim)),
+        bar: add(new Meter(scene, INFO.x + 66, y + 2, METERS[key].notches)),
+      };
+    });
+    this.infoBody = add(text(scene, INFO.x + 8, INFO.y + 72, '', INK.sky).setMaxWidth(INFO.w - 16));
     const px = INFO.x + INFO.w - PREVIEW - 10, py = INFO.y + 7;
     add(panel(scene, px - 3, py - 3, PREVIEW + 6, PREVIEW + 6, 'dim'));
+    // how long the move takes to wind up, under the preview
+    add(scene.add.image(px - 3, py + PREVIEW + 9, 'statClock').setOrigin(0, 0.5).setScrollFactor(0).setDepth(DEPTH + 2));
+    this.infoCharge = add(text(scene, px + 10, py + PREVIEW + 4, '', INK.white));
     this.previewAt = [px + PREVIEW / 2, py + PREVIEW / 2];
     this.preview = add(scene.add.image(...this.previewAt, 'px').setScrollFactor(0).setDepth(DEPTH + 2));
 
@@ -175,8 +188,14 @@ export class MoveMenu {
     this.infoType.setTexture('art-types', info.type);
     this.infoName.setText(MOVES[id].name);
     this.infoKind.setText(`${cap(info.type)} · ${info.role} · ${info.kind}`);
-    const cell = ([k, v]) => `${k} ${v}`;
-    this.infoStats.setText(`${info.stats.slice(0, 2).map(cell).join('   ')}\n${info.stats.slice(2).map(cell).join('   ')}`);
+    const have = { power: info.power, stamina: info.cost, range: info.reach };
+    for (const s of this.stats) {
+      const v = have[s.key];
+      s.bar.set(litNotches(s.key, v), METERS[s.key].color);
+      s.art.setAlpha(v ? 1 : 0.35);
+      s.label.setText(s.key === 'range' ? info.reachLabel : s.key === 'power' ? 'Power' : 'Stamina').setTint(v ? INK.dim : INK.off);
+    }
+    this.infoCharge.setText(`${+info.charge.toFixed(2)}s`);
     this.infoBody.setText([info.how, ...info.notes].slice(0, 4).join('\n'));
 
     this.slots.forEach((s, i) => {

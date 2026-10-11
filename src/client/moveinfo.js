@@ -42,15 +42,23 @@ const HOW = {
 const STAT = { atk: 'Attack', spd: 'Speed', def: 'Defense', eva: 'Evasion' };
 const pct = (n) => `${Math.round(n * 100)}%`;
 const secs = (n) => `${+n.toFixed(1)}s`;
+// How the move menu draws the stats: a bar of `notches` cells that is full at `full` (the biggest any move has;
+// stamina's is the mon's whole bar, so a cost reads as the share of it that goes). A value lights the nearest whole
+// number of notches, and always at least one.
+export const METERS = {
+  power: { notches: 16, full: 36, color: '#ff7a6a' },
+  stamina: { notches: 16, full: 100, color: '#f2c94c' },
+  range: { notches: 16, full: 330, color: '#8fdcff' },
+};
+export const litNotches = (key, value) => {
+  const m = METERS[key];
+  return value > 0 ? Math.min(m.notches, Math.max(1, Math.round((value / m.full) * m.notches))) : 0;
+};
 const reachOf = (mv) => mv.range ?? mv.length ?? mv.dash ?? (mv.kind === 'aoe' ? mv.grow?.max ?? mv.radius : mv.kind === 'melee' ? mv.reach + mv.radius : null);
 
-// { type, role, how, stats: [[label, value]...], notes: [...] }
+// { type, role, kind, how, power, cost, charge (seconds), reach (px, or null), reachLabel, notes: [...] }
 export function describe(id) {
   const mv = MOVES[id];
-  const stats = [['Power', mv.dmg ? String(mv.dmg) : '-'], ['Stamina', String(mv.cost)], ['Charge', secs(mv.charge)]];
-  const reach = reachOf(mv);
-  if (reach) stats.push([mv.kind === 'aoe' ? 'Radius' : 'Range', String(Math.round(reach))]);
-
   const n = [];
   if (mv.random) n.push('Uses some other move at random.');
   if (mv.lob) n.push('Lobbed: it comes down where you aim.');
@@ -88,5 +96,9 @@ export function describe(id) {
 
   // for the player's eyes only (Taunt has its own, stricter idea of a status move in mv.cls)
   const role = mv.kind === 'self' ? 'Support' : (mv.dmg ?? 0) >= 8 ? 'Attack' : 'Status';
-  return { type: typeOf(id), role, kind: cap(KIND_LABEL[mv.kind]), how: HOW[mv.kind], stats, notes: n };
+  return {
+    type: typeOf(id), role, kind: cap(KIND_LABEL[mv.kind]), how: HOW[mv.kind],
+    power: mv.dmg ?? 0, cost: mv.cost, charge: mv.charge, reach: reachOf(mv) ?? null, reachLabel: mv.kind === 'aoe' ? 'Radius' : 'Range',
+    notes: n,
+  };
 }

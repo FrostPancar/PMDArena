@@ -1,13 +1,13 @@
 import Phaser from 'phaser';
 import { Play, KEYS, COMBAT, VIEW_W, VIEW_H } from '../../scene.js';
 import { MOVES } from '../../moves.js';
-import { SPECIES, loadSpecies, ensureSpecies } from '../../sprites.js';
+import { loadSpecies, ensureSpecies } from '../../sprites.js';
 import { Mon, dirVec } from '../../mon.js';
 import { Actions, keyGuard } from '../input.js';
 import { go, wipe } from '../transition.js';
 import { session, saveSession, bookBattle } from '../session.js';
 import { net } from '../net.js';
-import { mine, arenaOf, arenaName, startingSpots } from '../modes.js';
+import { mine, lookOf, arenaOf, arenaName, startingSpots } from '../modes.js';
 import { LEDGES } from '../ledges.js';
 import { CpuController, RemoteController, snapshot } from '../controllers.js';
 import { BattleHud, controlsCard, resultCard } from '../hud.js';
@@ -19,8 +19,6 @@ const SNAPSHOT_MS = 50;
 const TAG = { ally: 0x8fdcff, foe: 0xff7a6a };
 const MOVE_ID = new Map(Object.entries(MOVES).map(([id, mv]) => [mv, id]));
 const r1 = (n) => Math.round(n * 10) / 10;
-// The sprites a fighter wears: its evolved form if the battle names one that really is a form of its species.
-const lookOf = (f) => (SPECIES[f.form]?.base === f.species ? f.form : f.species);
 const JUMP_TIME = 0.55; // how long Mon keeps a jump in the air
 
 // A fight on one of the stages, 1v1 or 2v2. All the combat is the playground's Play scene; this adds who is fighting
@@ -31,10 +29,11 @@ const JUMP_TIME = 0.55; // how long Mon keeps a jump in the air
 // once whenever one of them acts; the others show them as puppets and replay those acts, which is how a far-away
 // fighter's move lands on yours. Fights against the computer alone work the same way with nobody to tell.
 export class Battle extends Play {
-  constructor() { super('battle'); }
+  constructor(key = 'battle') { super(key); }
 
   init(data) {
     this.cfg = data.battle;
+    this.gone = data.gone ?? []; // players who left during the stage draw: their fighters drop at the start
     this.online = this.cfg.fighters.some((f) => !mine(f));
     this.me = this.cfg.fighters.find((f) => f.kind === 'human' && mine(f));
     this.registry.set('species', lookOf(this.me));
@@ -59,6 +58,7 @@ export class Battle extends Play {
     // that opens the pause menu is not also read as backing out of it
     this.actions = new Actions(this);
     super.create();
+    for (const x of this.fighters) if (this.gone.includes(x.f.owner) && x.controller instanceof RemoteController) x.controller.drop();
     this.hud = new BattleHud(this, this.player, this.me.moves);
     const tab = panel(this, VIEW_W - 55, 3, 52, 15, 'dim').setInteractive({ useHandCursor: true });
     tab.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); this.pause(); });
@@ -374,7 +374,7 @@ export class Battle extends Play {
     this.freeze(true);
     this.menu = new Menu(this, this.actions, {
       x: (VIEW_W - 116) >> 1, y: 74, w: 116, title: this.online ? 'Menu' : 'Paused',
-      items: [{ label: 'Keep fighting' }, { label: 'Controls' }, { label: this.online ? 'Give up' : 'Back to the dojo' }],
+      items: [{ label: 'Keep fighting' }, { label: 'Controls' }, { label: this.online ? 'Give up' : this.leaveLabel ?? 'Back to the dojo' }],
       onPick: (i) => {
         if (i === 1) return this.showControls();
         this.resume();

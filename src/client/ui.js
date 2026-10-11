@@ -44,6 +44,45 @@ function frameTexture(scene, style, w, h) {
 
 export const panel = (scene, x, y, w, h, style = 'win') => pin(scene.add.image(x, y, frameTexture(scene, style, w, h)).setOrigin(0), 0);
 
+// A bar for a stat, split into equal notches, `lit` of them filled (whole notches only). Drawn on a small canvas of
+// its own, so it can be added to a Group like any game object and set() again whenever the value changes.
+const NOTCH_W = 5, BAR_H_PX = 5;
+let meterCount = 0;
+export class Meter {
+  constructor(scene, x, y, notches) {
+    this.scene = scene;
+    this.notches = notches;
+    this.w = notches * NOTCH_W + 2;
+    this.key = `meter-${meterCount++}`;
+    this.tex = scene.textures.createCanvas(this.key, this.w, BAR_H_PX);
+    this.img = pin(scene.add.image(x, y, this.key).setOrigin(0), 2);
+  }
+
+  set(notches, color) {
+    const g = this.tex.getContext(), inner = this.w - 2, lit = Math.min(this.notches, Math.max(0, notches)) * NOTCH_W;
+    g.clearRect(0, 0, this.w, BAR_H_PX);
+    g.fillStyle = '#0a1826';
+    g.fillRect(0, 0, this.w, BAR_H_PX);
+    g.fillStyle = '#23486c';
+    g.fillRect(1, 1, inner, BAR_H_PX - 2);
+    g.fillStyle = color;
+    g.fillRect(1, 1, lit, BAR_H_PX - 2);
+    g.fillStyle = 'rgba(255,255,255,0.45)';
+    g.fillRect(1, 1, lit, 1);
+    g.fillStyle = '#0a1826';
+    for (let i = 1; i < this.notches; i++) g.fillRect(1 + i * NOTCH_W - 1, 0, 1, BAR_H_PX);
+    this.tex.refresh();
+    return this;
+  }
+
+  setVisible(v) { this.img.setVisible(v); return this; }
+
+  destroy() {
+    this.img.destroy();
+    this.scene.textures.remove(this.key);
+  }
+}
+
 // A set of objects made, shown, hidden and destroyed together.
 export class Group {
   constructor() { this.items = []; }
