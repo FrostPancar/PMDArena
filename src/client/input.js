@@ -1,6 +1,7 @@
 import { wipe } from './transition.js';
+import { touch, attach } from './touch.js';
 
-// Menus and the dojo are driven by pad-style actions rather than raw keys, so a gamepad or touch pad can feed the same handlers later.
+// Menus and the dojo are driven by pad-style actions rather than raw keys, so the touch pad (touch.js) feeds the same handlers.
 // The on-screen button icons stand for these: d-pad = up / down / left / right, A = confirm, B = cancel, START = menu.
 export const BINDINGS = {
   up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'],
@@ -24,6 +25,7 @@ export const keyGuard = () => {
 
 // One per scene. Whatever handler was pushed last gets the actions: { up(), down(), left(), right(), confirm(), cancel(), menu() }.
 // A handler that takes typing also has type(letter) and erase(); while it is on top the letter keys spell instead of steer.
+// One that is walked around with (it reads dir()) says so with steer: true, which is what puts the d-pad on a touch screen.
 export class Actions {
   constructor(scene) {
     this.scene = scene;
@@ -34,13 +36,14 @@ export class Actions {
     kb.on('keydown', (e) => {
       const top = this.top;
       if (top?.type && (/^Key[A-Z]$/.test(e.code) || e.code === 'Backspace')) {
-        if (fresh(e) && !wipe.busy) e.code === 'Backspace' ? top.erase?.() : top.type(e.code[3]);
+        if (fresh(e)) this.spell(e.code === 'Backspace' ? null : e.code[3]);
         return;
       }
       const action = ACTION_OF[e.code];
       if (action && fresh(e) && (!e.repeat || REPEATS.has(action))) this.fire(action);
     });
     this.keys = kb.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT');
+    attach(this);
   }
 
   push(handler) { this.stack.push(handler); return handler; }
@@ -56,9 +59,17 @@ export class Actions {
     this.top?.[action]?.();
   }
 
-  // Held direction, for walking.
+  // A letter for the handler that takes typing, or null to rub the last one out. Also called by the on-screen letters.
+  spell(ch) {
+    const top = this.top;
+    if (wipe.busy || !top?.type) return;
+    if (ch) top.type(ch); else top.erase?.();
+  }
+
+  // Held direction, for walking: the keys, or the touch pad.
   dir() {
     const k = this.keys;
-    return [(k.D.isDown || k.RIGHT.isDown) - (k.A.isDown || k.LEFT.isDown), (k.S.isDown || k.DOWN.isDown) - (k.W.isDown || k.UP.isDown)];
+    const x = (k.D.isDown || k.RIGHT.isDown) - (k.A.isDown || k.LEFT.isDown), y = (k.S.isDown || k.DOWN.isDown) - (k.W.isDown || k.UP.isDown);
+    return x || y ? [x, y] : touch.stick;
   }
 }

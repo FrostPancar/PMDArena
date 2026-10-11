@@ -1,4 +1,5 @@
 import { VIEW_W, VIEW_H } from '../scene.js';
+import { touch } from './touch.js';
 
 // Screen-space widgets shared by every screen: text in the game font, framed windows, list menus, the dialogue box and the button bar.
 // Everything here ignores the camera (scroll factor 0) and sits above the world.
@@ -19,15 +20,14 @@ const STYLES = {
   win: ['rgba(22,52,84,0.93)', '#f4f8ff'],
   hot: ['rgba(58,104,160,0.96)', '#fff3a0'],
   dim: ['rgba(12,24,40,0.78)', '#9fb4c8'],
+  // the touch pad's buttons (touch.js): see-through, as they lie over the game
+  pad: ['rgba(12,24,40,0.4)', '#e6eefa'],
+  padHot: ['rgba(64,124,196,0.72)', '#fff3a0'],
 };
 
-function frameTexture(scene, style, w, h) {
-  const key = `frame-${style}-${w}x${h}`;
-  if (scene.textures.exists(key)) return key;
-  const c = document.createElement('canvas');
-  c.width = w; c.height = h;
-  const g = c.getContext('2d');
-  const [fill, edge] = STYLES[style];
+// Paints a window frame of a style onto a 2D canvas context, its top left corner at 0, 0. `fill` overrides the style's own.
+export function paintFrame(g, style, w, h, fill = STYLES[style][0]) {
+  const edge = STYLES[style][1];
   const rings = ['#0a1826', edge, '#8fb0cc', fill], cut = [3, 2, 2, 1];
   rings.forEach((col, r) => {
     g.fillStyle = col;
@@ -38,6 +38,14 @@ function frameTexture(scene, style, w, h) {
       g.fillRect(r + inset, y, w - 2 * (r + inset), 1);
     }
   });
+}
+
+function frameTexture(scene, style, w, h) {
+  const key = `frame-${style}-${w}x${h}`;
+  if (scene.textures.exists(key)) return key;
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  paintFrame(c.getContext('2d'), style, w, h);
   scene.textures.addCanvas(key, c);
   return key;
 }
@@ -93,6 +101,8 @@ export class Group {
 
 // Button bar along the bottom edge. Each item is { icon, key, label, action }; clicking one fires its action.
 // set() gives the screen's own buttons; a dialogue or menu pushes its own on top while it is up.
+// On a touch screen the icons are the pad's own buttons (touch.js), so the keyboard key is left out, and the bar is
+// centred to stay clear of the pad in the corners.
 export const BAR_H = 15;
 export class Hints {
   constructor(scene, actions) {
@@ -119,7 +129,7 @@ export class Hints {
         const img = group.add(icon(scene, x, cy, it.icon).setOrigin(0, 0.5));
         x += img.width + 2;
       }
-      if (it.key) {
+      if (it.key && !(touch.on && it.icon)) {
         const k = group.add(text(scene, x, cy - 6, it.key, INK.gold));
         x += k.width + 3;
       }
@@ -131,6 +141,7 @@ export class Hints {
       }
       x += 10;
     }
+    if (touch.on) for (const o of group.items) o.x += (VIEW_W - x + 5) >> 1;
   }
 
   setVisible(v) { this.bar.setVisible(v); this.group.setVisible(v); }

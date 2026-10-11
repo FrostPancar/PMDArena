@@ -2,14 +2,14 @@
 
 All 258 effect folders in `move_VFX`, under the names on disk now.
 
-**197 moves are in the game.** The unused effects below carry **43 more move ideas**: 38 that fit mechanics the game already has and 5 that need a new one. Several folders hold more than one idea (noted in the row).
+**199 moves are in the game.** The unused effects below carry **42 more move ideas**: 37 that fit mechanics the game already has and 5 that need a new one. Several folders hold more than one idea (noted in the row).
 
 | Tier | Meaning | Folders |
 |---|---|---|
-| S | In the game, as a move, part of a move, or a status or system effect | 190 |
-| A | Not used. Move idea that fits existing mechanics | 38 |
+| S | In the game, as a move, part of a move, or a status or system effect | 192 |
+| A | Not used. Move idea that fits existing mechanics | 37 |
 | B | Not used. Move idea that needs a new mechanic | 5 |
-| C | Not used. A part or marker, not a move on its own | 25 |
+| C | Not used. A part or marker, not a move on its own | 24 |
 
 ## A: move ideas ready to build
 
@@ -29,7 +29,6 @@ All 258 effect folders in `move_VFX`, under the names on disk now.
 | `0069_magenta_starburst` | Drill Peck: directional beak then the magenta burst, melee for Starly |
 | `0094_projectile` | Signal Beam: sparkling red and green shot with a confusion chance |
 | `0105_flash_oval_star` | Sunny Day stand-in: self buff, attack up and burn cured |
-| `0109_erupts` | Spikes (the spiky orb set): a second hidden trap like Stealth Rock; the bubble and fire fountain sets are impacts |
 | `0111_light_jet` | Solar Beam strike / Sacred pillar: light spikes rising at the cursor |
 | `0112_green_zigzag` | Absorb / Mega Drain: zigzag shot that heals the user for part of the damage |
 | `0120_paw` | Scratch: fast cheap melee |
@@ -70,7 +69,6 @@ All 258 effect folders in `move_VFX`, under the names on disk now.
 |---|---|
 | `0015_white_puff_small` | dust puff for jump landings and dash starts |
 | `0019_tiny_spark_blink` | static crackle for paralysis fizzles |
-| `0023_blue_dots_to_ring` | gather-in charge for water and ice moves |
 | `0044_white_stars_row` | twinkle row for heals and buffs |
 | `0047_blue_dots_ring_expand` | release ring for aura and psychic moves |
 | `0053_burn` | rising embers and small flame: the earlier burn effect, now replaced by the status sheet icon |
@@ -114,6 +112,7 @@ Main is the move's own art; charge plays while it winds up; impact plays on the 
 | `0018_white_orb_electric` | Thunder (mid range, with charge and impact) |
 | `0020_target_lock_reticle` | Lock-On (auto target); Helping Hand (self) |
 | `0021_water_splash` | Brine (mid range) |
+| `0023_blue_dots_to_ring` | Cosmic Power (self) |
 | `0024_fireball_glow` | Ember (projectile) |
 | `0027_white_wings_flap` | Wing Attack (melee) |
 | `0028_fireballs_burst` | Inferno (area, with charge) |
@@ -169,7 +168,7 @@ Main is the move's own art; charge plays while it winds up; impact plays on the 
 | `0093_powders` | Stun Spore (mid range) |
 | `0095_rings_up` | Whirlpool (area) |
 | `0096_water_spout` | Water Spout (mid range, with charge) |
-| `0097_white_smoke_puff` | Haze (area) |
+| `0097_white_smoke_puff` | Haze (area); Substitute (self) |
 | `0099_mega_moves` | Will-O-Wisp (homing); Mega Punch (melee); Mega Kick (melee); Cross Chop (melee) |
 | `0100_sword_slash` | Leaf Blade (melee); Dual Chop (melee) |
 | `0101_slash` | Slash (melee) |
@@ -177,6 +176,7 @@ Main is the move's own art; charge plays while it winds up; impact plays on the 
 | `0103_blue_bubble_cloud` | Water Gun (mid range) |
 | `0104_metal_z` | Rest (self) |
 | `0108_razor_leaf_wind` | Razor Leaf (mid range, with charge); Magical Leaf (slight homing, charge only); Razor Wind (area, with charge) |
+| `0109_erupts` | Aqua Jet (teleport) |
 | `0110_rock_ball` | Rock Throw (projectile, with impact) |
 | `0113_white_laser_vertical` | Hydro Pump (beam, with charge); Hyper Beam (beam, with charge); Ice Beam (beam, with charge) |
 | `0114_sand_tomb` | Sand Tomb (mid range, with impact) |
@@ -250,7 +250,7 @@ Main is the move's own art; charge plays while it winds up; impact plays on the 
 | `0196_gunk_shot` | Sludge Bomb (projectile, impact only) |
 | `0198_avalanche` | Avalanche (auto target, with impact) |
 | `0199_charm` | Draining Kiss (auto target) |
-| `0201_dark_void` | Dark Void (area) |
+| `0201_dark_void` | Night Daze (area) |
 | `0203_sludge_bomb` | Sludge Bomb (projectile) |
 | `0204_crimson_flower_burst` | Giga Impact (dash, impact only) |
 | `0205_rock_throw` | Rock Slide (auto target) |
@@ -261,7 +261,7 @@ Main is the move's own art; charge plays while it winds up; impact plays on the 
 | `0212_seed_bomb` | Seed Bomb (projectile, with impact) |
 | `0213_bug_bite` | Bug Bite (melee) |
 | `0215_electric_charge_projectile` | Charge Beam (projectile, with charge and impact) |
-| `0216_yellow_powerup` | Charge Beam (projectile, bonus only); Agility (self) |
+| `0216_yellow_powerup` | Charge Beam (projectile, bonus only); rising particles after stat-raising moves |
 | `0217_pink_flurry` | Petal Dance (area) |
 | `0218_mud_burst` | Mud Bomb (projectile, with impact) |
 | `0219_dragon_ground_rush` | Dragon Rush (melee) |

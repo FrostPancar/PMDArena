@@ -6,6 +6,7 @@ import { FLAG_COUNT } from './art.js';
 import { session, saveSession, progressOf, formOf, branchOf, awaitsChoice, faceOf, facesOpen, NAME_LENGTH } from './session.js';
 import { unlockPlan, evolveLevels, formAt } from './progress.js';
 import { EvolveMenu } from './evolvemenu.js';
+import { touch } from './touch.js';
 import { DEPTH, INK, Group, text, icon, typeIcon, panel, shade } from './ui.js';
 
 const TABS = ['Profile', 'Pokémon', 'Records'];
@@ -184,7 +185,7 @@ export class ProfileMenu {
     const facts = [
       [`Moves open: ${plan.filter((m) => m.level <= prog.level).length} of ${plan.length}`, INK.white],
       [next ? `Next move at Lv ${next.level}: ${MOVES[next.id].name}` : 'Every move is open', next ? INK.mint : INK.dim],
-      [awaitsChoice(id) ? 'Ready to evolve! Press Enter to choose its form' : at ? `Evolves at Lv ${at}` : grows.length ? 'Fully evolved' : 'Does not evolve', at || awaitsChoice(id) ? INK.sky : INK.dim],
+      [awaitsChoice(id) ? `Ready to evolve! Press ${touch.on ? 'A' : 'Enter'} to choose its form` : at ? `Evolves at Lv ${at}` : grows.length ? 'Fully evolved' : 'Does not evolve', at || awaitsChoice(id) ? INK.sky : INK.dim],
       [mon ? `${mon.wins} wins in ${mon.battles} battles` : 'Has not fought yet', INK.dim],
     ];
     facts.forEach(([line, tint], i) => add(text(scene, x + 10, TOP + 66 + i * 15, line, tint)));

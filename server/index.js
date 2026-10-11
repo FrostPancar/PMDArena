@@ -6,7 +6,7 @@ import { attachRelay } from './relay.js';
 // Production server: the built game from dist/ plus the online relay, in one process.
 //   npm run build && npm start        (PORT sets the port, default 8080)
 const ROOT = path.resolve('dist');
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.json': 'application/json', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.json': 'application/json', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json' };
 
 const server = http.createServer((req, res) => {
   let rel = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);

@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "node server/index.js"
+    "start": "node server/index.js",
+    "build:tools": "vite build --config vite.tools.config.js"
   },
   "dependencies": {
     "phaser": "^3.90.0",

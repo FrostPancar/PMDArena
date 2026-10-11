@@ -4,7 +4,7 @@ import { MAPS, WORLD_URL, makeWalkable, buildTestRealm, buildFxTextures, labelTe
 import { SPECIES } from './sprites.js';
 import { Mon, dirVec, dirFromVec, DIR_NAMES, RUN_MULT } from './mon.js';
 import { STATUS_SHEET_URL, DECOY_SHEET_URL, buildStatusIcons, buildDecoy } from './statusfx.js';
-import { MOVES, PARRY, CANCEL, EMPOWER, LEECH, SPRINT, STATUS, KIND_LABEL, movesOf, preloadMoves } from './moves.js';
+import { MOVES, PARRY, CANCEL, EMPOWER, POWERUP, LEECH, SPRINT, STATUS, KIND_LABEL, movesOf, preloadMoves } from './moves.js';
 
 export const VIEW_W = 384, VIEW_H = 216;
 export const WALK_SPEED = 62;
@@ -194,6 +194,8 @@ export class Play extends Phaser.Scene {
     this.holds = [];
     this.zones = [];
     this.traps = [];
+    this.shade = this.add.rectangle(0, 0, bg.width, bg.height, 0x05060f).setOrigin(0).setDepth(5).setAlpha(0); // dims the map under the mons
+    this.shadeT = this.shadeDur = 0;
     this.padOn = null;
 
     const [sx, sy] = this.map.spawn;
@@ -328,6 +330,9 @@ export class Play extends Phaser.Scene {
     return [(k.D.isDown || k.RIGHT.isDown) - (k.A.isDown || k.LEFT.isDown), (k.S.isDown || k.DOWN.isDown) - (k.W.isDown || k.UP.isDown)];
   }
 
+  // Is the player holding the run button?
+  sprinting() { return this.keys.SHIFT.isDown; }
+
   jump() {
     const [vx, vy] = this.inputDir();
     return this.player.jump(vx, vy, WALK_SPEED * (this.player.running ? RUN_MULT : 1.15));
@@ -397,12 +402,14 @@ export class Play extends Phaser.Scene {
     m.walk(0, 0);
     m.state = 'windup';
     // a spot-landing move is committed to where it was aimed when the charge began
-    m.windup = { mv, t: 0, track, aim: mv.kind === 'mid' || mv.lob ? this.aimOf(m, track) : null };
+    m.windup = { mv, t: 0, track, aim: mv.kind === 'mid' || mv.kind === 'blink' || mv.lob ? this.aimOf(m, track) : null };
     if (mv.chargeFrames.length) {
       const img = this.add.image(m.x, m.y - 8, mv.chargeFrames[0]).setDepth(60 + m.y).setScale(mv.chargeScale ?? 1).setOrigin(...(mv.chargeOrigin ?? [0.5, 0.5]));
       this.chargeFx.push({ img, m, w: m.windup, frames: mv.chargeFrames });
     }
-    m.setAnim(m.species.anims.Charge ? 'Charge' : 'Idle', 'loop');
+    // moves that land on a spot are wound up with a spin, the rest with the charge pose
+    const spin = (mv.kind === 'mid' || mv.lob) && m.species.anims.Rotate;
+    m.setAnim(spin ? 'Rotate' : m.species.anims.Charge ? 'Charge' : 'Idle', 'loop');
     return true;
   }
 
@@ -506,6 +513,9 @@ export class Play extends Phaser.Scene {
       } else if (mv.kind === 'mid' || mv.kind === 'auto') {
         const s = this.landSpot(m, mv, w?.aim ?? this.aimOf(m, w ? w.track : 'pointer'));
         ring(s.hx ?? s.x, s.hy ?? s.y, mv.radius, color, alpha);
+      } else if (mv.kind === 'blink') {
+        const s = this.blinkSpot(m, mv, w?.aim ?? this.aimOf(m, 'pointer'));
+        ring(s.x, s.y, mv.radius, color, alpha);
       } else if (mv.lob) {
         const a = w?.aim ?? this.aimOf(m, 'pointer'), d = Phaser.Math.Clamp(a.dist, 30, mv.range);
         ring(m.x + a.dx * d, m.y + a.dy * d, mv.burst, color, alpha);
@@ -565,6 +575,14 @@ export class Play extends Phaser.Scene {
     return 1 + mv.ramp * n;
   }
 
+  // Where a teleport move puts its user: toward the aim, pulled back to the last walkable spot.
+  blinkSpot(m, mv, aim) {
+    let d = Math.min(aim.dist, mv.range);
+    while (d > 0 && !this.walkable(m.x + aim.dx * d, m.y + aim.dy * d)) d -= 4;
+    d = Math.max(0, d);
+    return { x: m.x + aim.dx * d, y: m.y + aim.dy * d };
+  }
+
   // Is this mon standing in a Gravity zone? Nobody can jump there.
   heavy(m) {
     return this.zones.some((z) => z.mv.gravity && Math.hypot(m.x - z.x, (m.y - z.y) * 1.3) <= z.mv.radius + 7);
@@ -589,6 +607,16 @@ export class Play extends Phaser.Scene {
           this.fx.push({ img, frames: mv.bonusFrames, t: 0, fps: 30, follow: m, lift: 8 });
         }
       });
+    }
+
+    if (mv.kind === 'blink') {
+      // a burst where the user was, another where it reappears, and a small hit there
+      const burst = () => this.fx.push({ img: this.add.image(Math.round(m.x), Math.round(m.y) - 8, mv.frames[0]).setDepth(60 + m.y), frames: mv.frames, t: 0, fps: mv.fps ?? 30 });
+      burst();
+      Object.assign(m, this.blinkSpot(m, mv, aim));
+      burst();
+      this.hitCircle(m, m.x, m.y, mv.radius, dmg, mv);
+      return;
     }
 
     if (mv.kind === 'hold') {
@@ -630,6 +658,13 @@ export class Play extends Phaser.Scene {
       if (mv.shield) m.shield = mv.shield * k;
       if (mv.buff) m.addBuff(mv.buff.stat, mv.buff.mul, mv.buff.time * k);
       if (mv.ingrain) m.ingrain = { t: mv.ingrain.time, hps: mv.ingrain.hps };
+      if (mv.dark) { this.shadeT = this.shadeDur = mv.dark; }
+      if (mv.buff?.mul > 1 || mv.empower) {
+        // every stat-raising move ends with the rising particles, once its own art is done
+        this.time.delayedCall((mv.frames.length / (mv.fps ?? 30)) * 1000, () => {
+          if (m.alive) this.fx.push({ img: this.add.image(m.x, m.y - 10, POWERUP.frames[0]).setScale(POWERUP.scale), frames: POWERUP.frames, t: 0, fps: 30, follow: m, lift: 10 });
+        });
+      }
       if (mv.sub) m.sub = true;
       if (mv.regen) m.regen = { t: mv.regen.time, hps: mv.regen.hps };
       if (mv.endFrames.length) {
@@ -654,18 +689,22 @@ export class Play extends Phaser.Scene {
     if (mv.kind === 'projectile' || mv.kind === 'homing' || mv.kind === 'slight') {
       // a lobbed shot comes down where it was aimed; the shot starts 10px out
       const travel = mv.lob ? Phaser.Math.Clamp(aim.dist, 30, mv.range) - 10 : mv.range;
-      const launch = (frames, r) => {
+      const launch = (frames, r, speed, power) => {
         const img = this.add.image(m.x, m.y - 8, frames[0]).setScale((mv.scale ?? 1) * (big ? 1.5 : 1));
         if (mv.tint) img.setTint(mv.tint);
         this.shots.push({
           img, frames, fps: mv.fps ?? 30, t: 0, x: m.x + dx * 10, y: m.y + dy * 10,
-          vx: dx * mv.speed, vy: dy * mv.speed, speed: mv.speed, turn: mv.turn ?? 0, cone: mv.kind === 'slight',
-          life: travel / mv.speed, owner: m, dmg, r, rotate: mv.rotate, rotOffset: mv.rotOffset ?? 0, spin: mv.spin, arc: mv.arc, life0: travel / mv.speed, mv,
+          vx: dx * speed, vy: dy * speed, speed, turn: mv.turn ?? 0, cone: mv.kind === 'slight',
+          life: travel / speed, owner: m, dmg: dmg * power, r, rotate: mv.rotate, rotOffset: mv.rotOffset ?? 0, spin: mv.spin, arc: mv.arc, life0: travel / speed, mv,
         });
       };
-      if (!mv.volley) launch(mv.frames, mv.radius);
-      // a volley sends its shots one after another, each with its own art and width
-      else mv.volley.forEach((v, i) => this.time.delayedCall(i * 170, () => m.alive && launch(v.frames, v.r)));
+      if (!mv.cycle) launch(mv.frames, mv.radius, mv.speed, 1);
+      else {
+        // each use steps to the next entry: its own art, width, speed and damage
+        const n = m.cycles[mv.name] ?? 0, v = mv.cycle[n % mv.cycle.length];
+        m.cycles[mv.name] = n + 1;
+        launch(v.frames, v.r, v.speed, v.dmg / mv.dmg);
+      }
       return;
     }
 
@@ -797,7 +836,6 @@ export class Play extends Phaser.Scene {
     for (const t of [this.player, ...this.npcs]) {
       if (t.team === owner.team || Math.hypot(t.x - x, (t.y - y) * 1.3) > r + 7) continue;
       if (mv?.strip) { t.shield = 0; for (const b of Object.values(t.buffs)) if (b.mul > 1) b.t = 0; }
-      if (mv?.volley) t.invuln = 0; // every wave of a volley can connect
       if (!t.damage(dmg, owner.x, owner.y)) continue;
       any = true;
       if (mv?.bury && t.alive) t.buried = mv.bury;
@@ -834,7 +872,7 @@ export class Play extends Phaser.Scene {
     const dt = Math.min(ms, 50) / 1000;
     const p = this.player;
     const [vx, vy] = this.inputDir();
-    p.walk(vx, vy, WALK_SPEED, dt, this.keys.SHIFT.isDown);
+    p.walk(vx, vy, WALK_SPEED, dt, this.sprinting());
     this.updateWindup(p, dt);
     p.update(dt);
     for (const n of this.npcs) { n.think(dt, p); this.updateWindup(n, dt); n.update(dt); }
@@ -843,6 +881,11 @@ export class Play extends Phaser.Scene {
     this.updateHolds(dt);
     this.updateZones(dt);
     this.updateTraps(dt);
+    if (this.shadeT > 0) {
+      // fade in, hold, fade out
+      const u = (this.shadeT -= dt) / this.shadeDur;
+      this.shade.setAlpha(0.7 * Phaser.Math.Clamp(Math.min(u * 5, (1 - u) * 5), 0, 1));
+    }
     this.updateSprint(p);
     this.updatePads();
     this.updateShots(dt);

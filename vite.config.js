@@ -77,6 +77,6 @@ function relay() {
   };
 }
 
-// index.html is the game. playground.html (the developers' test client) and vfx.html (the effect viewer) are
+// index.html is the game. playground.html (the developers' test client), vfx.html (the effect viewer) and moves.html (the move viewer) are
 // dev-only tools: `npm run dev` serves them, the build leaves them out.
 export default defineConfig({ plugins: [vfxApi(), relay()] });

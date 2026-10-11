@@ -38,6 +38,7 @@ const HOW = {
   dash: 'You rush through whatever is ahead.',
   hold: 'Hold the button to fly at the cursor.',
   self: 'Works on yourself.',
+  blink: 'You vanish and reappear where you aim.',
 };
 const STAT = { atk: 'Attack', spd: 'Speed', def: 'Defense', eva: 'Evasion' };
 const pct = (n) => `${Math.round(n * 100)}%`;
@@ -62,7 +63,7 @@ export function describe(id) {
   const n = [];
   if (mv.random) n.push('Uses some other move at random.');
   if (mv.lob) n.push('Lobbed: it comes down where you aim.');
-  if (mv.volley) n.push(`Fires ${mv.volley.length} shots in a row.`);
+  if (mv.cycle) n.push(`Each use fires a different shot, ${mv.cycle.length} in rotation.`);
   if (mv.grow) n.push('Hold to widen the blast, release to fire.');
   if (mv.status) {
     const what = mv.status.kind === 'tri' ? 'burned, paralysed or frozen' : STATUS[mv.status.kind].label;

@@ -4,6 +4,7 @@ import { CHOICES } from '../evolutions.js';
 import { MOVES, BRANCH_MOVES } from '../moves.js';
 import { chooseBranch } from './session.js';
 import { cap } from './moveinfo.js';
+import { tapActs } from './touch.js';
 import { DEPTH, INK, Group, text, typeIcon, panel, shade, choose, banner } from './ui.js';
 
 const COLS = 4, CELL_W = 88, CELL_H = 56, GRID_X = 16, GRID_Y = 34;
@@ -33,7 +34,7 @@ export class EvolveMenu {
       gadd(text(scene, x + w / 2, y + 43, SPECIES[id].name, INK.white).setOrigin(0.5, 0));
       const zone = gadd(pinned(scene.add.zone(x, y, w, h).setOrigin(0), 3)).setInteractive({ useHandCursor: true });
       zone.on('pointerover', () => this.select(i));
-      zone.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); this.select(i); this.pick(); });
+      zone.on('pointerdown', (p, _x, _y, e) => { e.stopPropagation(); const on = this.index === i; this.select(i); if (tapActs(p, on)) this.pick(); });
       return cell;
     });
 

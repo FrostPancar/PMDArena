@@ -60,7 +60,7 @@ export class Hub extends Phaser.Scene {
 
     this.actions = new Actions(this);
     this.hints = new Hints(this, this.actions);
-    this.walkKeys = this.actions.push({ confirm: () => this.interact(), menu: () => this.openMoves() });
+    this.walkKeys = this.actions.push({ steer: true, confirm: () => this.interact(), menu: () => this.openMoves() });
     this.mark = this.add.image(0, 0, 'art-icons', 'btnA').setDepth(9000).setVisible(false); // floats over the player near a spot
     this.bob = 0;
     this.near = undefined;

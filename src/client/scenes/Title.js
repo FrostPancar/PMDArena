@@ -7,6 +7,7 @@ import { Actions } from '../input.js';
 import { go, wipe } from '../transition.js';
 import { formOf } from '../session.js';
 import { fetchStages, stagesNote } from '../stages.js';
+import { touch } from '../touch.js';
 import { INK, text, icon, panel } from '../ui.js';
 
 export const GAME_TITLE = 'PMD', GAME_TAGLINE = 'Dojo Battles';
@@ -31,7 +32,7 @@ export class Title extends Phaser.Scene {
     // the prompt sits over the sea, clear of the mon on the cliff
     const y = 150;
     panel(this, 98 - 54, y - 5, 108, 22, 'dim');
-    this.tweens.add({ targets: [icon(this, 98 - 32, y + 6, 'start'), text(this, 98 - 16, y, 'Press Enter')], alpha: 0.25, duration: 520, yoyo: true, repeat: -1 });
+    this.tweens.add({ targets: [icon(this, 98 - 32, y + 6, 'start'), text(this, 98 - 16, y, touch.on ? 'Tap to start' : 'Press Enter')], alpha: 0.25, duration: 520, yoyo: true, repeat: -1 });
     this.note = text(this, VIEW_W - 5, 4, '', INK.dim).setOrigin(1, 0);
 
     const start = () => { if (!wipe.busy) go(this, 'dream', { pick: 'self', from: 'title' }); };

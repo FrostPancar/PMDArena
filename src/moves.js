@@ -22,6 +22,7 @@ const urls = import.meta.glob(
     '../move_VFX/0020_target_lock_reticle/001/*.png',
     '../move_VFX/0020_target_lock_reticle/005/*.png',
     '../move_VFX/0021_water_splash/000/*.png',
+    '../move_VFX/0023_blue_dots_to_ring/000/*.png',
     '../move_VFX/0024_fireball_glow/000/*.png',
     '../move_VFX/0027_white_wings_flap/000/*.png',
     '../move_VFX/0028_fireballs_burst/000/*.png',
@@ -107,6 +108,7 @@ const urls = import.meta.glob(
     '../move_VFX/0108_razor_leaf_wind/009/*.png',
     '../move_VFX/0108_razor_leaf_wind/010/*.png',
     '../move_VFX/0108_razor_leaf_wind/012/*.png',
+    '../move_VFX/0109_erupts/005/*.png',
     '../move_VFX/0110_rock_ball/001/*.png',
     '../move_VFX/0110_rock_ball/002/*.png',
     '../move_VFX/0113_white_laser_vertical/000/*.png',
@@ -270,7 +272,7 @@ const urls = import.meta.glob(
 
 export const KIND_LABEL = {
   melee: 'melee', mid: 'mid range', projectile: 'long range', beam: 'beam', aoe: 'area',
-  auto: 'auto target', homing: 'homing', slight: 'slight homing', self: 'self', dash: 'dash', hold: 'hold',
+  auto: 'auto target', homing: 'homing', slight: 'slight homing', self: 'self', dash: 'dash', hold: 'hold', blink: 'teleport',
 };
 
 // kind decides delivery:
@@ -299,7 +301,8 @@ export const KIND_LABEL = {
 // grow makes it a held charge: the zone widens from min to max at `rate` px a second, costing `upkeep` stamina a second,
 // and goes off on release (left click cancels any charge).
 // scatter drops an area move's art (seqs or altSeqs, at random) all over its radius; trap leaves an unseen hurtbox on the spot for that many seconds;
-// volley fires one shot per entry in turn, each with its own art and radius; after puts a status on the user when a lingering move ends;
+// cycle steps through its entries on successive uses, each with its own art, radius, damage and speed; a blink move teleports the user to the cursor;
+// dark dims the screen for that many seconds; after puts a status on the user when a lingering move ends;
 // endSeqs plays when a self buff runs out, loopBuff loops the art while it lasts; ingrain roots and heals the user; hpCost spends that share of max HP.
 // ramp makes each use in a row hit harder; regen heals the user over time; cleanse clears the user's lowered stats; gravity makes a lingering zone nobody can jump in;
 // random (Metronome) fires some other move instead; a dash with burst ends in a blast of that radius, and tire leaves the user out of stamina.
@@ -309,7 +312,7 @@ export const KIND_LABEL = {
 export const MOVES = {
   razorLeaf: { name: 'Razor Leaf', kind: 'mid', fx: '0108_razor_leaf_wind', seqs: ['010'], scale: 0.8, range: 75, radius: 22, dmg: 16, cost: 25, charge: 0.3, chargeFx: '0108_razor_leaf_wind', chargeSeqs: ['009'], chargeScale: 0.7 },
   leafStorm: { name: 'Leaf Storm', kind: 'projectile', fx: '0186_leaf_storm', seqs: ['000'], slice: [4, 20], speed: 170, range: 230, radius: 12, dmg: 18, cost: 30, charge: 0.4, impactSeqs: ['001', '001', '002'] },
-  leafBlade: { name: 'Leaf Blade', kind: 'melee', fx: '0100_sword_slash', seqs: ['000'], reach: 14, radius: 30, dmg: 20, cost: 18, charge: 0.15, fps: 12, tint: 0x9cff7a, impactFx: '0066_green_dashes_swirl', impactSeqs: ['000'], lunge: false },
+  leafBlade: { name: 'Leaf Blade', kind: 'melee', fx: '0100_sword_slash', seqs: ['000'], reach: 14, radius: 30, dmg: 20, cost: 18, charge: 0.075, fps: 12, tint: 0x9cff7a, impactFx: '0066_green_dashes_swirl', impactSeqs: ['000'], lunge: false },
   flameBurst: { name: 'Flame Burst', kind: 'mid', status: { kind: 'burn', chance: 0.25 }, fx: '0189_fire_burst', seqs: ['000'], range: 75, radius: 20, dmg: 18, cost: 28, charge: 0.3, origin: [0.5, 0.9] },
   fireSpin: { name: 'Fire Spin', kind: 'mid', status: { kind: 'burn', chance: 0.3 }, fx: '0225_fire_whirl_column', seqs: ['000'], range: 85, radius: 24, dmg: 16, cost: 32, charge: 0.35, origin: [0.5, 0.9], fps: 45, linger: 5 },
   bubble: { name: 'Bubble', kind: 'projectile', fx: '0183_blue_dot_pulse_small', seqs: ['000'], speed: 220, range: 240, radius: 8, dmg: 10, cost: 12, charge: 0.12 },
@@ -317,15 +320,15 @@ export const MOVES = {
   confusion: { name: 'Confusion', kind: 'auto', fx: '0171_pink_psychic_burst', seqs: ['000'], range: 130, radius: 22, dmg: 16, cost: 30, charge: 0.4 },
   swift: { name: 'Swift', kind: 'mid', fx: '0084_star_burst_swift', seqs: ['000'], fixed: 12, hitReach: 36, radius: 30, dmg: 14, cost: 25, charge: 0.25, rotate: true, origin: [0.12, 0.5], fps: 20 },
 
-  bite: { name: 'Bite', kind: 'melee', fx: '0122_fangs_bite', seqs: ['000'], reach: 16, radius: 16, dmg: 18, cost: 15, charge: 0.12, impactSeqs: ['016'] },
-  fireFang: { name: 'Fire Fang', kind: 'melee', status: { kind: 'burn', chance: 0.25 }, fx: '0157_fire_fang', seqs: ['000'], reach: 18, radius: 18, dmg: 22, cost: 20, charge: 0.18, fps: 20 },
+  bite: { name: 'Bite', kind: 'melee', fx: '0122_fangs_bite', seqs: ['000'], reach: 16, radius: 16, dmg: 18, cost: 15, charge: 0.06, impactSeqs: ['016'] },
+  fireFang: { name: 'Fire Fang', kind: 'melee', status: { kind: 'burn', chance: 0.25 }, fx: '0157_fire_fang', seqs: ['000'], reach: 18, radius: 18, dmg: 22, cost: 20, charge: 0.09, fps: 20 },
   ember: { name: 'Ember', kind: 'projectile', status: { kind: 'burn', chance: 0.25 }, fx: '0024_fireball_glow', seqs: ['000'], speed: 210, range: 260, radius: 10, dmg: 14, cost: 20, charge: 0.25, impactFx: '0090_eruption', impactSeqs: ['001'], impactScale: 0.6 },
   magicalLeaf: { name: 'Magical Leaf', kind: 'slight', fx: '0186_leaf_storm', seqs: ['001'], fps: 10, speed: 125, range: 250, turn: 0.6, radius: 10, dmg: 14, cost: 24, charge: 0.3, chargeFx: '0108_razor_leaf_wind', chargeSeqs: ['009'] },
   waterPulse: { name: 'Water Pulse', kind: 'projectile', fx: '0081_water_pulse', seqs: ['002'], speed: 150, range: 240, radius: 11, dmg: 16, cost: 28, charge: 0.35, rotate: true, fps: 20, impactSeqs: ['008'] },
   shadowBall: { name: 'Shadow Ball', kind: 'homing', fx: '0092_shadow_ball', seqs: ['000'], speed: 85, range: 320, turn: 1.6, radius: 11, dmg: 15, cost: 32, charge: 0.4, scale: 1.5, fps: 8 },
   psybeam: { name: 'Psybeam', kind: 'beam', fx: '0006_pink_light_beam', seqs: ['000'], slice: [1, 32], length: 140, dmg: 18, cost: 38, charge: 0.5, fps: 45, impactSeqs: ['001'] },
   hydroBurst: { name: 'Hydro Burst', kind: 'aoe', fx: '0227_hydro_radial_burst', seqs: ['000'], slice: [12, 33], radius: 42, dmg: 16, cost: 40, charge: 0.45 },
-  powerWhip: { name: 'Power Whip', kind: 'melee', fx: '0245_grass_whip', seqs: ['000', '001'], reach: 22, radius: 22, dmg: 22, cost: 24, charge: 0.25, fps: 18 },
+  powerWhip: { name: 'Power Whip', kind: 'melee', fx: '0245_grass_whip', seqs: ['000', '001'], reach: 22, radius: 22, dmg: 22, cost: 24, charge: 0.125, fps: 18 },
   grassKnot: { name: 'Grass Knot', kind: 'auto', fx: '0080_roots_and_leaves', seqs: ['001'], range: 130, radius: 24, dmg: 18, cost: 32, charge: 0.45, fps: 45, origin: [0.5, 0.8] },
 
   gigaDrain: { name: 'Giga Drain', kind: 'auto', fx: '0085_wrap_vines', seqs: ['000'], range: 120, radius: 20, dmg: 14, cost: 30, charge: 0.4, drain: 0.6, origin: [0.5, 0.8], fps: 20 },
@@ -338,54 +341,54 @@ export const MOVES = {
   flamethrower: { name: 'Flamethrower', kind: 'beam', status: { kind: 'burn', chance: 0.3 }, fx: '0036_fire_streak_vertical', seqs: ['000'], length: 130, dmg: 18, cost: 36, charge: 0.45, fps: 55 },
   willOWisp: { name: 'Will-O-Wisp', kind: 'homing', status: { kind: 'burn', chance: 1 }, fx: '0099_mega_moves', seqs: ['001'], speed: 75, range: 330, turn: 1.4, radius: 11, dmg: 13, cost: 28, charge: 0.35, spin: false },
   eruption: { name: 'Eruption', kind: 'auto', status: { kind: 'burn', chance: 0.25 }, fx: '0090_eruption', seqs: ['000', '001'], hitDelay: 600, range: 130, radius: 22, dmg: 19, cost: 34, charge: 0.45, origin: [0.5, 0.8], fps: 20 },
-  dragonClaw: { name: 'Dragon Claw', kind: 'melee', fx: '0050_fire_claw_slash', seqs: ['000'], reach: 18, radius: 18, dmg: 21, cost: 20, charge: 0.15, fps: 15 },
+  dragonClaw: { name: 'Dragon Claw', kind: 'melee', fx: '0050_fire_claw_slash', seqs: ['000'], reach: 18, radius: 18, dmg: 21, cost: 20, charge: 0.075, fps: 15 },
   waterGun: { name: 'Water Gun', kind: 'mid', fx: '0103_blue_bubble_cloud', seqs: ['000'], range: 75, radius: 22, dmg: 16, cost: 25, charge: 0.3 },
   hydroPump: { name: 'Hydro Pump', kind: 'beam', fx: '0113_white_laser_vertical', seqs: ['000'], length: 150, dmg: 22, cost: 45, charge: 0.6, fps: 45, anchor: 'top', tint: 0x7cc4ff, chargeSeqs: ['001'] },
   whirlpool: { name: 'Whirlpool', kind: 'aoe', fx: '0095_rings_up', seqs: ['000'], radius: 38, dmg: 15, cost: 34, charge: 0.4, origin: [0.5, 0.8], fps: 20, linger: 5 },
   mudBomb: { name: 'Mud Bomb', kind: 'projectile', fx: '0218_mud_burst', seqs: ['000'], speed: 170, range: 230, radius: 12, dmg: 18, cost: 28, charge: 0.35, scale: 1.5, fps: 12, impactSeqs: ['001'], lob: true, arc: 44, burst: 20 },
   icyWind: { name: 'Icy Wind', kind: 'aoe', status: { kind: 'freeze', chance: 0.2 }, fx: '0055_ice_shards_ring', seqs: ['000'], radius: 52, dmg: 17, cost: 45, charge: 0.55 },
-  iceFang: { name: 'Ice Fang', kind: 'melee', status: { kind: 'freeze', chance: 0.2 }, fx: '0155_ice_fang', seqs: ['000'], reach: 18, radius: 18, dmg: 21, cost: 20, charge: 0.18, fps: 20 },
+  iceFang: { name: 'Ice Fang', kind: 'melee', status: { kind: 'freeze', chance: 0.2 }, fx: '0155_ice_fang', seqs: ['000'], reach: 18, radius: 18, dmg: 21, cost: 20, charge: 0.09, fps: 20 },
   psychic: { name: 'Psychic', kind: 'auto', fx: '0017_pink_sphere', seqs: ['000'], range: 140, radius: 26, dmg: 21, cost: 40, charge: 0.55, fps: 45 },
   hypnosis: { name: 'Hypnosis', kind: 'slight', status: { kind: 'sleep', chance: 1 }, fx: '0058_hypnosis_spiral', seqs: ['000'], slice: [0, 10], speed: 105, range: 230, turn: 0.7, radius: 11, dmg: 12, cost: 22, charge: 0.3 },
   futureSight: { name: 'Future Sight', kind: 'mid', fx: '0048_pillar_of_light', seqs: ['000'], range: 110, radius: 26, dmg: 26, cost: 45, charge: 0.7, origin: [0.5, 0.9], fps: 40 },
   drainingKiss: { name: 'Draining Kiss', kind: 'auto', fx: '0199_charm', seqs: ['000'], range: 110, radius: 20, dmg: 12, cost: 28, charge: 0.35, drain: 0.75, fps: 20 },
   darkPulse: { name: 'Dark Pulse', kind: 'aoe', fx: '0195_dark_pulse', seqs: ['000'], radius: 46, dmg: 17, cost: 38, charge: 0.45, fps: 55 },
   moonblast: { name: 'Moonblast', kind: 'projectile', fx: '0206_moonblast', seqs: ['001'], speed: 130, range: 240, radius: 16, dmg: 24, cost: 40, charge: 0.55, scale: 1.5, fps: 8, chargeSeqs: ['000'], impactSeqs: ['002'] },
-  quickAttack: { name: 'Quick Attack', kind: 'melee', fx: '0149_white_slash_lines', seqs: ['000'], reach: 20, radius: 18, dmg: 14, cost: 10, charge: 0.06 },
+  quickAttack: { name: 'Quick Attack', kind: 'melee', fx: '0149_white_slash_lines', seqs: ['000'], reach: 20, radius: 18, dmg: 14, cost: 10, charge: 0.03 },
   hyperBeam: { name: 'Hyper Beam', kind: 'beam', fx: '0113_white_laser_vertical', seqs: ['000'], length: 160, dmg: 26, cost: 55, charge: 0.75, fps: 45, anchor: 'top', chargeSeqs: ['001'] },
   hyperVoice: { name: 'Hyper Voice', kind: 'projectile', fx: '0060_hyper_voice', seqs: ['002'], speed: 130, range: 80, radius: 15, dmg: 18, cost: 30, charge: 0.35, rotate: true, scale: 1.5, fps: 20 },
-  drainPunch: { name: 'Drain Punch', kind: 'melee', fx: '0220_drain_punch', seqs: ['000'], reach: 18, radius: 20, dmg: 22, cost: 30, charge: 0.4, drain: 0.5, fps: 45 },
-  thunderFang: { name: 'Thunder Fang', kind: 'melee', status: { kind: 'para', chance: 0.25 }, fx: '0152_thunder_fang', seqs: ['000'], reach: 18, radius: 18, dmg: 21, cost: 20, charge: 0.18, fps: 20 },
-  nightSlash: { name: 'Night Slash', kind: 'melee', fx: '0230_night_slash', seqs: ['000'], reach: 20, radius: 20, dmg: 19, cost: 18, charge: 0.14, rotate: true, fps: 70 },
-  xScissor: { name: 'X-Scissor', kind: 'melee', fx: '0166_x_scissor_slash', seqs: ['000'], reach: 20, radius: 22, dmg: 22, cost: 24, charge: 0.22 },
+  drainPunch: { name: 'Drain Punch', kind: 'melee', fx: '0220_drain_punch', seqs: ['000'], reach: 18, radius: 20, dmg: 22, cost: 30, charge: 0.2, drain: 0.5, fps: 45 },
+  thunderFang: { name: 'Thunder Fang', kind: 'melee', status: { kind: 'para', chance: 0.25 }, fx: '0152_thunder_fang', seqs: ['000'], reach: 18, radius: 18, dmg: 21, cost: 20, charge: 0.09, fps: 20 },
+  nightSlash: { name: 'Night Slash', kind: 'melee', fx: '0230_night_slash', seqs: ['000'], reach: 20, radius: 20, dmg: 19, cost: 18, charge: 0.07, rotate: true, fps: 70 },
+  xScissor: { name: 'X-Scissor', kind: 'melee', fx: '0166_x_scissor_slash', seqs: ['000'], reach: 20, radius: 22, dmg: 22, cost: 24, charge: 0.11 },
 
   dragonBreath: { name: 'Dragon Breath', kind: 'beam', status: { kind: 'para', chance: 0.3 }, fx: '0036_fire_streak_vertical', seqs: ['000'], length: 130, dmg: 19, cost: 36, charge: 0.45, fps: 55, tint: 0xb48cff },
   dragonPulse: { name: 'Dragon Pulse', kind: 'projectile', fx: '0178_purple_ring_orb', seqs: ['000'], speed: 160, range: 240, radius: 13, dmg: 20, cost: 30, charge: 0.4, impactSeqs: ['001'] },
   outrage: { name: 'Outrage', kind: 'aoe', fx: '0160_outrage', seqs: ['001'], radius: 38, dmg: 16, cost: 44, charge: 0.6, scale: 2, fps: 24, chargeSeqs: ['000'], chargeScale: 1.5, linger: 3, follow: true, after: 'confuse' },
-  dualChop: { name: 'Dual Chop', kind: 'melee', fx: '0100_sword_slash', seqs: ['008'], reach: 12, radius: 32, dmg: 20, cost: 18, charge: 0.15, fps: 16, lunge: false },
-  shadowClaw: { name: 'Shadow Claw', kind: 'melee', fx: '0179_shadow_claw', seqs: ['000'], reach: 18, radius: 20, dmg: 20, cost: 18, charge: 0.15 },
+  dualChop: { name: 'Dual Chop', kind: 'melee', fx: '0100_sword_slash', seqs: ['008'], reach: 12, radius: 32, dmg: 20, cost: 18, charge: 0.075, fps: 16, lunge: false },
+  shadowClaw: { name: 'Shadow Claw', kind: 'melee', fx: '0179_shadow_claw', seqs: ['000'], reach: 18, radius: 20, dmg: 20, cost: 18, charge: 0.075 },
   nightDaze: { name: 'Night Daze', kind: 'aoe', fx: '0201_dark_void', seqs: ['000'], radius: 40, dmg: 19, cost: 42, charge: 0.5, fps: 40 },
   snarl: { name: 'Snarl', kind: 'mid', fx: '0176_dark_vortex', seqs: ['000'], range: 80, radius: 22, dmg: 16, cost: 24, charge: 0.3 },
   scaryFace: { name: 'Scary Face', kind: 'auto', fx: '0064_scary_face_eyes', seqs: ['000'], range: 130, radius: 20, dmg: 13, cost: 22, charge: 0.3, fps: 20, impactSeqs: ['001'] },
   shadowSneak: { name: 'Shadow Sneak', kind: 'beam', fx: '0184_shadow_sneak', seqs: ['002'], flat: true, scale: 1.4, dmg: 17, cost: 28, charge: 0.25, fps: 22, impactSeqs: ['008'] },
   gust: { name: 'Gust', kind: 'mid', fx: '0258_gust_spiral', seqs: ['000'], range: 85, radius: 24, dmg: 16, cost: 24, charge: 0.3, origin: [0.5, 0.85], fps: 55, impactSeqs: ['001'], linger: 5 },
   whirlwind: { name: 'Whirlwind', kind: 'aoe', fx: '0135_whirlwind_spiral', seqs: ['001'], radius: 40, dmg: 16, cost: 36, charge: 0.4, origin: [0.5, 0.85], fps: 60 },
-  wingAttack: { name: 'Wing Attack', kind: 'melee', fx: '0027_white_wings_flap', seqs: ['000'], reach: 18, radius: 20, dmg: 18, cost: 16, charge: 0.12, fps: 40 },
+  wingAttack: { name: 'Wing Attack', kind: 'melee', fx: '0027_white_wings_flap', seqs: ['000'], reach: 18, radius: 20, dmg: 18, cost: 16, charge: 0.06, fps: 40 },
   airSlash: { name: 'Air Slash', kind: 'mid', fx: '0149_white_slash_lines', seqs: ['000'], range: 95, radius: 22, dmg: 16, cost: 22, charge: 0.25 },
   aerialAce: { name: 'Aerial Ace', kind: 'dash', fx: '0177_white_slash_flurry', seqs: ['000'], dash: 90, dur: 0.4, radius: 15, dmg: 19, cost: 28, charge: 0.2, recoil: 8, fps: 60 },
-  crabhammer: { name: 'Crabhammer', kind: 'melee', fx: '0147_red_fist_impact', seqs: ['000'], reach: 18, radius: 20, dmg: 24, cost: 26, charge: 0.3 },
+  crabhammer: { name: 'Crabhammer', kind: 'melee', fx: '0147_red_fist_impact', seqs: ['000'], reach: 18, radius: 20, dmg: 24, cost: 26, charge: 0.15 },
   bubbleBeam: { name: 'Bubble Beam', kind: 'slight', fx: '0089_bubble_rings', seqs: ['000'], slice: [0, 9], speed: 125, range: 250, turn: 0.65, radius: 13, dmg: 15, cost: 24, charge: 0.3, fps: 15 },
-  razorShell: { name: 'Razor Shell', kind: 'melee', fx: '0158_water_arc_slash', seqs: ['000'], reach: 20, radius: 22, dmg: 20, cost: 20, charge: 0.18, fps: 45 },
+  razorShell: { name: 'Razor Shell', kind: 'melee', fx: '0158_water_arc_slash', seqs: ['000'], reach: 20, radius: 22, dmg: 20, cost: 20, charge: 0.09, fps: 45 },
   surf: { name: 'Surf', kind: 'aoe', fx: '0073_water_droplets_spray', seqs: ['000'], radius: 52, dmg: 18, cost: 45, charge: 0.55, fps: 14 },
   bonemerang: { name: 'Bonemerang', kind: 'projectile', fx: '0011_bone_spin', seqs: ['000'], speed: 200, range: 230, radius: 11, dmg: 16, cost: 20, charge: 0.25, scale: 1.3, fps: 20, impactSeqs: ['001'] },
-  meteorMash: { name: 'Meteor Mash', kind: 'melee', fx: '0180_punch_shockwave', seqs: ['000'], reach: 18, radius: 20, dmg: 20, cost: 20, charge: 0.2 },
+  meteorMash: { name: 'Meteor Mash', kind: 'melee', fx: '0180_punch_shockwave', seqs: ['000'], reach: 18, radius: 20, dmg: 20, cost: 20, charge: 0.1 },
   earthquake: { name: 'Earthquake', kind: 'aoe', fx: '0172_earthquake', seqs: ['000'], altSeqs: ['001'], scatter: true, radius: 56, dmg: 20, cost: 15, charge: 0.3, grow: { min: 22, max: 84, rate: 32, upkeep: 30 }, fps: 24, bury: 1.4 },
   rockSlide: { name: 'Rock Slide', kind: 'auto', fx: '0205_rock_throw', seqs: ['000'], range: 130, radius: 24, dmg: 19, cost: 32, charge: 0.4 },
   stoneEdge: { name: 'Stone Edge', kind: 'mid', fx: '0188_stone_edge', seqs: ['000'], range: 85, radius: 24, dmg: 21, cost: 32, charge: 0.4, origin: [0.5, 0.95], fps: 45 },
   poisonSting: { name: 'Poison Sting', kind: 'projectile', status: { kind: 'poison', chance: 0.5 }, fx: '0083_white_needle', seqs: ['000'], speed: 260, range: 250, radius: 8, dmg: 10, cost: 12, charge: 0.12, rotate: true, tint: 0xd48cff },
   sludgeBomb: { name: 'Sludge Bomb', kind: 'projectile', status: { kind: 'poison', chance: 0.4 }, fx: '0203_sludge_bomb', seqs: ['000'], slice: [8, 35], speed: 185, range: 230, radius: 13, dmg: 20, cost: 30, charge: 0.4, impactFx: '0196_gunk_shot', impactSeqs: ['000'], arc: 44, burst: 20, lob: true },
-  poisonJab: { name: 'Poison Jab', kind: 'melee', status: { kind: 'poison', chance: 0.4 }, fx: '0088_poison_jab', seqs: ['000'], reach: 18, radius: 18, dmg: 20, cost: 18, charge: 0.15, scale: 1.5, fps: 14 },
-  metalClaw: { name: 'Metal Claw', kind: 'melee', fx: '0012_pin_missiles', seqs: ['000'], reach: 18, radius: 20, dmg: 20, cost: 18, charge: 0.15, fps: 20, impactFx: '0207_steel_slash', impactSeqs: ['001'] },
+  poisonJab: { name: 'Poison Jab', kind: 'melee', status: { kind: 'poison', chance: 0.4 }, fx: '0088_poison_jab', seqs: ['000'], reach: 18, radius: 18, dmg: 20, cost: 18, charge: 0.075, scale: 1.5, fps: 14 },
+  metalClaw: { name: 'Metal Claw', kind: 'melee', fx: '0012_pin_missiles', seqs: ['000'], reach: 18, radius: 20, dmg: 20, cost: 18, charge: 0.075, fps: 20, impactFx: '0207_steel_slash', impactSeqs: ['001'] },
   flashCannon: { name: 'Flash Cannon', kind: 'projectile', fx: '0175_flash_cannon', seqs: ['000'], slice: [20, 38], speed: 190, range: 260, radius: 14, dmg: 22, cost: 38, charge: 0.5, impactSeqs: ['001'] },
   gyroBall: { name: 'Gyro Ball', kind: 'homing', fx: '0142_blue_atom_orbit', seqs: ['000'], slice: [3, 12], speed: 95, range: 320, turn: 1.6, radius: 13, dmg: 16, cost: 32, charge: 0.4, fps: 20 },
 
@@ -399,37 +402,37 @@ export const MOVES = {
   lavaPlume: { name: 'Lava Plume', kind: 'aoe', status: { kind: 'burn', chance: 0.35 }, fx: '0034_magma_rocks_eruption', seqs: ['000'], radius: 48, dmg: 18, cost: 40, charge: 0.5, fps: 14, rings: 2 },
   discharge: { name: 'Discharge', kind: 'aoe', status: { kind: 'para', chance: 0.4 }, fx: '0042_thunder_arcs', seqs: ['000', '001'], radius: 42, dmg: 18, cost: 40, charge: 0.45 },
   extrasensory: { name: 'Extrasensory', kind: 'auto', fx: '0056_poison_spikes', seqs: ['002'], range: 130, radius: 20, dmg: 18, cost: 30, charge: 0.4, origin: [0.5, 0.92], fps: 18 },
-  furySwipes: { name: 'Fury Swipes', kind: 'melee', fx: '0070_swipes', seqs: ['000'], reach: 18, radius: 22, dmg: 16, cost: 14, charge: 0.1, fps: 14 },
+  furySwipes: { name: 'Fury Swipes', kind: 'melee', fx: '0070_swipes', seqs: ['000'], reach: 18, radius: 22, dmg: 16, cost: 14, charge: 0.05, fps: 14 },
   geyser: { name: 'Geyser', kind: 'mid', fx: '0074_water_geyser', seqs: ['000'], range: 85, radius: 22, dmg: 19, cost: 30, charge: 0.35, origin: [0.5, 0.85] },
   starShoot: { name: 'Star Shoot', kind: 'auto', fx: '0077_star_shoot', seqs: ['000'], range: 140, radius: 20, dmg: 15, cost: 24, charge: 0.3, origin: [0.8, 0.8], fps: 20 },
   uproar: { name: 'Uproar', kind: 'aoe', fx: '0091_uproar', seqs: ['000'], radius: 52, dmg: 17, cost: 42, charge: 0.5, fps: 24, linger: 5, follow: true },
-  slash: { name: 'Slash', kind: 'melee', fx: '0101_slash', seqs: ['000'], reach: 18, radius: 20, dmg: 18, cost: 14, charge: 0.1, fps: 16 },
+  slash: { name: 'Slash', kind: 'melee', fx: '0101_slash', seqs: ['000'], reach: 18, radius: 20, dmg: 18, cost: 14, charge: 0.05, fps: 16 },
   sandTomb: { name: 'Sand Tomb', kind: 'mid', fx: '0114_sand_tomb', seqs: ['001'], range: 90, radius: 26, dmg: 14, cost: 34, charge: 0.4, origin: [0.5, 0.75], fps: 50, bury: 1.0, impactSeqs: ['000'], linger: 5 },
   thunder: { name: 'Thunder', kind: 'mid', status: { kind: 'para', chance: 0.35 }, fx: '0018_white_orb_electric', seqs: ['000'], range: 150, radius: 24, dmg: 26, cost: 46, charge: 0.65, origin: [0.5, 0.96], fps: 20, chargeSeqs: ['002'], impactSeqs: ['001'] },
   triAttack: { name: 'Tri Attack', kind: 'projectile', status: { kind: 'tri', chance: 0.4 }, fx: '0124_tri_beam', seqs: ['001'], speed: 170, range: 240, radius: 12, dmg: 20, cost: 30, charge: 0.4, fps: 14, impactSeqs: ['000'] },
-  iceShard: { name: 'Ice Shard', kind: 'projectile', status: { kind: 'freeze', chance: 0.15 }, fx: '0127_ice_shard', seqs: ['002'], speed: 300, range: 240, radius: 8, dmg: 11, cost: 12, charge: 0.08, rotate: true, scale: 1.5 },
-  vineWhip: { name: 'Vine Whip', kind: 'melee', fx: '0131_whip_smack', seqs: ['000'], reach: 18, radius: 20, dmg: 17, cost: 14, charge: 0.12, fps: 20, impactSeqs: ['001'] },
-  hammerArm: { name: 'Hammer Arm', kind: 'melee', fx: '0139_hammer_arm', seqs: ['000'], reach: 18, radius: 22, dmg: 25, cost: 30, charge: 0.4, fps: 28 },
+  iceShard: { name: 'Ice Shard', kind: 'projectile', status: { kind: 'freeze', chance: 0.15 }, fx: '0127_ice_shard', seqs: ['002'], speed: 300, range: 240, radius: 8, dmg: 11, cost: 12, charge: 0.08, rotate: true },
+  vineWhip: { name: 'Vine Whip', kind: 'melee', fx: '0131_whip_smack', seqs: ['000'], reach: 18, radius: 20, dmg: 17, cost: 14, charge: 0.06, fps: 20, impactSeqs: ['001'] },
+  hammerArm: { name: 'Hammer Arm', kind: 'melee', fx: '0139_hammer_arm', seqs: ['000'], reach: 18, radius: 22, dmg: 25, cost: 30, charge: 0.2, fps: 28 },
   rockTomb: { name: 'Rock Tomb', kind: 'mid', fx: '0140_grey_rock_shatter', seqs: ['000'], range: 85, radius: 26, dmg: 19, cost: 28, charge: 0.35, fps: 20 },
   acid: { name: 'Acid', kind: 'projectile', status: { kind: 'poison', chance: 0.3 }, fx: '0145_green_poison', seqs: ['000'], speed: 190, range: 230, radius: 10, dmg: 15, cost: 20, charge: 0.25, rotate: true, fps: 14, impactSeqs: ['001'] },
-  woodHammer: { name: 'Wood Hammer', kind: 'melee', fx: '0148_wood_hammer', seqs: ['000'], reach: 18, radius: 22, dmg: 25, cost: 30, charge: 0.4 },
+  woodHammer: { name: 'Wood Hammer', kind: 'melee', fx: '0148_wood_hammer', seqs: ['000'], reach: 18, radius: 22, dmg: 25, cost: 30, charge: 0.2 },
   hex: { name: 'Hex', kind: 'auto', fx: '0163_purple_claw_vortex', seqs: ['000'], range: 130, radius: 22, dmg: 19, cost: 30, charge: 0.4, fps: 45 },
-  crossPoison: { name: 'Cross Poison', kind: 'melee', status: { kind: 'poison', chance: 0.4 }, fx: '0165_cross_poison', seqs: ['000'], reach: 18, radius: 20, dmg: 20, cost: 18, charge: 0.15 },
+  crossPoison: { name: 'Cross Poison', kind: 'melee', status: { kind: 'poison', chance: 0.4 }, fx: '0165_cross_poison', seqs: ['000'], reach: 18, radius: 20, dmg: 20, cost: 18, charge: 0.075 },
   rockWrecker: { name: 'Rock Wrecker', kind: 'projectile', fx: '0182_rock_wrecker', seqs: ['001'], speed: 150, range: 240, radius: 14, dmg: 28, cost: 50, charge: 0.8, fps: 20, chargeSeqs: ['000'], impactSeqs: ['002'] },
   focusBlast: { name: 'Focus Blast', kind: 'projectile', fx: '0185_focus_blast', seqs: ['010'], speed: 170, range: 250, radius: 13, dmg: 26, cost: 46, charge: 0.75, rotate: true, fps: 14, chargeSeqs: ['000'], impactSeqs: ['016'] },
   blizzard: { name: 'Blizzard', kind: 'projectile', status: { kind: 'freeze', chance: 0.3 }, fx: '0190_ice_projectile', seqs: ['010'], speed: 230, range: 250, radius: 11, dmg: 18, cost: 28, charge: 0.4, rotate: true, fps: 14, chargeSeqs: ['000'], impactSeqs: ['016'] },
-  wakeUpSlap: { name: 'Wake-Up Slap', kind: 'melee', fx: '0191_wake_up_slap', seqs: ['000'], reach: 18, radius: 20, dmg: 19, cost: 18, charge: 0.15 },
+  wakeUpSlap: { name: 'Wake-Up Slap', kind: 'melee', fx: '0191_wake_up_slap', seqs: ['000'], reach: 18, radius: 20, dmg: 19, cost: 18, charge: 0.075 },
   avalanche: { name: 'Avalanche', kind: 'auto', status: { kind: 'freeze', chance: 0.2 }, fx: '0198_avalanche', seqs: ['000'], range: 140, radius: 24, dmg: 22, cost: 38, charge: 0.5, origin: [0.5, 0.95], fps: 26, impactSeqs: ['001'] },
   iceBall: { name: 'Ice Ball', kind: 'projectile', status: { kind: 'freeze', chance: 0.2 }, fx: '0209_snowball_burst', seqs: ['001'], speed: 180, range: 240, radius: 11, dmg: 17, cost: 24, charge: 0.3, scale: 1.5, fps: 8, impactSeqs: ['000'] },
   chargeBeam: { name: 'Charge Beam', kind: 'projectile', status: { kind: 'para', chance: 0.15 }, fx: '0215_electric_charge_projectile', seqs: ['010'], speed: 280, range: 260, radius: 10, dmg: 19, cost: 34, charge: 0.6, rotate: true, fps: 12, chargeSeqs: ['000'], impactSeqs: ['016'], bonus: { chance: 0.5, buff: { stat: 'atk', mul: 1.3, time: 8 }, scale: 0.6 }, bonusFx: '0216_yellow_powerup', bonusSeqs: ['000'] },
-  dragonRush: { name: 'Dragon Rush', kind: 'melee', fx: '0219_dragon_ground_rush', seqs: ['000'], reach: 20, radius: 24, dmg: 23, cost: 26, charge: 0.25 },
+  dragonRush: { name: 'Dragon Rush', kind: 'melee', fx: '0219_dragon_ground_rush', seqs: ['000'], reach: 20, radius: 24, dmg: 23, cost: 26, charge: 0.125 },
   shockWave: { name: 'Shock Wave', kind: 'aoe', status: { kind: 'para', chance: 0.2 }, fx: '0222_electric_ball_burst', seqs: ['000'], radius: 50, dmg: 20, cost: 44, charge: 0.55, fps: 22, chargeSeqs: ['001'] },
-  focusPunch: { name: 'Focus Punch', kind: 'melee', fx: '0224_focus_punch', seqs: ['001'], reach: 18, radius: 22, dmg: 32, cost: 44, charge: 0.85, fps: 20, chargeSeqs: ['000'] },
+  focusPunch: { name: 'Focus Punch', kind: 'melee', fx: '0224_focus_punch', seqs: ['001'], reach: 18, radius: 22, dmg: 32, cost: 44, charge: 0.425, fps: 20, chargeSeqs: ['000'] },
   blastBurn: { name: 'Blast Burn', kind: 'aoe', status: { kind: 'burn', chance: 0.35 }, fx: '0009_fire_ring', seqs: ['000'], radius: 40, dmg: 26, cost: 46, charge: 0.6 },
-  bugBite: { name: 'Bug Bite', kind: 'melee', fx: '0213_bug_bite', seqs: ['000'], reach: 18, radius: 20, dmg: 18, cost: 14, charge: 0.1, fps: 14 },
+  bugBite: { name: 'Bug Bite', kind: 'melee', fx: '0213_bug_bite', seqs: ['000'], reach: 18, radius: 20, dmg: 18, cost: 14, charge: 0.05, fps: 14 },
   auraSphere: { name: 'Aura Sphere', kind: 'slight', fx: '0240_aqua_swirl_projectile', seqs: ['000'], slice: [8, 35], speed: 125, range: 250, turn: 0.6, radius: 11, dmg: 17, cost: 24, charge: 0.3 },
-  forcePalm: { name: 'Force Palm', kind: 'melee', status: { kind: 'para', chance: 0.3 }, fx: '0241_palm_strike_red', seqs: ['000'], reach: 18, radius: 20, dmg: 20, cost: 18, charge: 0.15, fps: 14 },
-  rockSmash: { name: 'Rock Smash', kind: 'melee', fx: '0243_rock_smash', seqs: ['002'], reach: 18, radius: 22, dmg: 21, cost: 22, charge: 0.25, fps: 40 },
+  forcePalm: { name: 'Force Palm', kind: 'melee', status: { kind: 'para', chance: 0.3 }, fx: '0241_palm_strike_red', seqs: ['000'], reach: 18, radius: 20, dmg: 20, cost: 18, charge: 0.075, fps: 14 },
+  rockSmash: { name: 'Rock Smash', kind: 'melee', fx: '0243_rock_smash', seqs: ['002'], reach: 18, radius: 22, dmg: 21, cost: 22, charge: 0.125, fps: 40 },
   thunderShock: { name: 'Thunder Shock', kind: 'mid', status: { kind: 'para', chance: 0.25 }, fx: '0252_electric_orb_spark', seqs: ['000'], range: 80, radius: 22, dmg: 15, cost: 20, charge: 0.2, fps: 20 },
   psychoCut: { name: 'Psycho Cut', kind: 'projectile', fx: '0170_psycho_cut', seqs: ['002'], speed: 220, range: 200, radius: 11, dmg: 20, cost: 22, charge: 0.2, rotate: true, scale: 1.5, fps: 12, impactSeqs: ['010'] },
   psyshock: { name: 'Psyshock', kind: 'projectile', fx: '0255_magenta_swirl_sphere', seqs: ['000'], slice: [25, 31], speed: 140, range: 240, radius: 18, dmg: 22, cost: 36, charge: 0.5, fps: 12 },
@@ -445,7 +448,7 @@ export const MOVES = {
   aromatherapy: { name: 'Aromatherapy', kind: 'self', fx: '0161_aromatherapy', seqs: ['000'], heal: 25, cure: true, cost: 30, charge: 0.5, fps: 40 },
   wish: { name: 'Wish', kind: 'self', fx: '0249_wish', seqs: ['002'], heal: 55, healDelay: 3270, cost: 40, charge: 0.5, fps: 22 },
   swordsDance: { name: 'Swords Dance', kind: 'self', fx: '0130_swords_dance', seqs: ['000'], empower: true, cost: 30, charge: 0.5, fps: 50, scale: 0.6, lift: 34 },
-  agility: { name: 'Agility', kind: 'self', fx: '0216_yellow_powerup', seqs: ['000'], buff: { stat: 'spd', mul: 1.45, time: 10 }, cost: 26, charge: 0.4, scale: 0.6, userAnim: 'Double' },
+  agility: { name: 'Agility', kind: 'self', buff: { stat: 'spd', mul: 1.45, time: 10 }, cost: 26, charge: 0.4, userAnim: 'Double' },
   tailwind: { name: 'Tailwind', kind: 'self', fx: '0244_tailwind', seqs: ['000'], buff: { stat: 'spd', mul: 1.6, time: 8 }, cost: 30, charge: 0.4, scale: 0.8 },
   ironDefense: { name: 'Iron Defense', kind: 'self', fx: '0138_hex_shield', seqs: ['000'], buff: { stat: 'def', mul: 1.6, time: 10 }, cost: 28, charge: 0.4, scale: 1.5, fps: 14, endSeqs: ['001'] },
   acupressure: { name: 'Acupressure', kind: 'self', fx: '0229_acupuncture', seqs: ['000'], empower: true, cost: 24, charge: 0.4, lift: 34 },
@@ -475,12 +478,12 @@ export const MOVES = {
   stealthRock: { name: 'Stealth Rock', kind: 'mid', fx: '0181_stealth_rock', seqs: ['001'], range: 100, radius: 16, dmg: 16, cost: 26, charge: 0.3, fps: 18, trap: 25 },
   sludgeWave: { name: 'Sludge Wave', kind: 'aoe', status: { kind: 'poison', chance: 0.4 }, fx: '0144_sludge_wave', seqs: ['000'], radius: 40, dmg: 22, cost: 38, charge: 0.45, fps: 16 },
   waterfall: { name: 'Waterfall', kind: 'mid', fx: '0141_waterfall', seqs: ['002', '002', '002', '001'], range: 100, radius: 20, dmg: 24, cost: 32, charge: 0.3, origin: [0.5, 0.8], fps: 20, hitDelay: 1050 },
-  pinMissile: { name: 'Pin Missile', kind: 'projectile', fx: '0136_pin_missile', seqs: ['018'], volley: [{ seq: '018', r: 6 }, { seq: '002', r: 9 }, { seq: '010', r: 12 }], speed: 250, range: 230, radius: 6, dmg: 8, cost: 26, charge: 0.25, rotate: true, scale: 1.5 },
-  megahorn: { name: 'Megahorn', kind: 'melee', fx: '0126_horn', seqs: ['002'], reach: 20, radius: 20, dmg: 28, cost: 34, charge: 0.35, rotate: true, scale: 2.5, fps: 12 },
-  megaPunch: { name: 'Mega Punch', kind: 'melee', fx: '0099_mega_moves', seqs: ['005'], reach: 20, radius: 24, dmg: 30, cost: 38, charge: 0.5, scale: 0.6, fps: 16 },
-  megaKick: { name: 'Mega Kick', kind: 'melee', fx: '0099_mega_moves', seqs: ['008'], reach: 20, radius: 24, dmg: 34, cost: 44, charge: 0.6, scale: 0.6, fps: 16 },
-  crossChop: { name: 'Cross Chop', kind: 'melee', fx: '0099_mega_moves', seqs: ['006'], reach: 18, radius: 20, dmg: 26, cost: 30, charge: 0.3, scale: 1.3, fps: 16 },
-  needleArm: { name: 'Needle Arm', kind: 'melee', fx: '0221_small_white_fist', seqs: ['001'], reach: 18, radius: 20, dmg: 22, cost: 22, charge: 0.25, fps: 16, impactFx: '0076_needle_arm', impactSeqs: ['001'] },
+  pinMissile: { name: 'Pin Missile', kind: 'projectile', fx: '0136_pin_missile', seqs: ['018'], cycle: [{ seq: '018', r: 5, dmg: 14, speed: 300 }, { seq: '002', r: 8, dmg: 18, speed: 240 }, { seq: '010', r: 11, dmg: 22, speed: 190 }], speed: 300, range: 230, radius: 5, dmg: 14, cost: 16, charge: 0.2, rotate: true },
+  megahorn: { name: 'Megahorn', kind: 'melee', fx: '0126_horn', seqs: ['002'], reach: 20, radius: 20, dmg: 28, cost: 34, charge: 0.175, rotate: true, scale: 2.5, fps: 12 },
+  megaPunch: { name: 'Mega Punch', kind: 'melee', fx: '0099_mega_moves', seqs: ['005'], reach: 20, radius: 24, dmg: 30, cost: 38, charge: 0.25, scale: 0.6, fps: 16 },
+  megaKick: { name: 'Mega Kick', kind: 'melee', fx: '0099_mega_moves', seqs: ['008'], reach: 20, radius: 24, dmg: 34, cost: 44, charge: 0.3, scale: 0.6, fps: 16 },
+  crossChop: { name: 'Cross Chop', kind: 'melee', fx: '0099_mega_moves', seqs: ['006'], reach: 18, radius: 20, dmg: 26, cost: 30, charge: 0.15, scale: 1.3, fps: 16 },
+  needleArm: { name: 'Needle Arm', kind: 'melee', fx: '0221_small_white_fist', seqs: ['001'], reach: 18, radius: 20, dmg: 22, cost: 22, charge: 0.125, fps: 16, impactFx: '0076_needle_arm', impactSeqs: ['001'] },
   nightShade: { name: 'Night Shade', kind: 'auto', fx: '0102_evil', seqs: ['001'], range: 130, radius: 26, dmg: 20, cost: 32, charge: 0.5, fps: 24, chargeSeqs: ['000'], impactSeqs: ['002'] },
   explosion: { name: 'Explosion', kind: 'aoe', fx: '0010_explosion', seqs: ['001'], radius: 62, dmg: 36, cost: 40, charge: 1.0, fps: 24, chargeSeqs: ['002'], hpCost: 0.25, linger: 1.54, once: true },
   cottonGuard: { name: 'Cotton Guard', kind: 'self', fx: '0133_cotton_guard', seqs: ['000'], buff: { stat: 'def', mul: 1.7, time: 8 }, cost: 30, charge: 0.45, fps: 24 },
@@ -491,8 +494,8 @@ export const MOVES = {
   auroraBeam: { name: 'Aurora Beam', kind: 'projectile', status: { kind: 'freeze', chance: 0.2 }, fx: '0003_rainbow_rings', seqs: ['002'], speed: 200, range: 230, radius: 11, dmg: 18, cost: 28, charge: 0.35, rotate: true },
   charge: { name: 'Charge', kind: 'self', fx: '0039_yellow_orb_pulse', seqs: ['000'], empower: true, cost: 28, charge: 0.4, fps: 24 },
   smokescreen: { name: 'Smokescreen', kind: 'mid', fx: '0041_grey_shards_fall', seqs: ['000'], range: 90, radius: 26, dmg: 4, cost: 28, charge: 0.3, scale: 1.4, fps: 8, linger: 4, debuff: { stat: 'atk', mul: 0.6, time: 3 } },
-  cut: { name: 'Cut', kind: 'melee', fx: '0054_yellow_crescent_slash', seqs: ['000'], reach: 18, radius: 18, dmg: 14, cost: 10, charge: 0.08, rotate: true, fps: 24 },
-  furyCutter: { name: 'Fury Cutter', kind: 'melee', fx: '0054_yellow_crescent_slash', seqs: ['000'], reach: 18, radius: 18, dmg: 9, cost: 12, charge: 0.08, rotate: true, fps: 24, tint: 0xb8ff7a, ramp: 0.5 },
+  cut: { name: 'Cut', kind: 'melee', fx: '0054_yellow_crescent_slash', seqs: ['000'], reach: 18, radius: 18, dmg: 14, cost: 10, charge: 0.04, rotate: true, fps: 24 },
+  furyCutter: { name: 'Fury Cutter', kind: 'melee', fx: '0054_yellow_crescent_slash', seqs: ['000'], reach: 18, radius: 18, dmg: 9, cost: 12, charge: 0.04, rotate: true, fps: 24, tint: 0xb8ff7a, ramp: 0.5 },
   yawn: { name: 'Yawn', kind: 'projectile', status: { kind: 'sleep', chance: 1 }, fx: '0078_orange_zigzag', seqs: ['002'], speed: 90, range: 200, radius: 11, dmg: 2, cost: 30, charge: 0.4, rotate: true },
   aquaRing: { name: 'Aqua Ring', kind: 'self', fx: '0082_blue_orbs_rise', seqs: ['000'], regen: { time: 8, hps: 5 }, cost: 30, charge: 0.4, fps: 20 },
   haze: { name: 'Haze', kind: 'aoe', fx: '0097_white_smoke_puff', seqs: ['000'], radius: 46, dmg: 3, cost: 26, charge: 0.35, scale: 1.6, fps: 20, strip: true, cleanse: true },
@@ -504,13 +507,15 @@ export const MOVES = {
   gigaImpact: { name: 'Giga Impact', kind: 'dash', fx: '0177_white_slash_flurry', seqs: ['000'], dash: 110, dur: 0.4, radius: 16, dmg: 34, cost: 50, charge: 0.7, fps: 60, impactFx: '0204_crimson_flower_burst', impactSeqs: ['000'], burst: 34, tire: true },
   sleepPowder: { name: 'Sleep Powder', kind: 'mid', status: { kind: 'sleep', chance: 1 }, fx: '0234_pink_spores_ring', seqs: ['000'], range: 80, radius: 22, dmg: 3, cost: 32, charge: 0.4, fps: 10 },
   powerGem: { name: 'Power Gem', kind: 'projectile', fx: '0236_power_gem', seqs: ['001'], speed: 210, range: 240, radius: 10, dmg: 20, cost: 28, charge: 0.45, scale: 1.5, fps: 10, chargeSeqs: ['000'], impactSeqs: ['002'] },
-  firePunch: { name: 'Fire Punch', kind: 'melee', status: { kind: 'burn', chance: 0.3 }, fx: '0253_fire_star_explosion', seqs: ['000'], reach: 18, radius: 20, dmg: 22, cost: 22, charge: 0.25, fps: 16 },
+  firePunch: { name: 'Fire Punch', kind: 'melee', status: { kind: 'burn', chance: 0.3 }, fx: '0253_fire_star_explosion', seqs: ['000'], reach: 18, radius: 20, dmg: 22, cost: 22, charge: 0.125, fps: 16 },
   attract: { name: 'Attract', kind: 'auto', status: { kind: 'attract', chance: 1 }, fx: '0051_crosshair_marks', seqs: ['000'], range: 130, radius: 18, dmg: 2, cost: 30, charge: 0.4, fps: 30 },
   taunt: { name: 'Taunt', kind: 'auto', status: { kind: 'taunt', chance: 1 }, fx: '0259_dark_scribble', seqs: ['000', '002'], range: 140, radius: 18, dmg: 2, cost: 24, charge: 0.3, scale: 1.5, fps: 12 },
   encore: { name: 'Encore', kind: 'projectile', status: { kind: 'encore', chance: 1 }, fx: '0062_star_drop', seqs: ['002'], speed: 200, range: 220, radius: 9, dmg: 2, cost: 26, charge: 0.3, rotate: true },
   gravity: { name: 'Gravity', kind: 'mid', fx: '0075_red_blue_swirl_orb', seqs: ['000'], range: 110, radius: 40, cost: 30, charge: 0.4, fps: 8, alpha: 0.55, linger: 6, gravity: true },
   metronome: { name: 'Metronome', kind: 'self', fx: '0063_white_puff_spark', seqs: ['000'], random: true, cls: 'attack', cost: 30, charge: 0.4, scale: 2, fps: 40 },
   substitute: { name: 'Substitute', kind: 'self', fx: '0097_white_smoke_puff', seqs: ['000'], sub: true, hpCost: 0.25, cost: 30, charge: 0.4, fps: 30 },
+  aquaJet: { name: 'Aqua Jet', kind: 'blink', fx: '0109_erupts', seqs: ['005'], range: 90, radius: 18, dmg: 15, cost: 16, charge: 0.06, fps: 16 },
+  cosmicPower: { name: 'Cosmic Power', kind: 'self', fx: '0023_blue_dots_to_ring', seqs: ['000'], buff: { stat: 'def', mul: 1.5, time: 12 }, dark: 1, cost: 30, charge: 0.4, scale: 2.5, fps: 14 },
   braveBird: { name: 'Brave Bird', kind: 'hold', fx: '0251_brave_bird_silhouette', seqs: ['000'], speed: 250, radius: 14, dmg: 18, cost: 15, upkeep: 60, recoil: 0.35, charge: 0.1, fps: 10 },
 };
 
@@ -520,6 +525,8 @@ export const PARRY = { cost: 15, gain: 45, window: 0.55, cooldown: 0.9, hit: ['0
 
 // The sparks that loop on a mon whose next attack is boosted, and the trail behind one that is running.
 export const EMPOWER = { fx: ['0224_focus_punch', '000'] };
+// Rising particles that play on the user once any stat-raising move has finished its own art.
+export const POWERUP = { fx: ['0216_yellow_powerup', '000'], scale: 0.6 };
 // Leech Seed ticks: sprouts on the seeded foe, sparkles on the mon being healed.
 export const LEECH = { seeded: ['0137_leech_seed', '001'], heal: ['0037_heal_effects', '006'] };
 export const SPRINT = { move: 'tailwind', scale: 0.5 };
@@ -550,7 +557,7 @@ export const STATUS = {
 };
 
 // Move class, for Taunt: 'attack' does real damage, 'status' is everything else (heals, buffs, shields, conditions).
-for (const mv of Object.values(MOVES)) mv.cls ??= mv.kind !== 'self' && ((mv.dmg ?? 0) >= 10 || mv.volley) ? 'attack' : 'status';
+for (const mv of Object.values(MOVES)) mv.cls ??= mv.kind !== 'self' && ((mv.dmg ?? 0) >= 10 || mv.cycle) ? 'attack' : 'status';
 
 // Every move here can be learned by the species or one of its evolutions in the main games (checked against PokéAPI).
 // First entry is equipped by default.
@@ -560,21 +567,21 @@ export const MOVESETS = {
   treecko: ['leafBlade', 'magicalLeaf', 'grassKnot', 'xScissor', 'nightSlash', 'quickAttack', 'bulletSeed', 'gigaDrain', 'energyBall', 'dualChop', 'aerialAce', 'slash', 'rockSmash', 'leechSeed', 'swordsDance', 'agility', 'protect', 'doubleTeam', 'seedBomb', 'megaPunch', 'cut', 'furyCutter', 'substitute', 'stunSpore'],
   charmander: ['flameBurst', 'ember', 'fireFang', 'fireSpin', 'flamethrower', 'dragonClaw', 'fireBlast', 'dragonBreath', 'outrage', 'overheat', 'inferno', 'incinerate', 'blastBurn', 'slash', 'furySwipes', 'focusBlast', 'focusPunch', 'dragonRush', 'swordsDance', 'protect', 'megaPunch', 'megaKick', 'smokescreen', 'cut', 'firePunch', 'substitute'],
   torchic: ['fireSpin', 'ember', 'flameBurst', 'flamethrower', 'willOWisp', 'quickAttack', 'aerialAce', 'overheat', 'incinerate', 'blastBurn', 'featherDance', 'swordsDance', 'agility', 'protect', 'doubleTeam', 'firePunch', 'substitute'],
-  squirtle: ['bubble', 'waterPulse', 'bite', 'waterGun', 'hydroPump', 'whirlpool', 'icyWind', 'surf', 'bubbleBeam', 'brine', 'blizzard', 'avalanche', 'focusPunch', 'iceBeam', 'ironDefense', 'protect', 'rest', 'rainDance', 'waterfall', 'yawn', 'aquaRing', 'haze', 'lifeDew', 'substitute', 'waterSpout'],
-  mudkip: ['waterPulse', 'bite', 'waterGun', 'mudBomb', 'whirlpool', 'hydroPump', 'surf', 'earthquake', 'rockSlide', 'blizzard', 'iceBall', 'avalanche', 'earthPower', 'sandTomb', 'rockTomb', 'focusPunch', 'iceBeam', 'protect', 'rest', 'rainDance', 'waterfall', 'yawn', 'aquaRing', 'substitute', 'barrier'],
-  ralts: ['confusion', 'psybeam', 'shadowBall', 'psychic', 'hypnosis', 'futureSight', 'drainingKiss', 'moonblast', 'willOWisp', 'shadowSneak', 'psyshock', 'thunderbolt', 'chargeBeam', 'shockWave', 'focusBlast', 'wish', 'protect', 'doubleTeam', 'sing', 'healBell', 'meanLook', 'confuseRay', 'disable', 'flash', 'luckyChant', 'auraSphere', 'nightShade', 'lifeDew', 'attract', 'gravity', 'substitute'],
+  squirtle: ['bubble', 'waterPulse', 'bite', 'waterGun', 'hydroPump', 'whirlpool', 'icyWind', 'surf', 'bubbleBeam', 'brine', 'blizzard', 'avalanche', 'focusPunch', 'iceBeam', 'ironDefense', 'protect', 'rest', 'rainDance', 'waterfall', 'yawn', 'aquaRing', 'haze', 'lifeDew', 'substitute', 'waterSpout', 'aquaJet'],
+  mudkip: ['waterPulse', 'bite', 'waterGun', 'mudBomb', 'whirlpool', 'hydroPump', 'surf', 'earthquake', 'rockSlide', 'blizzard', 'iceBall', 'avalanche', 'earthPower', 'sandTomb', 'rockTomb', 'focusPunch', 'iceBeam', 'protect', 'rest', 'rainDance', 'waterfall', 'yawn', 'aquaRing', 'substitute', 'barrier', 'aquaJet'],
+  ralts: ['confusion', 'psybeam', 'shadowBall', 'psychic', 'hypnosis', 'futureSight', 'drainingKiss', 'moonblast', 'willOWisp', 'shadowSneak', 'psyshock', 'thunderbolt', 'chargeBeam', 'shockWave', 'focusBlast', 'wish', 'protect', 'doubleTeam', 'sing', 'healBell', 'meanLook', 'confuseRay', 'disable', 'flash', 'luckyChant', 'auraSphere', 'nightShade', 'lifeDew', 'attract', 'gravity', 'substitute', 'cosmicPower'],
   eevee: ['swift', 'bite', 'quickAttack', 'shadowBall', 'hyperVoice', 'wish', 'protect', 'doubleTeam', 'healBell', 'payDay', 'rest', 'rainDance', 'focusEnergy', 'helpingHand', 'yawn', 'attract', 'substitute'],
   axew: ['dualChop', 'dragonPulse', 'outrage', 'dragonClaw', 'bite', 'nightSlash', 'xScissor', 'slash', 'rockSmash', 'focusBlast', 'dracoMeteor', 'swordsDance', 'protect', 'focusEnergy', 'cut', 'gigaImpact', 'substitute', 'psychoCut'],
   zorua: ['shadowClaw', 'snarl', 'nightDaze', 'scaryFace', 'darkPulse', 'shadowBall', 'nightSlash', 'hex', 'furySwipes', 'uproar', 'extrasensory', 'swordsDance', 'agility', 'protect', 'doubleTeam', 'confuseRay', 'nightShade', 'cut', 'taunt', 'substitute'],
   starly: ['wingAttack', 'gust', 'airSlash', 'aerialAce', 'whirlwind', 'quickAttack', 'uproar', 'featherDance', 'tailwind', 'agility', 'protect', 'doubleTeam', 'braveBird', 'foresight', 'helpingHand', 'roost', 'substitute'],
-  corphish: ['crabhammer', 'bubbleBeam', 'razorShell', 'surf', 'bubble', 'waterGun', 'waterPulse', 'nightSlash', 'xScissor', 'blizzard', 'slash', 'rockSmash', 'iceBeam', 'swordsDance', 'ironDefense', 'protect', 'rainDance', 'waterfall', 'substitute'],
+  corphish: ['crabhammer', 'bubbleBeam', 'razorShell', 'surf', 'bubble', 'waterGun', 'waterPulse', 'nightSlash', 'xScissor', 'blizzard', 'slash', 'rockSmash', 'iceBeam', 'swordsDance', 'ironDefense', 'protect', 'rainDance', 'waterfall', 'substitute', 'aquaJet'],
   cubone: ['bonemerang', 'earthquake', 'rockSlide', 'stoneEdge', 'fireBlast', 'earthPower', 'rockTomb', 'rockSmash', 'focusPunch', 'incinerate', 'swordsDance', 'ironDefense', 'protect', 'rest', 'focusEnergy', 'stealthRock', 'megaPunch', 'substitute'],
   nidoran: ['poisonSting', 'poisonJab', 'sludgeBomb', 'bite', 'thunderbolt', 'thunder', 'shockWave', 'protect', 'doubleTeam', 'helpingHand', 'sludgeWave', 'substitute'],
   venipede: ['poisonSting', 'xScissor', 'poisonJab', 'sludgeBomb', 'bite', 'gyroBall', 'crossPoison', 'bugBite', 'swordsDance', 'agility', 'ironDefense', 'protect', 'doubleTeam', 'pinMissile', 'megahorn', 'furyCutter', 'substitute'],
   rotom: ['thunderShock', 'thunderbolt', 'thunder', 'chargeBeam', 'shockWave', 'discharge', 'shadowBall', 'hex', 'willOWisp', 'darkPulse', 'doubleTeam', 'protect', 'confuseRay', 'flash', 'nightShade', 'charge', 'substitute'],
   riolu: ['forcePalm', 'quickAttack', 'drainPunch', 'focusPunch', 'focusBlast', 'rockSmash', 'bite', 'metalClaw', 'swordsDance', 'agility', 'doubleTeam', 'protect', 'foresight', 'focusEnergy', 'helpingHand', 'auraSphere', 'megaPunch', 'megaKick', 'crossChop', 'substitute', 'meteorMash'],
   combee: ['attackOrder', 'gust', 'bugBite', 'defendOrder', 'healOrder', 'airSlash', 'furyCutter', 'tailwind', 'agility', 'protect', 'substitute', 'powerGem'],
-  clefairy: ['metronome', 'moonblast', 'drainingKiss', 'sing', 'wakeUpSlap', 'megaPunch', 'megaKick', 'attract', 'encore', 'gravity', 'softBoiled', 'moonlight', 'wish', 'lifeDew', 'healBell', 'helpingHand', 'luckyChant', 'flash', 'thunderbolt', 'protect', 'doubleTeam', 'substitute', 'meteorMash', 'triAttack'],
+  clefairy: ['metronome', 'moonblast', 'drainingKiss', 'sing', 'wakeUpSlap', 'megaPunch', 'megaKick', 'attract', 'encore', 'gravity', 'softBoiled', 'moonlight', 'wish', 'lifeDew', 'healBell', 'helpingHand', 'luckyChant', 'flash', 'thunderbolt', 'protect', 'doubleTeam', 'substitute', 'meteorMash', 'triAttack', 'cosmicPower'],
   rhyhorn: ['rockThrow', 'stoneEdge', 'earthquake', 'megahorn', 'rockSlide', 'rockBlast', 'stealthRock', 'hammerArm', 'rockSmash', 'earthPower', 'rockTomb', 'rockWrecker', 'gigaImpact', 'ironDefense', 'rest', 'protect', 'substitute', 'iceFang', 'thunderFang'],
   scyther: ['furyCutter', 'cut', 'xScissor', 'slash', 'nightSlash', 'aerialAce', 'airSlash', 'wingAttack', 'quickAttack', 'bugBite', 'razorWind', 'gigaImpact', 'swordsDance', 'agility', 'focusEnergy', 'roost', 'doubleTeam', 'protect', 'substitute', 'psychoCut'],
   joltik: ['bugBite', 'spiderWeb', 'thunderbolt', 'discharge', 'chargeBeam', 'shockWave', 'furyCutter', 'xScissor', 'pinMissile', 'crossPoison', 'slash', 'charge', 'agility', 'doubleTeam', 'protect', 'substitute'],
@@ -628,11 +635,12 @@ export function preloadMoves(scene) {
     mv.impactFrames = build(mv.impactFx ?? mv.fx, mv.impactSeqs);
     mv.altFrames = build(mv.fx, mv.altSeqs);
     mv.endFrames = build(mv.fx, mv.endSeqs);
-    for (const v of mv.volley ?? []) v.frames = build(mv.fx, [v.seq]);
+    for (const v of mv.cycle ?? []) v.frames = build(mv.fx, [v.seq]);
   }
   LEECH.seededFrames = build(LEECH.seeded[0], [LEECH.seeded[1]]);
   LEECH.healFrames = build(LEECH.heal[0], [LEECH.heal[1]]);
   EMPOWER.frames = build(EMPOWER.fx[0], [EMPOWER.fx[1]]);
+  POWERUP.frames = build(POWERUP.fx[0], [POWERUP.fx[1]]);
   CANCEL.frames = build(CANCEL.fx[0], [CANCEL.fx[1]]).slice(...CANCEL.slice);
   PARRY.hitFrames = build(PARRY.hit[0], [PARRY.hit[1]]);
 }

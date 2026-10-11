@@ -11,6 +11,7 @@ import { mine, lookOf, arenaOf, arenaName, startingSpots } from '../modes.js';
 import { LEDGES } from '../ledges.js';
 import { CpuController, RemoteController, snapshot } from '../controllers.js';
 import { BattleHud, controlsCard, resultCard } from '../hud.js';
+import { touch } from '../touch.js';
 import { Menu, banner, panel, text, INK } from '../ui.js';
 
 // The basic attacks kept on the keyboard next to the mouse: lunge, shot, double hit, charge up.
@@ -60,10 +61,7 @@ export class Battle extends Play {
     super.create();
     for (const x of this.fighters) if (this.gone.includes(x.f.owner) && x.controller instanceof RemoteController) x.controller.drop();
     this.hud = new BattleHud(this, this.player, this.me.moves);
-    const tab = panel(this, VIEW_W - 55, 3, 52, 15, 'dim').setInteractive({ useHandCursor: true });
-    tab.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); this.pause(); });
-    text(this, VIEW_W - 50, 5, 'Esc', INK.gold);
-    text(this, VIEW_W - 30, 5, 'Menu');
+    this.menuTab();
 
     const rivals = this.cfg.fighters.filter((f) => f.team !== this.me.team);
     this.label = `${this.cfg.mode} ${rivals.every((f) => f.kind === 'cpu') ? 'vs CPU' : 'vs players'}`; // also how the records file this fight
@@ -95,6 +93,15 @@ export class Battle extends Play {
   begin() {
     this.started = true;
     this.waiting?.destroy();
+  }
+
+  // The way into the pause menu, top right.
+  menuTab() {
+    const tab = panel(this, VIEW_W - 55, 3, 52, 15, 'dim').setInteractive({ useHandCursor: true });
+    tab.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); this.pause(); });
+    if (touch.on) return void text(this, VIEW_W - 29, 5, 'Menu').setOrigin(0.5, 0);
+    text(this, VIEW_W - 50, 5, 'Esc', INK.gold);
+    text(this, VIEW_W - 30, 5, 'Menu');
   }
 
   // ---- who is fighting ----
@@ -311,19 +318,53 @@ export class Battle extends Play {
   // move starts and cleared again (which also keeps the engine from drawing a landing ring for a move not chosen).
   equipped() { return null; }
 
-  fire(i) {
+  // track: what the move is aimed with, 'pointer' (the mouse) or 'touch' (the touch pad's move buttons).
+  fire(i, track = 'pointer') {
     const p = this.player, id = this.me.moves[i];
     if (!id || (p.ailment.encore && i !== this.slot)) return; // encored: only the move just used will come out
     p.move = id;
-    if (this.useMove(p, 'pointer')) this.slot = i;
+    if (this.useMove(p, track)) this.slot = i;
     p.move = null;
   }
 
   // A held move (a widening blast, a flight) lasts while the button that started it stays down.
   holding(m, track, t) {
     if (m !== this.player) return super.holding(m, track, t);
+    if (track === 'touch') return this.live && touch.held[this.slot];
     const ptr = this.input.activePointer;
     return this.live && [ptr.leftButtonDown(), ptr.rightButtonDown(), this.moveKeys.Q.isDown, this.moveKeys.E.isDown][this.slot];
+  }
+
+  // ---- the touch pad (touch.js) ----
+  // With no pointer to aim with, a move from the pad goes at the nearest foe, or the way its button is dragged.
+  // A flight is steered with the d-pad.
+  aimOf(m, track) {
+    if (track !== 'touch') return super.aimOf(m, track);
+    const a = touch.aim, [sx, sy] = touch.stick;
+    if (a) return { dx: a.dx, dy: a.dy, dist: 40 + a.reach * 100 };
+    if (m.state === 'bird' && (sx || sy)) return { dx: sx, dy: sy, dist: 99 };
+    let foe = null, near = Infinity;
+    for (const n of this.npcs) {
+      const d = Math.hypot(n.x - m.x, n.y - m.y);
+      if (n.team !== m.team && n.alive && !n.hidden && d < near) { foe = n; near = d; }
+    }
+    return super.aimOf(m, foe);
+  }
+
+  // What the pad's fight buttons show: the moves, whether there is the stamina for each, and the one being charged
+  // or held. Null while there is no fighting to do, which gives the pad back to the menus.
+  padState() {
+    if (!this.live) return null;
+    const p = this.player;
+    return { moves: this.me.moves, stamina: p.stamina, hot: p.state === 'windup' || p.state === 'bird' ? this.slot : -1 };
+  }
+
+  // A fight button went down: 'move' (with its slot), 'jump', or 'parry', which calls off a charging move instead.
+  padPress(button, i) {
+    if (!this.live) return;
+    if (button === 'move') this.fire(i, 'touch');
+    else if (button === 'jump') this.jump();
+    else if (!this.cancelMove(this.player)) this.parry(this.player);
   }
 
   setMove() {}
@@ -334,7 +375,14 @@ export class Battle extends Play {
   // ---- input ----
   get live() { return this.fighting && !this.menu && !this.card && !wipe.busy; }
 
-  inputDir() { return this.live ? super.inputDir() : [0, 0]; }
+  inputDir() {
+    if (!this.live) return [0, 0];
+    const [x, y] = super.inputDir();
+    return x || y ? [x, y] : touch.stick;
+  }
+
+  // Shift, or the d-pad pushed out to its rim.
+  sprinting() { return super.sprinting() || touch.full; }
 
   // Moves 1 and 2 are the left and right mouse buttons, 3 and 4 are Q and E; all four go where the pointer is.
   bindInput() {
@@ -356,7 +404,7 @@ export class Battle extends Play {
     });
     this.input.mouse.disableContextMenu();
     this.input.on('pointerdown', (ptr) => {
-      if (!this.live) return;
+      if (!this.live || ptr.wasTouch) return; // a finger on the arena does nothing: the moves are on the pad
       if (ptr.button === 0) this.fire(0);
       else if (ptr.button === 2) this.fire(1);
     });

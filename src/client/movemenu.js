@@ -5,6 +5,7 @@ import { MOVES } from '../moves.js';
 import { loadoutOf, setLoadout, levelOf, branchOf, formOf, LOADOUT_SIZE } from './session.js';
 import { unlockPlan } from './progress.js';
 import { describe, typeOf, cap, METERS, litNotches } from './moveinfo.js';
+import { tapActs } from './touch.js';
 import { DEPTH, INK, Group, Meter, text, icon, typeIcon, panel, shade } from './ui.js';
 
 const ROWS = 10, ROW_H = 15, WHEEL_ROW = 50;
@@ -49,9 +50,10 @@ export class MoveMenu {
         zone: add(scene.add.zone(LIST.x + 4, y, LIST.w - 8, ROW_H).setOrigin(0).setScrollFactor(0).setDepth(DEPTH + 3)).setInteractive({ useHandCursor: true }),
       };
       row.zone.on('pointerover', () => this.scroll + r < this.moves.length && this.setIndex(this.scroll + r));
-      row.zone.on('pointerdown', (_p, _x, _y, e) => {
+      row.zone.on('pointerdown', (p, _x, _y, e) => {
         e.stopPropagation();
-        if (this.scroll + r < this.moves.length) { this.setIndex(this.scroll + r); this.toggle(); }
+        const i = this.scroll + r, on = i === this.index;
+        if (i < this.moves.length) { this.setIndex(i); if (tapActs(p, on)) this.toggle(); }
       });
       this.rows.push(row);
     }

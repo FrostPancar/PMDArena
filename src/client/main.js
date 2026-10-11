@@ -9,13 +9,19 @@ import { Battle } from './scenes/Battle.js';
 import { Practice } from './scenes/Practice.js';
 import { Wipe, go, wipe } from './transition.js';
 import { net } from './net.js';
+import { touch, fit, initTouch } from './touch.js';
 
 // The player client: title on Sharpedo Bluff -> the dream (choose a Pokémon) -> the room inside the bluff (find a
 // partner) -> Marowak Dojo (choose moves) -> the pillar in its basement -> the world map (players pick stages and
 // one is drawn from the picks) -> the battle.
 // This is the game (index.html). The developers' test client is playground.html / src/playground.js.
 const stage = document.getElementById('stage');
-const zoomFor = () => Math.max(1, Math.floor(Math.min(stage.clientWidth / VIEW_W, stage.clientHeight / VIEW_H)));
+// Whole-number zoom keeps the pixels square on a monitor. A phone has pixels to spare and no room: there the game
+// fills the screen (held sideways), and the touch pad is drawn over it at the same scale.
+const zoomFor = () => {
+  const most = Math.min(stage.clientWidth / VIEW_W, stage.clientHeight / VIEW_H);
+  return touch.on ? Math.max(0.5, most) : Math.max(1, Math.floor(most));
+};
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
@@ -28,7 +34,16 @@ const game = new Phaser.Game({
   scale: { mode: Phaser.Scale.NONE, zoom: zoomFor() },
   scene: [ClientBoot, Title, Dream, Hub, StageDraw, Battle, Practice, Wipe], // Wipe last: it draws over the others
 });
-window.addEventListener('resize', () => game.scale.setZoom(zoomFor()));
+const resize = () => {
+  const zoom = zoomFor();
+  if (zoom !== game.scale.zoom) game.scale.setZoom(zoom);
+  fit(zoom);
+};
+// a phone turned on its side reports its new size a moment after the event
+for (const type of ['resize', 'orientationchange']) window.addEventListener(type, () => { resize(); setTimeout(resize, 300); });
+window.visualViewport?.addEventListener('resize', resize);
+fit(game.scale.zoom);
+initTouch(game);
 if (import.meta.env.DEV) Object.assign(window, { game, net });
 
 // A match from the relay can arrive whatever the player is doing (their partner may have started it), so it is

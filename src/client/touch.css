@@ -1,0 +1,49 @@
+/* The touch pad (touch.js): a see-through layer over the game. Everything in it is sized in game pixels (--px is how
+   many screen pixels one of them takes, set by main.js), so it is drawn at the same scale as the game under it.
+   The pad hangs off the edges of the screen rather than of the game, so on a phone wider than the game most of it
+   lies over the black bars at the sides. */
+#pad { position: fixed; inset: 0; z-index: 10; pointer-events: none; opacity: 0.86; }
+#pad canvas { display: block; image-rendering: pixelated; }
+#pad .off { display: none; }
+#pad .key, #pad .stick { position: absolute; pointer-events: auto; touch-action: none; }
+#pad .key.down { filter: brightness(1.35); }
+
+/* over a menu the d-pad is only as big as its art, so the rows beside it can still be tapped; where it is walked
+   with, it takes a thumb anywhere in the corner */
+#pad .stick {
+  left: 0; bottom: 0;
+  width: calc(70px * var(--px) + env(safe-area-inset-left, 0px));
+  height: calc(70px * var(--px) + env(safe-area-inset-bottom, 0px));
+}
+#pad.roam .stick {
+  width: calc(100px * var(--px) + env(safe-area-inset-left, 0px));
+  height: calc(100px * var(--px) + env(safe-area-inset-bottom, 0px));
+}
+#pad .stick canvas {
+  position: absolute; pointer-events: none;
+  left: calc(4px * var(--px) + env(safe-area-inset-left, 0px));
+  bottom: calc(4px * var(--px) + env(safe-area-inset-bottom, 0px));
+  width: calc(64px * var(--px)); height: calc(64px * var(--px));
+}
+#pad .stick .nub {
+  left: calc(26px * var(--px) + env(safe-area-inset-left, 0px));
+  bottom: calc(26px * var(--px) + env(safe-area-inset-bottom, 0px));
+  width: calc(20px * var(--px)); height: calc(20px * var(--px));
+}
+/* the rim and the gold of a full push only show where running is possible */
+#pad .stick .rim, #pad .stick .gold { display: none; }
+#pad.fight .stick .rim { display: block; }
+#pad.fight .stick.full .gold { display: block; }
+#pad.fight .stick.full .plain { display: none; }
+
+#pad .board {
+  position: absolute; left: 50%; bottom: calc(19px * var(--px));
+  width: calc(229px * var(--px)); height: calc(68px * var(--px)); margin-left: calc(-114.5px * var(--px));
+}
+
+/* held upright, a phone is asked to turn */
+#rotate {
+  position: fixed; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center;
+  background: #06101c; color: #f4f8ff; font: 600 18px/1.5 system-ui, sans-serif; text-align: center; padding: 24px;
+}
+@media (orientation: portrait) { body.touch #rotate { display: flex; } }

@@ -2,6 +2,7 @@ import { VIEW_W, VIEW_H } from '../scene.js';
 import { MOVES } from '../moves.js';
 import { SPECIES } from '../sprites.js';
 import { typeOf } from './moveinfo.js';
+import { touch } from './touch.js';
 import { DEPTH, INK, text, typeIcon, panel, shade } from './ui.js';
 
 const PLATE_W = 104, BAR_W = PLATE_W - 10;
@@ -14,6 +15,7 @@ const pinned = (o, depth = 2) => o.setScrollFactor(0).setDepth(DEPTH + depth);
 // What the player sees during a fight, kept small so the arena stays in view: a slim plate top left with the mon's
 // health and stamina, and along the bottom edge one chip per battle move showing the button it is on. The move being
 // charged (or last used, or under the mouse) is named beside the chips; all four are listed for the first seconds.
+// On a touch screen the moves are the pad's own buttons (touch.js), each with its name on it, so only the plate is drawn.
 export class BattleHud {
   constructor(scene, mon, moves) {
     Object.assign(this, { scene, mon, moves, hover: -1 });
@@ -27,6 +29,9 @@ export class BattleHud {
     this.hp = shade(scene, 8, 19, BAR_W, 4, 0x58d858, 1).setDepth(DEPTH + 2);
     this.st = shade(scene, 8, 24, BAR_W, 2, 0xf2c94c, 1).setDepth(DEPTH + 2);
     this.buffs = text(scene, 5, 32, '', INK.dim);
+    this.last = {};
+    this.chips = [];
+    if (touch.on) return;
 
     const y = VIEW_H - CHIP_H - 3;
     this.chips = moves.map((id, i) => {
@@ -54,7 +59,6 @@ export class BattleHud {
       this.intro.push(text(scene, 9, top + 5 + i * 13, BUTTONS[i].say, INK.gold), text(scene, 66, top + 5 + i * 13, MOVES[id].name));
     });
     scene.time.delayedCall(6000, () => scene.tweens.add({ targets: this.intro, alpha: 0, duration: 500 }));
-    this.last = {};
   }
 
   // Only touches a text object when what it shows has changed.
@@ -73,6 +77,7 @@ export class BattleHud {
     this.set(this.hpText, 'hp', String(Math.ceil(m.hp)));
     const buffs = m.buffText();
     this.set(this.buffs, 'buffs', buffs === '-' ? '' : buffs.replace(/↑/g, '+').replace(/↓/g, '-'));
+    if (!this.chips.length) return;
     this.chips.forEach((c, i) => {
       c.hot.setVisible(i === charging);
       c.type.setAlpha(m.stamina >= MOVES[this.moves[i]].cost ? 1 : 0.35); // faded: not enough stamina
@@ -97,20 +102,31 @@ export const CONTROLS = [
   ['C', 'Call off a charging move'],
   ['Esc', 'Menu'],
 ];
+// the same card for the touch pad
+const PAD_CONTROLS = [
+  ['D-pad', 'Move'],
+  ['Push it to the rim', 'Run'],
+  ['Move buttons', 'Aimed at the nearest foe'],
+  ['Drag a move', 'Aim it yourself'],
+  ['Jump', 'Jump over attacks'],
+  ['Parry', 'Parry, or call off a move'],
+  ['Menu', 'Pause'],
+];
 
 // The controls card. Returns its objects so the caller can take it down again.
 export function controlsCard(scene) {
-  const w = 230, h = 30 + CONTROLS.length * 13 + 22, x = (VIEW_W - w) >> 1, y = (VIEW_H - h) >> 1;
+  const rows = touch.on ? PAD_CONTROLS : CONTROLS, split = touch.on ? 104 : 88;
+  const w = touch.on ? 262 : 230, h = 30 + rows.length * 13 + 22, x = (VIEW_W - w) >> 1, y = (VIEW_H - h) >> 1;
   const d = DEPTH + 10;
   const parts = [
     shade(scene, 0, 0, VIEW_W, VIEW_H, 0x000000, 0.5).setDepth(d),
     panel(scene, x, y, w, h).setDepth(d + 1),
     text(scene, VIEW_W / 2, y + 8, 'How to fight', INK.gold).setOrigin(0.5, 0).setDepth(d + 2),
-    text(scene, VIEW_W / 2, y + h - 18, 'Enter to close', INK.dim).setOrigin(0.5, 0).setDepth(d + 2),
+    text(scene, VIEW_W / 2, y + h - 18, touch.on ? 'Tap to close' : 'Enter to close', INK.dim).setOrigin(0.5, 0).setDepth(d + 2),
   ];
-  CONTROLS.forEach(([key, what], i) => {
-    parts.push(text(scene, x + 88, y + 26 + i * 13, key, INK.sky).setOrigin(1, 0).setDepth(d + 2));
-    parts.push(text(scene, x + 98, y + 26 + i * 13, what).setDepth(d + 2));
+  rows.forEach(([key, what], i) => {
+    parts.push(text(scene, x + split, y + 26 + i * 13, key, INK.sky).setOrigin(1, 0).setDepth(d + 2));
+    parts.push(text(scene, x + split + 10, y + 26 + i * 13, what).setDepth(d + 2));
   });
   return parts;
 }
@@ -138,7 +154,7 @@ export function resultCard(scene, species, earned) {
     text(scene, x + w - 10, y + 23, to.need ? `${to.into}/${to.need}` : 'MAX', INK.dim).setOrigin(1, 0).setDepth(d + 2),
     shade(scene, x + 55, y + 38, barW + 2, 6, 0x06101c, 1).setDepth(d + 2),
     shade(scene, x + 56, y + 39, Math.max(1, Math.round(barW * (to.need ? to.into / to.need : 1))), 4, 0x7ad8ff, 1).setDepth(d + 3),
-    text(scene, VIEW_W / 2, y + h - 16, 'Enter to go on', INK.dim).setOrigin(0.5, 0).setDepth(d + 2),
+    text(scene, VIEW_W / 2, y + h - 16, touch.on ? 'Tap to go on' : 'Enter to go on', INK.dim).setOrigin(0.5, 0).setDepth(d + 2),
   ];
   lines.forEach(([line, tint], i) => parts.push(text(scene, VIEW_W / 2, y + 54 + i * 13, line, tint).setOrigin(0.5, 0).setDepth(d + 2)));
   return parts;

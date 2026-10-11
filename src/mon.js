@@ -59,6 +59,7 @@ export class Mon {
     this.regen = null; // { t, hps } healing over time
     this.sub = false; // drawn and hit as the substitute doll until the next hit
     this.ramp = null; // { mv, n, t } consecutive uses of a ramping move
+    this.cycles = {}; // move name -> how many times a cycling move has been used
     this.pending = null; // { mv, aim } melee move waiting for the lunge to connect
     this.status = null; // { kind, t } while burned, poisoned, paralysed or frozen
     this.freezeImmune = 0;

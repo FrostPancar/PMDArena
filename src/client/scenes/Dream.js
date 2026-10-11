@@ -8,6 +8,7 @@ import { go } from '../transition.js';
 import { session, saveSession, formOf, levelOf } from '../session.js';
 import { fetchStages, stagesNote, whenStages } from '../stages.js';
 import { cap } from '../moveinfo.js';
+import { tapActs } from '../touch.js';
 import { DEPTH, INK, Hints, text, icon, typeIcon, panel } from '../ui.js';
 
 const COLS = 6, CELL_W = 24, CELL_H = 24;
@@ -47,7 +48,7 @@ export class Dream extends Phaser.Scene {
       const img = this.add.sprite(x + CELL_W / 2, y + CELL_H - 5 - sp.foot, `a-${sp.anims.Idle.key}`, 0).setScrollFactor(0).setDepth(DEPTH + 2);
       const zone = this.add.zone(x, y, CELL_W, CELL_H).setOrigin(0).setScrollFactor(0).setDepth(DEPTH + 3).setInteractive({ useHandCursor: true });
       zone.on('pointerover', () => this.select(i));
-      zone.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); this.select(i); this.pick(); });
+      zone.on('pointerdown', (p, _x, _y, e) => { e.stopPropagation(); const on = this.index === i; this.select(i); if (tapActs(p, on)) this.pick(); });
       return { id, x, y, img, restY: img.y };
     });
     {
@@ -55,7 +56,7 @@ export class Dream extends Phaser.Scene {
       const img = text(this, x + CELL_W / 2, y + CELL_H / 2 - 1, '?', INK.gold).setOrigin(0.5).setScale(2).setDepth(DEPTH + 2);
       const zone = this.add.zone(x, y, CELL_W, CELL_H).setOrigin(0).setScrollFactor(0).setDepth(DEPTH + 3).setInteractive({ useHandCursor: true });
       zone.on('pointerover', () => this.select(i));
-      zone.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); this.select(i); this.pick(); });
+      zone.on('pointerdown', (p, _x, _y, e) => { e.stopPropagation(); const on = this.index === i; this.select(i); if (tapActs(p, on)) this.pick(); });
       this.cells.push({ id: null, x, y, img, restY: img.y });
     }
     // what stands on the dream's glow while the random cell is picked: nothing you can make out

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Move Viewer</title>
+<style>
+  :root { --bg:#0e1118; --panel:#161b26; --line:#262e3f; --ink:#dfe6f3; --dim:#8492ab; --acc:#8fd14f; --warn:#f2c94c; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink);
+    font: 12px/1.45 ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  #app { display: grid; grid-template-columns: 280px 1fr; height: 100%; }
+  aside { background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+  header { padding: 12px; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 13px; margin: 0 0 8px; letter-spacing: .08em; color: var(--acc); }
+  input[type=search], select { font: inherit; color: var(--ink); background: #0a0d13; border: 1px solid var(--line); border-radius: 4px; padding: 5px 7px; }
+  input[type=search] { width: 100%; }
+  input:focus, select:focus { outline: none; border-color: var(--acc); }
+  button, a.btn { font: inherit; color: var(--ink); background: #1e2534; border: 1px solid var(--line); border-radius: 4px;
+    padding: 4px 8px; cursor: pointer; text-decoration: none; display: inline-block; }
+  button:hover, a.btn:hover { border-color: var(--acc); }
+  button.on { background: var(--acc); color: #10140a; border-color: var(--acc); }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  #kinds { margin-top: 8px; }
+  #count { color: var(--dim); margin-top: 6px; }
+  #list { overflow-y: auto; flex: 1; }
+  .item { display: flex; justify-content: space-between; gap: 8px; padding: 5px 12px; cursor: pointer; border-bottom: 1px solid #1b2130; }
+  .item:hover { background: #1b2231; }
+  .item.sel { background: #243044; box-shadow: inset 3px 0 0 var(--acc); }
+  .item .k { color: var(--dim); font-size: 10px; white-space: nowrap; }
+  main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  #bar { padding: 10px 16px; border-bottom: 1px solid var(--line); display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  #title { font-size: 15px; margin: 0; }
+  #sub { color: var(--dim); }
+  #stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; background: #0b0e15; }
+  #stage canvas { image-rendering: pixelated; }
+  #foot { padding: 8px 16px; border-top: 1px solid var(--line); color: var(--dim); display: flex; gap: 18px; flex-wrap: wrap; min-height: 34px; }
+  #foot b { color: var(--ink); font-weight: 600; }
+  kbd { font: inherit; font-size: 10px; color: var(--dim); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; background: #10141d; }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside>
+    <header>
+      <h1>MOVE VIEWER</h1>
+      <input type="search" id="q" placeholder="search moves…" />
+      <div class="row" id="kinds"></div>
+      <div id="count"></div>
+      <div class="row" style="margin-top:8px">
+        <a class="btn" href="/playground.html">Playground</a>
+        <a class="btn" href="/vfx.html">Effect viewer</a>
+      </div>
+    </header>
+    <div id="list"></div>
+  </aside>
+  <main>
+    <div id="bar">
+      <div>
+        <h2 id="title">-</h2>
+        <div id="sub"></div>
+      </div>
+      <label>used by <select id="who"></select></label>
+      <div class="row">
+        <button id="t-stamina">Stamina</button>
+        <button id="t-damage">Damage numbers</button>
+        <button id="t-hitbox">Hitboxes</button>
+        <button id="t-pause">Pause</button>
+      </div>
+    </div>
+    <div id="stage"></div>
+    <div id="foot"><span id="stat"></span><span id="help"><kbd>↑</kbd> <kbd>↓</kbd> previous / next move</span></div>
+  </main>
+</div>
+<script type="module" src="/src/move-viewer.js"></script>
+</body>
+</html>

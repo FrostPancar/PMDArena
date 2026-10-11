@@ -1,5 +1,6 @@
 import { VIEW_W } from '../scene.js';
 import { MAPS, MAP_ORDER } from '../maps.js';
+import { tapActs } from './touch.js';
 import { DEPTH, INK, Group, text, icon, panel, shade } from './ui.js';
 
 const ROWS = 11, ROW_H = 15, LIST = { x: 6, y: 5, w: 150 }, VIEW = { x: 160, y: 5, w: 218, h: 174 };
@@ -21,7 +22,7 @@ export class MapMenu {
       const name = add(text(scene, LIST.x + 12, y + 2, ''));
       const zone = add(scene.add.zone(LIST.x + 4, y, LIST.w - 8, ROW_H).setOrigin(0).setScrollFactor(0).setDepth(DEPTH + 3)).setInteractive({ useHandCursor: true });
       zone.on('pointerover', () => this.scroll + r < MAP_ORDER.length && this.set(this.scroll + r));
-      zone.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); if (this.scroll + r < MAP_ORDER.length) { this.set(this.scroll + r); this.pick(); } });
+      zone.on('pointerdown', (p, _x, _y, e) => { e.stopPropagation(); const i = this.scroll + r, on = i === this.index; if (i < MAP_ORDER.length) { this.set(i); if (tapActs(p, on)) this.pick(); } });
       this.rows.push({ name });
     }
     this.up = add(icon(scene, LIST.x + LIST.w - 12, LIST.y + 26, 'caretUp').setDepth(DEPTH + 4));

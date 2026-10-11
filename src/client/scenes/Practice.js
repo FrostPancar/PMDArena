@@ -11,15 +11,17 @@ import { Actions } from '../input.js';
 import { CpuController } from '../controllers.js';
 import { BattleHud } from '../hud.js';
 import { Battle } from './Battle.js';
-import { DEPTH, INK, banner, panel, text } from '../ui.js';
+import { touch } from '../touch.js';
+import { DEPTH, INK, banner, text, panel } from '../ui.js';
 
 const MAX_SPAWNS = 6; // of each kind at once
 const DUMMY_HP = 150, DUMMY_TINT = 0xb9c0cf;
-const BTN = { x: VIEW_W - 84, y: 21, w: 81, h: 15, gap: 2 };
+// down the right edge; on a touch screen that is where the fight buttons are, so it goes under the status plate instead
+const BTN = { x: touch.on ? 3 : VIEW_W - 84, y: touch.on ? 46 : 21, w: 81, h: 15, gap: 2 };
 const FOE_TAG = 0xff7a6a;
 
 // A stage with nobody to beat: the practice arena behind the lab's console. It is the Battle scene without an
-// outcome: the player respawns when they go down, and the toolbar down the right edge turns hit boxes on, spawns
+// outcome: the player respawns when they go down, and the toolbar turns hit boxes on, spawns
 // CPUs (they fight back) and dummies (they stand and take it), and clears them again. Numbers rise off everyone who
 // takes damage. Nothing here counts toward EXP or the records.
 export class Practice extends Battle {
@@ -40,10 +42,7 @@ export class Practice extends Battle {
     Play.prototype.create.call(this); // the stage, the player, input: without Battle's online and result handling
     this.label = 'Practice';
     this.hud = new BattleHud(this, this.player, this.me.moves);
-    const tab = panel(this, VIEW_W - 55, 3, 52, 15, 'dim').setInteractive({ useHandCursor: true });
-    tab.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); this.pause(); });
-    text(this, VIEW_W - 50, 5, 'Esc', INK.gold);
-    text(this, VIEW_W - 30, 5, 'Menu');
+    this.menuTab();
     this.buildToolbar();
     this.input.keyboard.on('keydown', (e) => {
       if (e.repeat || !this.live) return;
@@ -76,7 +75,7 @@ export class Practice extends Battle {
       idle.setInteractive({ useHandCursor: true }).on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); if (this.live) this.tool(id); });
       return { id, label, t, hot };
     });
-    this.readout = text(this, BTN.x, BTN.y + tools.length * (BTN.h + BTN.gap) + 2, '', INK.mint);
+    this.readout = touch.on ? text(this, 112, 5, '', INK.mint) : text(this, BTN.x, BTN.y + tools.length * (BTN.h + BTN.gap) + 2, '', INK.mint);
     this.refreshToolbar();
   }
 
