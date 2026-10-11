@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import FLAG_FRAMES from './flags.json';
 
 // Everything the player client draws that is not a mon, a map or a move effect is cut from the sheets in Art/ here.
 // Rects are [x, y, w, h] in sheet pixels unless a comment says otherwise.
@@ -6,8 +7,15 @@ const urls = import.meta.glob('../../Art/*.png', { eager: true, query: '?url', i
 const sheet = (part) => Object.entries(urls).find(([p]) => p.includes(part))[1];
 const SHEETS = {
   'art-bluff': sheet('Sharpedo Bluff'), 'art-dojo': sheet('Dojo'), 'art-font': sheet('- Font'),
-  'art-types': sheet('Type Icons'), 'art-icons': sheet('Item Icons'),
+  'art-types': sheet('Type Icons'), 'art-icons': sheet('Item Icons'), 'art-dream': sheet('Dreams'), 'art-flags': sheet('Flag Designs'),
 };
+// portraits/<species or form>.png, one 40px face each, shown as `face-<id>`
+const faces = import.meta.glob('../../portraits/*.png', { eager: true, query: '?url', import: 'default' });
+
+// Team flags for the profile: flags.json lists the six waving frames of each on the sheet. Shown as the animation
+// `flag<n>` on the texture 'flags' (frame n * 6 + i), every frame in a cell of the same size.
+export const FLAG_COUNT = FLAG_FRAMES.length;
+const FLAG_CELL = [32, 24], FLAG_BG = [192, 192, 192];
 
 export const TYPES = ['bug', 'dark', 'dragon', 'electric', 'fairy', 'fighting', 'fire', 'flying', 'ghost', 'grass', 'ground', 'ice', 'normal', 'poison', 'psychic', 'rock', 'steel', 'water'];
 
@@ -24,6 +32,17 @@ const ICONS = {
 const BLUFF = [3, 2, 457, 304];
 const SEA = { at: [0, 104], size: [203, 200], frames: [[24, 522], [246, 522], [470, 521], [695, 523], [26, 759], [250, 759], [482, 758], [712, 756], [967, 759]] };
 const FLAG = { at: [177, 54], size: [40, 59], frames: [[16, 335], [70, 340], [127, 342]], baked: 2 };
+
+// ---- the room inside the bluff (the player's base); positions are in room pixels ----
+// the crop leaves out the ragged top and right edges of the art, which are blank on the sheet
+const BASE = [470, 29, 441, 239];
+// (the ripper's red frame numbers poke into some of these rects; they are keyed out with the white)
+const BASE_SEA = { at: [0, 72], size: [195, 176], frames: [[964, 22], [1170, 22], [1379, 22], [1590, 22], [963, 208], [1173, 208], [1386, 207], [1594, 207], [965, 397]] };
+const BASE_FOUNTAIN = { at: [355, 93], frames: [[753, 295, 36, 37], [797, 295, 36, 37], [839, 295, 36, 37], [883, 295, 36, 37]] };
+
+// ---- the dream (choosing a Pokémon): two wave bands that tile every 48 rows, drawn down both sides of the screen ----
+const DREAM = { light: [28, 15, 142, 192], dark: [28, 208, 142, 192] };
+export const DREAM_GLOW = 0xf7f7b5; // the flat colour behind the bands
 
 // ---- Marowak Dojo; positions are in room pixels ----
 const ROOM = [399, 15, 340, 323];
@@ -48,6 +67,7 @@ export const PLACE = {};
 
 export function preloadArt(scene) {
   for (const [key, url] of Object.entries(SHEETS)) scene.load.image(key, url);
+  for (const [path, url] of Object.entries(faces)) scene.load.image(`face-${path.split('/').pop().slice(0, -4)}`, url);
 }
 
 const blank = (w, h) => {
@@ -63,10 +83,12 @@ const copyOf = (scene, key) => {
   return [c, g];
 };
 
-// Make one flat colour of a canvas transparent.
-function keyOut(g, [r, gr, b]) {
+// Make one flat colour of a canvas transparent, and with `labels` the bright red of a sheet's frame numbers too.
+function keyOut(g, [r, gr, b], labels = false) {
   const d = g.getImageData(0, 0, g.canvas.width, g.canvas.height), p = d.data;
-  for (let i = 0; i < p.length; i += 4) if (p[i] === r && p[i + 1] === gr && p[i + 2] === b) p[i + 3] = 0;
+  for (let i = 0; i < p.length; i += 4) {
+    if ((p[i] === r && p[i + 1] === gr && p[i + 2] === b) || (labels && p[i] > 200 && p[i + 1] < 80 && p[i + 2] < 80)) p[i + 3] = 0;
+  }
   g.putImageData(d, 0, 0);
 }
 
@@ -113,12 +135,12 @@ function isolate(g, x, y, [r, gr, b]) {
 
 // A strip texture of equally sized frames. Each frame is a sheet rect placed at `at[i]` (backdrop pixels);
 // the strip's cell is the box around all of them, so the sprite never has to move between frames.
-function strip(scene, key, sheetCanvas, frames, at, bg, fps) {
+function strip(scene, key, sheetCanvas, frames, at, bg, fps, labels = false) {
   const x0 = Math.min(...at.map((p) => p[0])), y0 = Math.min(...at.map((p) => p[1]));
   const fw = Math.max(...frames.map((f, i) => at[i][0] + f[2])) - x0, fh = Math.max(...frames.map((f, i) => at[i][1] + f[3])) - y0;
   const [c, g] = blank(fw * frames.length, fh);
   frames.forEach(([x, y, w, h], i) => g.drawImage(sheetCanvas, x, y, w, h, i * fw + at[i][0] - x0, at[i][1] - y0, w, h));
-  keyOut(g, bg);
+  keyOut(g, bg, labels);
   const tex = scene.textures.addCanvas(key, c);
   frames.forEach((_, i) => tex.add(i, 0, i * fw, 0, fw, fh));
   if (!scene.anims.exists(key)) scene.anims.create({ key, frames: frames.map((_, i) => ({ key, frame: i })), frameRate: fps, repeat: -1 });
@@ -142,6 +164,22 @@ function buildBluff(scene) {
   strip(scene, 'bluff-flag', src, FLAG.frames.map(([x, y]) => [x, y, fw, fh]), FLAG.frames.map(() => FLAG.at), WHITE, 5);
   // the sea frames are cut to the cliff's outline and fill the white left under it
   strip(scene, 'bluff-sea', src, SEA.frames.map(([x, y]) => [x, y, ...SEA.size]), SEA.frames.map(() => SEA.at), WHITE, 7);
+
+  // the inner room: its sea and its fountain are white holes filled the same way
+  const [r, rg] = blank(BASE[2], BASE[3]);
+  rg.drawImage(src, -BASE[0], -BASE[1]);
+  scene.textures.addCanvas('base', r);
+  strip(scene, 'base-sea', src, BASE_SEA.frames.map(([x, y]) => [x, y, ...BASE_SEA.size]), BASE_SEA.frames.map(() => BASE_SEA.at), WHITE, 7, true);
+  strip(scene, 'base-fountain', src, BASE_FOUNTAIN.frames, BASE_FOUNTAIN.frames.map(() => BASE_FOUNTAIN.at), WHITE, 6);
+}
+
+function buildDream(scene) {
+  const src = scene.textures.get('art-dream').getSourceImage();
+  for (const [name, [x, y, w, h]] of Object.entries(DREAM)) {
+    const [c, g] = blank(w, h);
+    g.drawImage(src, -x, -y);
+    scene.textures.addCanvas(`dream-${name}`, c);
+  }
 }
 
 function buildDojo(scene) {
@@ -240,19 +278,52 @@ function buildFont(scene) {
   scene.cache.bitmapFont.add('pmd', { data: font, texture: 'pmd-font', frame: null });
 }
 
-// One white pixel, stretched and tinted for bars, shades and backdrops.
+// Small things drawn by hand, a character per pixel ('.' is clear): one white pixel, stretched and tinted for bars,
+// shades and backdrops; a white arrowhead, tinted to mark whose side a fighter is on; a padlock for moves not yet
+// earned; and a mouse with its left or right button lit, for the battle HUD.
+const INKS = { '#': '#0a1826', f: '#ffffff', y: '#ffd84a', g: '#8fa3b8' };
+const DRAWN = {
+  tag: ['#######', '#fffff#', '.#fff#.', '..#f#..', '...#...'],
+  lock: ['..###..', '.#...#.', '.#...#.', '#######', '#yyyyy#', '#yy#yy#', '#yyyyy#', '#######'],
+  mouseL: ['.#######.', '#yyy#ggg#', '#yyy#ggg#', '#yyy#ggg#', '#########', '#fffffff#', '#fffffff#', '#fffffff#', '.#fffff#.', '..#####..'],
+  mouseR: ['.#######.', '#ggg#yyy#', '#ggg#yyy#', '#ggg#yyy#', '#########', '#fffffff#', '#fffffff#', '#fffffff#', '.#fffff#.', '..#####..'],
+};
+
 function buildPixel(scene) {
   const [p, pg] = blank(2, 2);
   pg.fillStyle = '#fff';
   pg.fillRect(0, 0, 2, 2);
   scene.textures.addCanvas('px', p);
+  for (const [key, rows] of Object.entries(DRAWN)) {
+    const [c, g] = blank(rows[0].length, rows.length);
+    rows.forEach((row, y) => [...row].forEach((ch, x) => {
+      if (ch === '.') return;
+      g.fillStyle = INKS[ch];
+      g.fillRect(x, y, 1, 1);
+    }));
+    scene.textures.addCanvas(key, c);
+  }
+}
+
+function buildFlags(scene) {
+  const src = scene.textures.get('art-flags').getSourceImage();
+  const [cw, ch] = FLAG_CELL, [c, g] = blank(cw * 6, ch * FLAG_COUNT);
+  FLAG_FRAMES.forEach((frames, n) => frames.forEach(([x, y, w, h], i) => g.drawImage(src, x, y, w, h, i * cw, n * ch + ch - h, w, h)));
+  keyOut(g, FLAG_BG);
+  const tex = scene.textures.addCanvas('flags', c);
+  FLAG_FRAMES.forEach((frames, n) => {
+    frames.forEach((_, i) => tex.add(n * 6 + i, 0, i * cw, n * ch, cw, ch));
+    scene.anims.create({ key: `flag${n}`, frames: frames.map((_, i) => ({ key: 'flags', frame: n * 6 + i })), frameRate: 7, repeat: -1 });
+  });
 }
 
 export function buildArt(scene) {
   buildFont(scene);
   buildIcons(scene);
   buildPixel(scene);
+  buildFlags(scene);
   buildBluff(scene);
+  buildDream(scene);
   buildDojo(scene);
   for (const key of Object.keys(SHEETS)) if (key !== 'art-icons' && key !== 'art-types') scene.textures.remove(key);
 }

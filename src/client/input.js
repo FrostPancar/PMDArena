@@ -23,6 +23,7 @@ export const keyGuard = () => {
 };
 
 // One per scene. Whatever handler was pushed last gets the actions: { up(), down(), left(), right(), confirm(), cancel(), menu() }.
+// A handler that takes typing also has type(letter) and erase(); while it is on top the letter keys spell instead of steer.
 export class Actions {
   constructor(scene) {
     this.scene = scene;
@@ -31,6 +32,11 @@ export class Actions {
     kb.addCapture('SPACE,UP,DOWN,LEFT,RIGHT,TAB,BACKSPACE');
     const fresh = keyGuard();
     kb.on('keydown', (e) => {
+      const top = this.top;
+      if (top?.type && (/^Key[A-Z]$/.test(e.code) || e.code === 'Backspace')) {
+        if (fresh(e) && !wipe.busy) e.code === 'Backspace' ? top.erase?.() : top.type(e.code[3]);
+        return;
+      }
       const action = ACTION_OF[e.code];
       if (action && fresh(e) && (!e.repeat || REPEATS.has(action))) this.fire(action);
     });

@@ -426,6 +426,12 @@ export class Play extends Phaser.Scene {
     return d > 22 && d < (mv.length ?? Math.min(mv.range ?? 100, 120));
   }
 
+  // Is the button behind a held move still down? Right mouse for one aimed with the pointer, F for one aimed
+  // straight ahead; a rival (track is its target) lets go after a moment.
+  holding(m, track, t) {
+    return track === 'pointer' ? this.input.activePointer.rightButtonDown() : track ? t < 0.9 : this.keys.F.isDown;
+  }
+
   cancelWindup(m) {
     m.windup = null;
     m.applyTint();
@@ -515,7 +521,7 @@ export class Play extends Phaser.Scene {
     const g = w.mv.grow;
     if (g) {
       // held charge: the zone keeps growing (and costing stamina) until the button is let go
-      const held = w.track === 'pointer' ? this.input.activePointer.rightButtonDown() : w.track ? w.t < 0.9 : this.keys.F.isDown;
+      const held = this.holding(m, w.track, w.t);
       w.t += dt;
       w.radius = Math.min(g.max, g.min + g.rate * w.t);
       if (w.radius < g.max) m.spend(g.upkeep * dt);
@@ -750,6 +756,11 @@ export class Play extends Phaser.Scene {
     const c = m.forceShot ? COMBAT.Shoot : COMBAT[name];
     if (m.mute || !c || !(c.frames ?? [m.anim.hit ?? m.anim.durs.length >> 1]).includes(f)) return;
     const [dx, dy] = m.aim ? [m.aim.dx, m.aim.dy] : dirVec(m.dir);
+    this.basicHit(m, c, dx, dy);
+  }
+
+  // A basic action connecting along (dx, dy). On its own so an online battle can repeat it for a remote fighter.
+  basicHit(m, c, dx, dy) {
     const dmg = c.dmg * m.power * m.mul('atk') * (m.charged ? 2 : 1);
     if (c.kind === 'melee') this.hitCircle(m, m.x + dx * 14, m.y + dy * 11, 13, dmg);
     else if (c.kind === 'radial') this.hitCircle(m, m.x, m.y, 26, dmg);
@@ -921,7 +932,7 @@ export class Play extends Phaser.Scene {
     this.holds = this.holds.filter((h) => {
       const { m, mv } = h;
       // player: while right click (or F) stays down; rivals: a short burst at their target
-      const held = h.track === 'pointer' ? this.input.activePointer.rightButtonDown() : h.track ? h.t < 0.9 : this.keys.F.isDown;
+      const held = this.holding(m, h.track, h.t);
       if (m.state !== 'bird' || !held || m.stamina <= 0) {
         if (m.state === 'bird') m.toIdle();
         m.hidden = false;

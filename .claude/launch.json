@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "pmd-playground",
+      "name": "pmd-arena",
       "runtimeExecutable": "npm",
       "runtimeArgs": [
         "run",
@@ -15,7 +15,7 @@
       "port": 5173
     },
     {
-      "name": "pmd-client",
+      "name": "pmd-arena-alt",
       "runtimeExecutable": "npm",
       "runtimeArgs": [
         "run",

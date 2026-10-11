@@ -3,99 +3,15 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>PMD Playground</title>
+<title>PMD: Dojo Battles</title>
 <style>
-  :root { --bg:#0e1118; --panel:#161b26; --line:#262e3f; --ink:#dfe6f3; --dim:#8492ab; --acc:#8fd14f; --warn:#ef6b5b; --stam:#f2c94c; }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink);
-    font: 12px/1.45 ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
-  #app { display: flex; height: 100%; }
-  #stage { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-  #stage canvas { image-rendering: pixelated; box-shadow: 0 0 0 2px var(--line); }
-  #panel { width: 300px; flex: none; background: var(--panel); border-left: 1px solid var(--line);
-    padding: 14px; overflow-y: auto; }
-  h1 { font-size: 13px; margin: 0 0 12px; letter-spacing: .08em; color: var(--acc); }
-  h2 { font-size: 10px; margin: 16px 0 6px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); font-weight: 600; }
-  button { font: inherit; color: var(--ink); background: #1e2534; border: 1px solid var(--line); border-radius: 4px;
-    padding: 4px 6px; cursor: pointer; }
-  button:hover { border-color: var(--acc); }
-  button.on { background: var(--acc); color: #10140a; border-color: var(--acc); }
-  .row { display: flex; gap: 6px; flex-wrap: wrap; }
-  .row button { flex: 1; }
-  a.tool { color: var(--acc); text-decoration: none; }
-  a.tool:hover { text-decoration: underline; }
-  #chars button { flex: 1 1 28%; display: flex; flex-direction: column; align-items: center; gap: 2px; }
-  #hp, #st { height: 8px; background: #0a0d13; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
-  #st { height: 6px; margin-top: 3px; }
-  #hp i, #st i { display: block; height: 100%; width: 100%; background: var(--acc); transition: width .15s; }
-  #st i { background: var(--stam); transition: none; }
-  #maps { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 4px; }
-  #maps button { font-size: 11px; padding: 3px 4px; text-align: left; }
-  #moves { display: grid; grid-template-columns: 1fr; gap: 4px; }
-  #moves button { display: flex; justify-content: space-between; text-align: left; }
-  button.on kbd { color: #10140a; background: #ffffff40; border-color: #00000030; }
-  #stat { display: grid; grid-template-columns: 76px 1fr; gap: 1px 8px; margin-top: 8px; }
-  #stat dt { color: var(--dim); } #stat dd { margin: 0; }
-  #anims { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-  #anims button { text-align: left; display: flex; justify-content: space-between; }
-  kbd { font: inherit; font-size: 10px; color: var(--dim); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; background: #10141d; }
-  #keys { display: grid; grid-template-columns: auto 1fr; gap: 3px 8px; color: var(--dim); }
-  #keys span { color: var(--ink); }
-  @media (max-width: 760px) { #app { flex-direction: column; } #panel { width: auto; border-left: 0; border-top: 1px solid var(--line); max-height: 45%; } }
+  html, body { height: 100%; margin: 0; background: #000; overflow: hidden; }
+  #stage { height: 100%; display: flex; align-items: center; justify-content: center; }
+  #stage canvas { image-rendering: pixelated; outline: none; }
 </style>
 </head>
 <body>
-<div id="app">
-  <div id="stage"></div>
-  <aside id="panel">
-    <h1>PMD PLAYGROUND</h1>
-    <div id="hp"><i></i></div>
-    <div id="st"><i></i></div>
-    <dl id="stat"></dl>
-
-    <h2>Character <kbd>Q</kbd> <kbd>E</kbd></h2>
-    <div class="row" id="chars"></div>
-
-    <h2>Equipped move <kbd>1-0</kbd> <kbd>G</kbd> <kbd>wheel</kbd></h2>
-    <div id="moves"></div>
-
-    <h2>Stage</h2>
-    <div class="row"><button id="btn-world">World map <kbd>Esc</kbd></button></div>
-    <div id="maps"></div>
-
-    <h2>Tools</h2>
-    <div class="row">
-      <button id="btn-zones">Walk zones <kbd>B</kbd></button>
-      <button id="btn-rival">Spawn rival <kbd>T</kbd></button>
-      <button id="btn-reset">Reset <kbd>R</kbd></button>
-    </div>
-    <div class="row" style="margin-top:6px"><a class="tool" href="/vfx.html">Move effect viewer →</a></div>
-
-    <h2>Controls</h2>
-    <div id="keys">
-      <kbd>WASD / arrows</kbd><span>move (8 directions)</span>
-      <kbd>Shift</kbd><span>run (drains stamina)</span>
-      <kbd>Space</kbd><span>jump: uses half your stamina, dodges every hit, steer in the air</span>
-      <kbd>L</kbd><span>parry: swing, block the next hit and gain stamina</span>
-      <kbd>Left click</kbd><span>shoot at the cursor</span>
-      <kbd>Right click</kbd><span>equipped move at the cursor (charges, costs stamina)</span>
-      <kbd>Left click</kbd><span>while charging or holding a move: cancel it</span>
-      <kbd>Ring on the ground</kbd><span>where the equipped move will land; red rings are a rival's</span>
-      <kbd>F</kbd><span>equipped move straight ahead</span>
-      <kbd>1 – 0</kbd><span>equip a move; G or mouse wheel cycles</span>
-      <kbd>J</kbd><span>Attack: lunge</span>
-      <kbd>K</kbd><span>Shoot straight ahead</span>
-      <kbd>U</kbd><span>Double: two quick hits</span>
-      <kbd>I</kbd><span>Charge: next hit ×2</span>
-      <kbd>Esc</kbd><span>back to the world map</span>
-      <kbd>World map</kbd><span>arrows or click to pick a stage, Enter or click again to go</span>
-      <kbd>Q / E</kbd><span>switch character</span>
-    </div>
-
-    <h2>Trigger a state</h2>
-    <div id="anims"></div>
-  </aside>
-</div>
-<script type="module" src="/src/main.js"></script>
+<div id="stage"></div>
+<script type="module" src="/src/client/main.js"></script>
 </body>
 </html>

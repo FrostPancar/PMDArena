@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import { VIEW_W, VIEW_H } from '../scene.js';
 import { SPECIES } from '../sprites.js';
-import { MOVES, movesOf } from '../moves.js';
-import { loadoutOf, setLoadout, LOADOUT_SIZE } from './session.js';
+import { MOVES } from '../moves.js';
+import { loadoutOf, setLoadout, levelOf, LOADOUT_SIZE } from './session.js';
+import { unlockPlan } from './progress.js';
 import { describe, typeOf, cap } from './moveinfo.js';
 import { DEPTH, INK, Group, text, icon, typeIcon, panel, shade } from './ui.js';
 
@@ -12,12 +13,15 @@ const INFO = { x: 160, y: 5, w: 218, h: 124 };
 const SLOTS = { x: 160, y: 132, w: 218, h: 52 };
 const PREVIEW = 46;
 
-// Full-screen move picker: everything the mon can learn on the left, what the highlighted move does on the right,
-// and the four slots it takes to battle underneath. Slot order is the order of the 1-4 keys in battle.
+// Full-screen move picker: everything the mon can learn on the left (the ones it has not earned yet padlocked, with
+// the level that opens them), what the highlighted move does on the right, and the four slots it takes to battle
+// underneath. Slot order is button order in battle: left click, right click, Q, E.
 export class MoveMenu {
   constructor(scene, actions, { species, onClose }) {
     Object.assign(this, { scene, actions, species, onClose, group: new Group() });
-    this.moves = movesOf(species).filter((id) => MOVES[id]);
+    this.level = levelOf(species);
+    this.needs = Object.fromEntries(unlockPlan(species).map((m) => [m.id, m.level])); // move id -> level that opens it
+    this.moves = Object.keys(this.needs);
     this.picked = loadoutOf(species);
     this.index = 0;
     this.scroll = 0;
@@ -28,7 +32,7 @@ export class MoveMenu {
 
     // the list
     add(panel(scene, LIST.x, LIST.y, LIST.w, LIST.h));
-    add(text(scene, LIST.x + 8, LIST.y + 6, `${SPECIES[species].name}'s moves`, INK.gold));
+    add(text(scene, LIST.x + 8, LIST.y + 6, `${SPECIES[species].name}  Lv ${this.level}`, INK.gold));
     this.count = add(text(scene, LIST.x + LIST.w - 8, LIST.y + 6, '', INK.mint).setOrigin(1, 0));
     this.bar = add(shade(scene, LIST.x + 4, 0, LIST.w - 8, ROW_H, 0x8fdcff, 0.28).setDepth(DEPTH + 1));
     this.rows = [];
@@ -36,8 +40,10 @@ export class MoveMenu {
       const y = LIST.y + 22 + r * ROW_H;
       const row = {
         slot: add(text(scene, LIST.x + 9, y + 2, '', INK.mint)),
+        lock: add(scene.add.image(LIST.x + 12, y + 7, 'lock').setScrollFactor(0).setDepth(DEPTH + 2)),
         type: add(typeIcon(scene, LIST.x + 26, y + 7, 'normal')),
         name: add(text(scene, LIST.x + 37, y + 2, '')),
+        needs: add(text(scene, LIST.x + LIST.w - 20, y + 2, '', INK.off).setOrigin(1, 0)),
         zone: add(scene.add.zone(LIST.x + 4, y, LIST.w - 8, ROW_H).setOrigin(0).setScrollFactor(0).setDepth(DEPTH + 3)).setInteractive({ useHandCursor: true }),
       };
       row.zone.on('pointerover', () => this.scroll + r < this.moves.length && this.setIndex(this.scroll + r));
@@ -105,7 +111,7 @@ export class MoveMenu {
     return [
       { icon: 'dpadUD', key: 'W S', label: 'Move' },
       { icon: 'dpadLR', key: 'A D', label: 'Page' },
-      { icon: 'btnA', key: 'Enter', label: this.picked.includes(this.moves[this.index]) ? 'Drop' : 'Take', action: 'confirm' },
+      { icon: 'btnA', key: 'Enter', label: this.locked(this.moves[this.index]) ? 'Locked' : this.picked.includes(this.moves[this.index]) ? 'Drop' : 'Take', action: 'confirm' },
       { icon: 'btnB', key: 'Esc', label: 'Done', action: 'cancel' },
     ];
   }
@@ -127,8 +133,11 @@ export class MoveMenu {
     this.refresh();
   }
 
+  locked(id) { return this.needs[id] > this.level; }
+
   toggle() {
     const id = this.moves[this.index], at = this.picked.indexOf(id);
+    if (this.locked(id)) return this.say(`${MOVES[id].name} unlocks at Lv ${this.needs[id]}.`);
     if (at >= 0) this.picked.splice(at, 1);
     else if (this.picked.length < LOADOUT_SIZE) this.picked.push(id);
     else return this.say(`All ${LOADOUT_SIZE} slots are full. Drop a move first.`);
@@ -148,12 +157,14 @@ export class MoveMenu {
     this.scroll = Math.max(Math.min(this.scroll, this.index), this.index - ROWS + 1);
     this.rows.forEach((row, r) => {
       const id = moves[this.scroll + r], on = id !== undefined;
-      for (const o of [row.slot, row.type, row.name]) o.setVisible(on);
+      for (const o of [row.slot, row.type, row.name, row.lock, row.needs]) o.setVisible(on);
       if (!on) return;
-      const at = picked.indexOf(id);
+      const at = picked.indexOf(id), locked = this.locked(id);
       row.slot.setText(at >= 0 ? String(at + 1) : '');
-      row.type.setTexture('art-types', typeOf(id));
-      row.name.setText(MOVES[id].name).setTint(at >= 0 ? INK.mint : INK.white);
+      row.lock.setVisible(locked);
+      row.needs.setText(locked ? `Lv ${this.needs[id]}` : '');
+      row.type.setTexture('art-types', typeOf(id)).setAlpha(locked ? 0.45 : 1);
+      row.name.setText(MOVES[id].name).setTint(locked ? INK.off : at >= 0 ? INK.mint : INK.white);
     });
     this.bar.y = LIST.y + 22 + (this.index - this.scroll) * ROW_H;
     this.moreUp.setVisible(this.scroll > 0);

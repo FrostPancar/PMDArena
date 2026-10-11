@@ -202,6 +202,37 @@ export class Dialog {
   }
 }
 
+// Asks for a room code: four letters typed on the keyboard. Resolves with the code, or null when backed out of.
+export const enterCode = (scene, actions, hints, length = 4) => new Promise((resolve) => {
+  const g = new Group(), w = 150, h = 50, x = (VIEW_W - w) >> 1, y = 60;
+  g.add(panel(scene, x, y, w, h));
+  g.add(text(scene, VIEW_W / 2, y + 7, 'Room code', INK.gold).setOrigin(0.5, 0));
+  const cells = Array.from({ length }, (_, i) => {
+    const cx = VIEW_W / 2 + (i - (length - 1) / 2) * 22;
+    g.add(panel(scene, cx - 9, y + 22, 18, 20, 'dim').setDepth(DEPTH + 1));
+    return g.add(text(scene, cx, y + 26, '').setOrigin(0.5, 0));
+  });
+  let code = '';
+  const show = () => cells.forEach((c, i) => c.setText(code[i] ?? ''));
+  const buttons = hints?.push([
+    { key: 'A-Z', label: 'Type the code' },
+    { icon: 'btnA', key: 'Enter', label: 'Join', action: 'confirm' },
+    { icon: 'btnB', key: 'Esc', label: 'Back', action: 'cancel' },
+  ]);
+  const done = (value) => {
+    actions.pop(handler);
+    if (buttons) hints.pop(buttons);
+    g.clear();
+    resolve(value);
+  };
+  const handler = actions.push({
+    type: (ch) => { if (code.length < length) { code += ch; show(); } },
+    erase: () => { code = code.slice(0, -1); show(); },
+    confirm: () => { if (code.length === length) done(code); },
+    cancel: () => done(null),
+  });
+});
+
 // A banner that slides in from the top, holds and leaves: area names, battle starts.
 export function banner(scene, title, sub) {
   const w = Math.max(120, 30 + Math.max(title.length, (sub ?? '').length) * 6), x = (VIEW_W - w) >> 1, h = sub ? 34 : 22;

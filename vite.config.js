@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import fs from 'node:fs';
 import path from 'node:path';
+import { attachRelay } from './server/relay.js';
 
 const VFX_DIR = path.resolve('move_VFX');
 const NAMES_FILE = path.join(VFX_DIR, 'names.json');
@@ -66,8 +67,16 @@ function vfxApi() {
   };
 }
 
-// index.html is the test client, game.html the player client; vfx.html is a dev-only tool.
-export default defineConfig({
-  plugins: [vfxApi()],
-  build: { rolldownOptions: { input: { index: 'index.html', game: 'game.html' } } },
-});
+// The online relay (server/relay.js) rides on the dev and preview servers, so `npm run dev` is enough to play online
+// with anyone who can reach this machine. server/index.js runs it in production.
+function relay() {
+  return {
+    name: 'relay',
+    configureServer(server) { if (server.httpServer) attachRelay(server.httpServer); },
+    configurePreviewServer(server) { if (server.httpServer) attachRelay(server.httpServer); },
+  };
+}
+
+// index.html is the game. playground.html (the developers' test client) and vfx.html (the effect viewer) are
+// dev-only tools: `npm run dev` serves them, the build leaves them out.
+export default defineConfig({ plugins: [vfxApi(), relay()] });
