@@ -1,0 +1,32 @@
+PMD: Dojo Battles
+alpha 0.5.6
+Patch size: M
+
+BURST MOVES
+These now fire several shots one after another, each where you are aiming
+at that moment. On keyboard and mouse one use sends them all; on the pad,
+hold the button and let go to stop early.
+- Bullet Seed: 5 seeds
+- Swift: 5 stars
+- Pin Missile: 4 needles (no longer cycles three different shots)
+- Razor Leaf: 4 leaves, each still comes back
+- Magical Leaf: 3 leaves
+
+HELD STREAMS
+These start on the press and keep going while the button is held, costing
+energy as they go.
+- Water Gun
+- Bubble (no longer a three-way fan)
+- Bubble Beam
+- Ember
+- Thunder Shock (small bolts where you aim; no lingering zone)
+- Star Shoot
+- Fury Swipes (swipe after swipe, each a little harder)
+
+NEW MOVE
+- Powder Snow: a short-range held stream with a small chance to freeze.
+  Alolan Vulpix learns it naturally.
+
+CHANGED MOVE
+- Icy Wind is replaced by Dazzling Gleam: Fairy type, 18 damage, no slow.
+  Alolan Vulpix learns it naturally; Clefairy and Ralts can be taught it.

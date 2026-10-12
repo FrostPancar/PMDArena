@@ -3,6 +3,15 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.6
+
+**Volleys and streams**
+- Bullet Seed, Swift, Pin Missile, Razor Leaf and Magical Leaf fire a burst of shots one after another.
+- Water Gun, Bubble, Bubble Beam, Ember, Thunder Shock, Star Shoot and Fury Swipes are held: they keep going while
+  the button is down, for energy.
+- New move: Powder Snow (a held stream; Alolan Vulpix).
+- Icy Wind is replaced by Dazzling Gleam (Fairy, no slow).
+
 ## alpha 0.5.5
 
 **Balance**

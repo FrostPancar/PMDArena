@@ -450,7 +450,8 @@ export class Battle extends Play {
   }
 
   fireMove(m, mv, aim) {
-    if (!m.remote) this.tell({ k: 'f', s: m.slot, mv: mv.id ?? MOVE_ID.get(mv), x: r1(m.x), y: r1(m.y), big: m.charged ? 1 : 0, aim: { dx: aim.dx, dy: aim.dy, dist: aim.dist, radius: aim.radius, stacks: aim.stacks } });
+    // (the start of a volley is not said: each of its shots is, as it goes)
+    if (!m.remote && !(mv.volley && !aim.one)) this.tell({ k: 'f', s: m.slot, mv: mv.id ?? MOVE_ID.get(mv), x: r1(m.x), y: r1(m.y), big: m.charged ? 1 : 0, aim: { dx: aim.dx, dy: aim.dy, dist: aim.dist, radius: aim.radius, stacks: aim.stacks, one: aim.one ? 1 : undefined } });
     super.fireMove(m, mv, aim);
   }
 
@@ -659,7 +660,7 @@ export class Battle extends Play {
   // Which of the four go off on the press rather than being aimed first and thrown on the release.
   instantMoves() {
     const p = this.player, tapping = !!p.dance || !!p.beaming?.clash;
-    return this.moves.map((id) => { const mv = MOVES[id]; return tapping || !mv || !!(mv.grow || mv.catch || mv.ritual || mv.steer || mv.flurry || mv.stance || mv.kind === 'beam' || mv.kind === 'hold'); });
+    return this.moves.map((id) => { const mv = MOVES[id]; return tapping || !mv || (touch.on && !!mv.volley) || !!(mv.stream || mv.grow || mv.catch || mv.ritual || mv.steer || mv.flurry || mv.stance || mv.kind === 'beam' || mv.kind === 'hold'); }); // (on the pad a volley is held for)
   }
 
   // A move's key or mouse button went down, and came up: a held move starts on the press; any other is aimed while the

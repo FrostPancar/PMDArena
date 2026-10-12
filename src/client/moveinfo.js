@@ -8,7 +8,7 @@ const TYPE_MOVES = {
   psychic: 'teleport healPulse dreamEater confusion psybeam psychic hypnosis futureSight psychoCut kinesis rest agility barrier gravity reflect lightScreen',
   dark: 'knockOff bite nightSlash darkPulse nightDaze snarl taunt suckerPunch torment',
   ghost: 'shadowBall shadowClaw shadowSneak hex confuseRay nightShade phantomForce destinyBond spite',
-  fairy: 'drainingKiss moonblast moonlight',
+  fairy: 'dazzlingGleam drainingKiss moonblast moonlight',
   fighting: 'counter drainPunch hammerArm wakeUpSlap focusBlast focusPunch auraSphere forcePalm crossChop dynamicPunch machPunch seismicToss circleThrow closeCombat detect brickBreak reversal',
   electric: 'electroweb zapCannon electroBall thunderFang thunderbolt discharge thunder chargeBeam shockWave thunderShock charge',
   bug: 'xScissor bugBite spiderWeb pinMissile megahorn furyCutter attackOrder defendOrder healOrder bugBuzz uTurn signalBeam stringShot stickyWeb',
@@ -18,7 +18,7 @@ const TYPE_MOVES = {
   rock: 'rockSlide stoneEdge rockBlast rockTomb rockWrecker stealthRock rockThrow powerGem rollout',
   poison: 'venoshock poisonPowder poisonSting sludgeBomb poisonJab acid crossPoison sludgeWave toxicSpikes',
   steel: 'steelWing ironTail metalClaw flashCannon gyroBall meteorMash ironDefense bulletPunch magnetPull',
-  ice: 'auroraVeil icyWind iceArmor iceFang iceShard blizzard avalanche iceBall iceBeam auroraBeam haze icicleCrash',
+  ice: 'auroraVeil powderSnow iceArmor iceFang iceShard blizzard avalanche iceBall iceBeam auroraBeam haze icicleCrash',
 };
 const TYPE_OF = {};
 for (const [type, ids] of Object.entries(TYPE_MOVES)) for (const id of ids.split(' ')) TYPE_OF[id] = type;
@@ -162,6 +162,8 @@ export function describe(id) {
   if (mv.latch) n.push(`Latches on: you and the foe are both held for ${secs(mv.latch)} while it keeps biting.`);
   if (mv.combo) n.push('Use it again right after it lands and it comes out at once.');
   if (mv.versus) n.push(mv.versus.any ? 'Hits twice as hard on a foe with a status condition.' : `Hits much harder on a foe that is ${mv.versus.status.map((k) => STATUS[k].label).join(' or ')}.`);
+  if (mv.stream) n.push(`Keeps ${mv.kind === 'melee' ? 'striking' : 'firing'} while held, for ${+(mv.stream.upkeep / 20).toFixed(1)} energy a second.`);
+  if (mv.volley) n.push(`${mv.volley.n} shots one after another, each where you aim. On the pad, hold for them.`);
   if (mv.fan) n.push(`Throws ${mv.fan} shots at once.`);
   if (mv.light) n.push('Light: any enemy shot or slash cancels it.');
   if (mv.pierce) n.push('Pierces: carries on through whatever it hits.');
@@ -211,7 +213,7 @@ export function describe(id) {
   // for the player's eyes only (Taunt has its own, stricter idea of a status move in mv.cls)
   const role = mv.kind === 'self' ? 'Support' : (mv.dmg ?? 0) >= 8 ? 'Attack' : 'Status';
   // held: it lasts while its button is down (the same moves the touch pad starts on the press)
-  const held = !!(mv.grow || mv.catch || mv.ritual || mv.steer || mv.flurry || mv.stance || mv.kind === 'beam' || mv.kind === 'hold');
+  const held = !!(mv.stream || mv.grow || mv.catch || mv.ritual || mv.steer || mv.flurry || mv.stance || mv.kind === 'beam' || mv.kind === 'hold');
   return {
     type: typeOf(id), role, held, delivery: DELIVERY[mv.kind] ?? 'projectile', tag: mv.tag ?? null, kind: cap(KIND_LABEL[mv.kind]), how: HOW[mv.kind],
     power: mv.dmg ?? 0, cost: mv.cost, charge: mv.charge, speed: quickness(mv), reach: reachOf(mv) ?? null,

@@ -226,7 +226,7 @@ export class Play extends Phaser.Scene {
     gone(this.dives, (q) => q.h.img.destroy());
     gone(this.walls, (w) => w.g.destroy());
     for (const k of ['zones', 'traps', 'shots', 'holds', 'dashes', 'decoys', 'actives', 'pendings', 'grips', 'stances', 'fields', 'clashes', 'auras',
-      'bits', 'cuts', 'dives', 'arcs', 'flurries', 'vanishes', 'threads', 'pillars', 'whips', 'beams', 'walls', 'leaps', 'steers', 'timers']) this[k] = [];
+      'bits', 'cuts', 'dives', 'arcs', 'flurries', 'volleys', 'vanishes', 'threads', 'pillars', 'whips', 'beams', 'walls', 'leaps', 'steers', 'timers']) this[k] = [];
     this.lineG.clear();
     this.shadeT = 0;
     this.shade.setAlpha(0);
@@ -280,6 +280,7 @@ export class Play extends Phaser.Scene {
     this.clashes = []; // pairs of beams locked together
     this.arcs = []; // mons being flung, pulled or dropped from one spot to another
     this.flurries = []; // Close Combat in progress
+    this.volleys = []; // bursts of shots still being fired one by one (Bullet Seed)
     this.vanishes = []; // mons gone from sight on their way to reappear (Shadow Sneak, Phantom Force)
     this.threads = []; // String Shot threads between two mons
     this.pillars = []; // rocks left standing as cover
@@ -859,10 +860,17 @@ export class Play extends Phaser.Scene {
 
   fireMove(m, mv, aim) {
     grayFrames(this, mv);
+    if ((mv.volley || mv.stream) && !aim.one) {
+      // a volley or a stream: this only starts it; the shots follow one by one (updateVolleys), each fired through here as `one`
+      m.lastMove = mv;
+      if (this.registry.get('callouts') !== false) this.popup(m, mv.name.toUpperCase());
+      if (!m.remote) this.volleys.push({ m, mv, track: aim.track, left: mv.volley?.n ?? Infinity, wait: 0, t: 0 }); // (a puppet's shots come from its owner one by one)
+      return;
+    }
     const { dx, dy } = aim;
     m.lastAim = aim;
     m.lastMove = mv;
-    if (this.registry.get('callouts') !== false) this.popup(m, mv.name.toUpperCase()); // every move is called out, unless turned off
+    if (this.registry.get('callouts') !== false && !aim.one) this.popup(m, mv.name.toUpperCase()); // every move is called out, unless turned off
     if (mv.dirFrames) mv = { ...mv, frames: mv.dirFrames[dirFromVec(dx, dy)], rotate: false }; // art drawn for each facing: the one along the aim
     if (mv.selfFrames?.length) this.fx.push({ img: this.add.image(m.x, m.y - 12, mv.selfFrames[0]).setScale(mv.selfScale ?? 1), frames: mv.selfFrames, t: 0, fps: 60, follow: m, lift: 12 });
     if (!mv.copy && !mv.random) this.lastUsed = mv;
@@ -1908,6 +1916,29 @@ export class Play extends Phaser.Scene {
   }
 
   // Close Combat: a punch every gap, each harder, while the button is held and nothing has knocked the user out of it.
+  // Bursts in progress: the next shot goes when its turn comes, wherever the user is aiming by then. Being hurt, stunned
+  // or knocked out ends the burst, and so does letting go of the pad's button (keys and mouse send the whole burst).
+  updateVolleys(dt) {
+    this.volleys = this.volleys.filter((v) => {
+      const { m, mv } = v;
+      v.t += dt;
+      if (!m.alive || m.state === 'hurt' || m.stun > 0 || m.ailment.hold) return false;
+      if (mv.stream) {
+        // a stream runs while the button is down and there is energy to feed it
+        if ((v.t > 0.12 && !this.holding(m, v.track, v.t)) || m.stamina <= 0) return false;
+        m.spend(mv.stream.upkeep * dt);
+      } else if (v.track === 'touch' && v.left < mv.volley.n && !this.holding(m, v.track, v.t)) return false;
+      if ((v.wait -= dt) > 0) return true;
+      v.wait += (mv.stream ?? mv.volley).gap;
+      v.left--;
+      const aim = this.aimOf(m, v.track);
+      m.dir = dirFromVec(aim.dx, aim.dy);
+      if (mv.kind === 'melee' && m.free) m.mute = m.act('Attack'); // a swing for each blow
+      this.fireMove(m, mv, { ...aim, track: v.track, one: true });
+      return v.left > 0;
+    });
+  }
+
   updateFlurries(dt) {
     this.flurries = this.flurries.filter((f) => {
       const { m, mv } = f, c = mv.flurry;
@@ -2303,6 +2334,7 @@ export class Play extends Phaser.Scene {
     this.updateAuras(dt);
     this.updateArcs(dt);
     this.updateFlurries(dt);
+    this.updateVolleys(dt);
     this.updateVanishes(dt);
     this.updateLines(dt);
     this.updateBits(dt);
