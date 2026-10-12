@@ -39,6 +39,7 @@ export class Mon {
     this.maxHp = o.hp ?? BASE_HP;
     this.hp = this.maxHp;
     this.maxStamina = NOTCH * NOTCHES;
+    this.snare = 0; // seconds it is still held fast in a web: it cannot walk or jump, but can still fight
     this.runT = 0; // seconds of running left from the notch last spent on it
     this.stamina = this.maxStamina;
     this.regenDelay = 0;
@@ -103,6 +104,7 @@ export class Mon {
     this.bar = scene.add.rectangle(x, y, 16, 2, 0x8fd14f).setOrigin(0, 0.5).setDepth(9001);
     this.stBg = scene.add.rectangle(x, y, 18, 3, 0x10141d).setDepth(9000);
     this.stBar = scene.add.rectangle(x, y, 16, 1, 0xf2c94c).setOrigin(0, 0.5).setDepth(9001);
+    this.stTicks = [1, 2, 3, 4].map(() => scene.add.rectangle(x, y, 1, 1, 0x10141d).setDepth(9002)); // between the five notches
     this.icons = []; // status and stat icons floating overhead
     this.ice = null;
     this.applyTint();
@@ -236,7 +238,7 @@ export class Mon {
       return;
     }
     if (this.ailment.reverse) { vx = -vx; vy = -vy; }
-    if ((!vx && !vy) || this.stuck || this.ailment.root || this.ingrain) {
+    if ((!vx && !vy) || this.stuck || this.ailment.root || this.ingrain || this.snare > 0) {
       if (this.state === 'walk') this.toIdle();
       return;
     }
@@ -263,7 +265,7 @@ export class Mon {
 
   // Leap in the given direction (or straight up).
   jump(vx, vy, speed) {
-    if (!this.grounded || this.stuck || this.ailment.root || this.ingrain || this.roost > 0 || this.beaming || this.stamina < JUMP_COST || this.scene.heavy?.(this)) return false;
+    if (!this.grounded || this.stuck || this.ailment.root || this.ingrain || this.snare > 0 || this.roost > 0 || this.beaming || this.stamina < JUMP_COST || this.scene.heavy?.(this)) return false;
     this.spend(JUMP_COST);
     const l = Math.hypot(vx, vy);
     this.air = { t: 0, vx: l ? (vx / l) * speed : 0, vy: l ? (vy / l) * speed : 0, ix: 0, iy: 0 };
@@ -384,7 +386,7 @@ export class Mon {
   }
 
   revive(x, y) {
-    Object.assign(this, { x, y, hp: this.maxHp, stamina: this.maxStamina, exhausted: false, runT: 0, kx: 0, ky: 0, invuln: 1, buried: 0, shield: 0, leech: null, ingrain: null, regen: null, sub: false, lx: x, ly: y, detect: 0, bide: null, bond: 0, bondTo: null, endure: 0, webbed: 0, torment: null, tether: null, dance: null, fuse: null, rep: null, grip: 0, stun: 0, roost: 0, chill: null, locked: null, acro: null, locks: {}, ramp: null, status: null, freezeImmune: 0 });
+    Object.assign(this, { x, y, hp: this.maxHp, stamina: this.maxStamina, exhausted: false, runT: 0, snare: 0, kx: 0, ky: 0, invuln: 1, buried: 0, shield: 0, leech: null, ingrain: null, regen: null, sub: false, lx: x, ly: y, detect: 0, bide: null, bond: 0, bondTo: null, endure: 0, webbed: 0, torment: null, tether: null, dance: null, fuse: null, rep: null, grip: 0, stun: 0, roost: 0, chill: null, locked: null, acro: null, locks: {}, ramp: null, status: null, freezeImmune: 0 });
     for (const b of Object.values(this.buffs)) b.t = 0;
     this.cancel();
     this.sprite.setAlpha(1);
@@ -448,6 +450,7 @@ export class Mon {
     }
     if (this.ramp) this.ramp.t -= dt;
     this.runT = Math.max(0, this.runT - dt);
+    this.snare = Math.max(0, this.snare - dt);
     for (const k in this.locks) if ((this.locks[k] -= dt) <= 0) delete this.locks[k];
     if (this.regen) {
       if (this.alive) this.heal(this.regen.hps * dt);
@@ -534,7 +537,7 @@ export class Mon {
       if (i < nf) (this.flakes[i] ??= this.scene.add.image(x, y, 'flake').setDepth(9002)).setPosition(x + Math.round((i - (nf - 1) / 2) * 9), y - 46).setVisible(true);
       else this.flakes[i].setVisible(false);
     }
-    const show = this.alive && this.hp < this.maxHp;
+    const show = this.alive && this.hp < this.maxHp && !this.cloaked; // (cloaked: its Double Team copies are out)
     this.barBg.setVisible(show).setPosition(x, y - 24);
     this.bar.setVisible(show).setPosition(x - 8, y - 24);
     this.bar.width = Math.max(1, Math.round((16 * this.hp) / this.maxHp));
@@ -549,7 +552,8 @@ export class Mon {
     const iced = this.alive && this.ailment.icon === 'ice';
     if (iced) (this.ice ??= this.scene.add.image(x, y, 'status').setAlpha(0.85)).setTexture('status', iconFrame('ice', now)).setPosition(x, y - 10).setDepth(11 + this.y);
     this.ice?.setVisible(iced);
-    const showSt = this.alive && this.team === 'p' && this.stamina < this.maxStamina;
+    const showSt = this.alive && this.team === 'p' && this.stamina < this.maxStamina && !this.cloaked;
+    this.stTicks.forEach((o, i) => o.setVisible(showSt).setPosition(x - 8 + Math.round(((i + 1) * 16) / NOTCHES), y - 20));
     this.stBg.setVisible(showSt).setPosition(x, y - 20);
     this.stBar.setVisible(showSt).setPosition(x - 8, y - 20);
     this.stBar.width = Math.max(1, Math.round((16 * Math.floor(this.stamina / NOTCH + 0.001)) / NOTCHES)); // whole notches only
@@ -569,6 +573,6 @@ export class Mon {
   }
 
   destroy() {
-    for (const o of [this.sprite, this.shadow, this.bar, this.barBg, this.stBar, this.stBg, this.ice, this.doll, ...this.icons, ...this.flakes]) o?.destroy();
+    for (const o of [this.sprite, this.shadow, this.bar, this.barBg, this.stBar, this.stBg, ...this.stTicks, this.ice, this.doll, ...this.icons, ...this.flakes]) o?.destroy();
   }
 }

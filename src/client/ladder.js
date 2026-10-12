@@ -2,7 +2,7 @@ import { MOVES } from '../moves.js';
 import { CHOICES } from '../evolutions.js';
 import { session, saveSession, LOADOUT_SIZE } from './session.js';
 import { ARENAS } from './modes.js';
-import { unlockPlan, formAt, evolveLevels } from './progress.js';
+import { unlockPlan, tmsFor, formAt, evolveLevels } from './progress.js';
 
 // The CPU ladder: every stage has a difficulty from 1 to 5, which sets both what the computer sends out there and how
 // well it plays. Fights against the computer alone can only be taken to stages that are open: the first two are from
@@ -48,6 +48,8 @@ export function wonOn(id) {
 // ---- what the computer brings to a level ----
 // How far along a CPU's mon is at each level: that decides the form it wears and which of its moves it has.
 const MON_LEVEL = [1, 1, 6, 12, 18, 26];
+// ...and how many of the moves it can be taught (TMs) it has been given
+const TM_COUNT = [0, 1, 3, 6, 10, 99];
 // How it plays. cool: its wait between attacks, times this. dodge: chance it jumps clear of a move it sees charging.
 // parry: chance it parries a shot or a swing coming at it. speed: how briskly it moves. aim: how far off (in px, at
 // most) its aim may be. run: it runs to close a long gap.
@@ -67,7 +69,8 @@ const pick = (list) => list[Math.floor(Math.random() * list.length)];
 export function cpuAt(species, level) {
   const lv = MON_LEVEL[level] ?? 12;
   const branch = CHOICES[species] && lv >= evolveLevels(species)[0] ? pick(CHOICES[species]) : undefined;
-  const known = unlockPlan(species, branch).filter((m) => m.level <= lv && MOVES[m.id]).map((m) => m.id);
+  const taught = tmsFor(species, branch).map((id) => [id, Math.random()]).sort((a, b) => a[1] - b[1]).slice(0, TM_COUNT[level] ?? 6).map(([id]) => id);
+  const known = [...unlockPlan(species, branch).filter((m) => m.level <= lv && MOVES[m.id]).map((m) => m.id), ...taught];
   const attacks = known.filter((id) => MOVES[id].cls === 'attack'), rest = known.filter((id) => MOVES[id].cls !== 'attack');
   const order = (list) => list.map((id) => [id, (MOVES[id].dmg ?? 0) * (level - 3) * 0.5 + Math.random() * 14]).sort((a, b) => b[1] - a[1]).map(([id]) => id);
   const moves = [...order(attacks).slice(0, LOADOUT_SIZE - 1), ...order(rest)];

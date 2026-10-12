@@ -1,10 +1,11 @@
-import { MOVES, movesOf } from '../moves.js';
+import { MOVES, movesOf, isTM } from '../moves.js';
 import { SPECIES } from '../sprites.js';
 import { EVOLUTIONS, CHOICES } from '../evolutions.js';
 import { typeOf } from './moveinfo.js';
 
 // How a mon grows. Fighting earns EXP, EXP makes levels, and levels do two things: they unlock the stronger half of
-// the mon's moves one by one, and at set levels the mon evolves (a new look only; see evolutions.js).
+// the moves the mon learns by itself, one by one (the moves it has to be taught are TMs: those are found after
+// fights and kept in session.js, and have nothing to do with its level), and at set levels the mon evolves (a new look only; see evolutions.js).
 // Nothing here remembers anything: the player's EXP lives in session.js, which asks these questions about it.
 
 export const LEVEL_CAP = 30;
@@ -29,6 +30,7 @@ const strength = (mv) => (mv.dmg ?? 0) + (mv.weight ?? mv.cost) * 0.25 + (mv.lin
   + (mv.drain ? 4 : 0) + (mv.heal ?? 0) * 0.2 + (mv.shield ? 6 : 0) + (mv.empower ? 6 : 0);
 const STEP_UP = 12; // how far each weaker relative pushes a move back
 const FIRST_UNLOCK = 2, LAST_UNLOCK = 20;
+const OPEN_MIN = 4; // a mon starts with at least this many of its moves, if it has them
 
 // the levels a list of moves unlocks at (see above)
 function schedule(ids) {
@@ -48,6 +50,7 @@ function schedule(ids) {
     group.slice(keep).forEach((id, i, rest) => locked.push({ id, turn: (i + 1) / (rest.length + 1) }));
   }
   locked.sort((a, b) => a.turn - b.turn || place[a.id] - place[b.id]);
+  while (open.size < OPEN_MIN && locked.length) open.add(locked.shift().id);
   const step = Math.min(3, Math.max(1, (LAST_UNLOCK - FIRST_UNLOCK) / Math.max(1, locked.length)));
   return [
     ...ids.filter((id) => open.has(id)).map((id) => ({ id, level: 1 })),
@@ -56,21 +59,24 @@ function schedule(ids) {
 }
 
 const plans = {};
-// [{ id, level }] for every move the species can learn: level 1 moves first in their usual order, then the locked
+// [{ id, level }] for every move the species learns by itself: level 1 moves first in their usual order, then the locked
 // ones in the order they unlock. `branch` is the evolution a branching species has taken (Eevee): that evolution's own
 // moves come on top, opening one by one from the level it evolved at, the weakest first.
 export function unlockPlan(species, branch) {
   const key = branch ? `${species}:${branch}` : species;
   if (plans[key]) return plans[key];
-  const own = movesOf(species).filter((id) => MOVES[id]);
+  const own = movesOf(species).filter((id) => MOVES[id] && !isTM(species, id));
   const plan = schedule(own);
   if (branch) {
-    const extra = movesOf(species, branch).filter((id) => MOVES[id] && !own.includes(id)).sort((a, b) => strength(MOVES[a]) - strength(MOVES[b]));
+    const extra = movesOf(species, branch).filter((id) => MOVES[id] && !movesOf(species).includes(id) && !isTM(species, id, branch)).sort((a, b) => strength(MOVES[a]) - strength(MOVES[b]));
     const from = evolveLevels(species)[0] ?? 1, step = Math.min(2, 16 / Math.max(1, extra.length));
     extra.forEach((id, i) => plan.push({ id, level: from + Math.floor(i * step) }));
   }
   return (plans[key] = plan);
 }
+
+// The moves a species can be taught: its TMs. (branch: as above)
+export const tmsFor = (species, branch) => [...new Set(movesOf(species, branch))].filter((id) => MOVES[id] && isTM(species, id, branch));
 
 export const unlockLevel = (species, id, branch) => unlockPlan(species, branch).find((m) => m.id === id)?.level ?? Infinity;
 

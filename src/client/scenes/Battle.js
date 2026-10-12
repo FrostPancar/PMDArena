@@ -14,7 +14,7 @@ import { BattleHud, ScoreStrip, callout, controlsCard, resultCard } from '../hud
 import { touch } from '../touch.js';
 import { MAPS } from '../../maps.js';
 import { onLadder, wonOn } from '../ladder.js';
-import { Menu, banner, panel, text, INK } from '../ui.js';
+import { Menu, banner, panel, text, INK, DEPTH } from '../ui.js';
 
 // The basic attacks kept on the keyboard next to the mouse: lunge, shot, double hit, charge up.
 const BASIC_KEYS = Object.fromEntries(Object.entries(KEYS).filter(([, anim]) => COMBAT[anim] || anim === 'Charge'));
@@ -58,6 +58,7 @@ export class Battle extends Play {
     this.need = fightsToWin(this.cfg);
     this.crewed = this.cfg.fighters.some((f) => f.crew);
     this.level = onLadder(this.cfg) ? this.cfg.level ?? null : null; // the CPU's difficulty, 1 to 5, in a fight on the ladder
+    this.aimG = this.reticle = null; // the pad's aim guide and its colour on this stage (made when first needed)
     this.autoWalk = null; // where a computer playing the player's own mon wants it to go (cfg.auto, for testing)
     this.moves = this.me.moves; // the four on the player's buttons: those of whichever of a crew is out
     this.sinceSnapshot = 0;
@@ -321,10 +322,66 @@ export class Battle extends Play {
 
   showResult(earned) {
     this.card = resultCard(this, this.me.species, earned, lookOf(this.me));
-    const done = () => { if (this.card) { this.card = null; this.leave(); } };
-    this.actions.push({ confirm: done, cancel: done });
+    // on from the card: to the evolution, if the fight brought one, and then out
+    const done = () => {
+      if (!this.card) return;
+      this.actions.pop(keys);
+      this.input.off('pointerdown', done);
+      for (const o of this.card) o.destroy();
+      this.card = null;
+      if (earned.evolved) this.showEvolution(lookOf(this.me), earned.evolved);
+      else this.leave();
+    };
+    const keys = this.actions.push({ confirm: done, cancel: done });
     this.input.on('pointerdown', done);
     this.time.delayedCall(9000, done);
+  }
+
+  // The mon that fought has grown into its next form: on a dark screen it flickers between the two, faster and faster,
+  // until a flash leaves the new one standing, with congratulations. Any button goes on.
+  showEvolution(from, to) {
+    const d = DEPTH + 30, cx = VIEW_W / 2, cy = VIEW_H / 2 + 6;
+    const frame = (id) => [`a-${SPECIES[id].anims.Idle.key}`, 0];
+    const parts = [
+      this.add.image(0, 0, 'px').setOrigin(0).setDisplaySize(VIEW_W, VIEW_H).setTint(0x06101c).setScrollFactor(0).setDepth(d),
+      text(this, cx, 34, 'What?', INK.gold).setOrigin(0.5, 0).setDepth(d + 2),
+      text(this, cx, 48, `${SPECIES[from].name} is evolving!`).setOrigin(0.5, 0).setDepth(d + 2),
+    ];
+    const glow = this.add.image(cx, cy, 'px').setDisplaySize(4, 4).setTint(0xffffff).setAlpha(0).setScrollFactor(0).setDepth(d + 1);
+    const mon = this.add.image(cx, cy, ...frame(from)).setScale(3).setScrollFactor(0).setDepth(d + 2);
+    parts.push(glow, mon);
+    this.card = parts;
+    let t = 0, next = 0.5, isNew = false, over = false;
+    const finish = () => {
+      over = true;
+      this.cameras.main.flash(260, 255, 255, 255);
+      mon.setTexture(...frame(to)).clearTint();
+      this.tweens.add({ targets: mon, scale: { from: 3.6, to: 3 }, duration: 320, ease: 'Back.easeOut' });
+      this.tweens.add({ targets: glow, alpha: { from: 0.5, to: 0 }, scaleX: 260, scaleY: 260, duration: 600 });
+      parts[1].setText('Congratulations!');
+      parts[2].setText(`${SPECIES[from].name} evolved into ${SPECIES[to].name}!`);
+      parts.push(text(this, cx, VIEW_H - 22, touch.on ? 'Tap to go on' : 'Enter to go on', INK.dim).setOrigin(0.5, 0).setDepth(d + 2));
+      const out = () => { if (this.card !== parts) return; this.card = null; this.leave(); };
+      this.time.delayedCall(500, () => { this.actions.push({ confirm: out, cancel: out }); this.input.on('pointerdown', out); });
+      this.time.delayedCall(12000, out);
+    };
+    const tick = this.time.addEvent({
+      delay: 30, loop: true,
+      callback: () => {
+        if (over) return tick.remove();
+        t += 0.03;
+        if (!ensureSpecies(this, to)) { t = Math.min(t, 0.4); return; } // its sprites are still on their way: hold the opening
+        mon.setTintFill(0xffffff);
+        if (t >= next) {
+          // each swap comes sooner than the last
+          isNew = !isNew;
+          mon.setTexture(...frame(isNew ? to : from));
+          next = t + Math.max(0.05, 0.42 * (1 - t / 3.2));
+        }
+        mon.setScale(3 + 0.25 * Math.sin(t * 14));
+        if (t >= 3.3) finish();
+      },
+    });
   }
 
   // Walking out mid-fight is giving up: it books a loss for a part of the EXP, and the relay tells the others,
@@ -603,19 +660,38 @@ export class Battle extends Play {
   // While a move's button is held on the pad, a guide on the ground shows where it will go: a dotted line from the
   // player and a ring where it lands (or how far it reaches).
   drawAim() {
-    const i = touch.on && this.live ? touch.aiming : -1, mv = MOVES[this.moves[i]];
+    // the move being aimed, or a held one whose button is down
+    const i = touch.on && this.live ? (touch.aiming >= 0 ? touch.aiming : touch.held.findIndex(Boolean)) : -1, mv = MOVES[this.moves[i]];
     if (!mv && !this.aimG) return;
     const g = (this.aimG ??= this.add.graphics().setDepth(7)).clear();
     if (!mv) return;
-    const p = this.player, a = this.aimOf(p, 'touch'), col = p.stamina >= mv.cost ? 0xfff3a0 : 0xff9a8a;
-    const ring = (x, y, r) => g.fillStyle(col, 0.14).fillEllipse(x, y, r * 2, r * 1.54).lineStyle(1, col, 0.95).strokeEllipse(x, y, r * 2, r * 1.54);
+    const p = this.player, a = this.aimOf(p, 'touch'), col = (this.reticle ??= this.reticleColor()), dark = 0x06101c;
+    const on = p.stamina >= mv.cost || p.state === 'windup' || p.state === 'bird' || !!p.beaming ? 1 : 0.4; // faint: no energy for it
+    // every mark is drawn dark first and then in colour over it, so it reads on any ground
+    const ring = (x, y, r) => g.lineStyle(3, dark, 0.55 * on).strokeEllipse(x, y, r * 2, r * 1.54).fillStyle(col, 0.16 * on).fillEllipse(x, y, r * 2, r * 1.54).lineStyle(1, col, on).strokeEllipse(x, y, r * 2, r * 1.54);
     if (mv.kind === 'self') return ring(p.x, p.y, 13);
-    if (mv.kind === 'aoe') return ring(p.x, p.y, mv.radius);
+    if (mv.kind === 'aoe') return ring(p.x, p.y, mv.grow?.max ?? mv.radius);
     const spot = mv.kind === 'mid' || mv.kind === 'blink' || mv.lob;
     const reach = spot ? Phaser.Math.Clamp(a.dist, 24, mv.range ?? 100) : mv.kind === 'melee' ? mv.reach + 14 + (mv.step ?? 0) : mv.range ?? mv.length ?? mv.dash ?? 100;
-    g.fillStyle(col, 0.9);
-    for (let d = 12; d < reach - 6; d += 8) g.fillRect(Math.round(p.x + a.dx * d) - 1, Math.round(p.y + a.dy * d) - 1, 2, 2);
+    for (let d = 12; d < reach - 6; d += 8) {
+      const x = Math.round(p.x + a.dx * d), y = Math.round(p.y + a.dy * d);
+      g.fillStyle(dark, 0.55 * on).fillRect(x - 2, y - 2, 4, 4).fillStyle(col, on).fillRect(x - 1, y - 1, 2, 2);
+    }
     ring(p.x + a.dx * reach, p.y + a.dy * reach, spot ? mv.burst ?? mv.radius ?? 12 : Math.max(5, mv.radius ?? 6));
+  }
+
+  // The aim guide's colour on this stage: whichever of a few strong colours stands furthest from the ground's own.
+  reticleColor() {
+    const c = document.createElement('canvas'), g = c.getContext('2d', { willReadFrequently: true });
+    c.width = c.height = 16;
+    let avg = [128, 128, 128];
+    try {
+      g.drawImage(this.bg.texture.getSourceImage(), 0, 0, 16, 16);
+      const px = g.getImageData(0, 0, 16, 16).data;
+      avg = [0, 1, 2].map((k) => { let sum = 0; for (let n = k; n < px.length; n += 4) sum += px[n]; return sum / 256; });
+    } catch { /* an image that cannot be read: the middle grey will do */ }
+    const far = (hex) => Math.hypot(((hex >> 16) & 255) - avg[0], ((hex >> 8) & 255) - avg[1], (hex & 255) - avg[2]);
+    return [0xfff35c, 0xff4fa0, 0x4ff3ff, 0xffffff, 0xff7a1a, 0xb4ff4f].reduce((best, hex) => (far(hex) > far(best) ? hex : best));
   }
 
   setMove() {}
@@ -723,7 +799,7 @@ export class Battle extends Play {
       }
     }
     for (const { mon, tag, name } of this.fighters) {
-      const x = Math.round(mon.x), y = Math.round(mon.y), shown = mon.alive && !mon.hidden;
+      const x = Math.round(mon.x), y = Math.round(mon.y), shown = mon.alive && !mon.hidden && !mon.cloaked; // (cloaked: among its Double Team copies)
       tag?.setVisible(shown).setPosition(x, y - 30);
       name?.setVisible(shown).setPosition(x, y - 33);
       mon.sprite.setAlpha(mon.alive ? 1 : 0.45); // down and out

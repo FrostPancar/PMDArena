@@ -10,6 +10,8 @@ import { SPECIES } from '../../sprites.js';
 import { fetchStages, stagesNote } from '../stages.js';
 import { touch } from '../touch.js';
 import { INK, text, icon, panel, choose } from '../ui.js';
+import { VERSION } from '../../version.js';
+import { VIEW_H } from '../../scene.js';
 
 export const GAME_TITLE = 'PMD', GAME_TAGLINE = 'Dojo Battles';
 
@@ -37,6 +39,7 @@ export class Title extends Phaser.Scene {
     panel(this, 98 - 54, y - 5, 108, 22, 'dim');
     this.tweens.add({ targets: [icon(this, 98 - 32, y + 6, 'start'), text(this, 98 - 16, y, touch.on ? 'Tap to start' : 'Press Enter')], alpha: 0.25, duration: 520, yoyo: true, repeat: -1 });
     this.note = text(this, VIEW_W - 5, 4, '', INK.dim).setOrigin(1, 0);
+    text(this, VIEW_W - 5, VIEW_H - 14, VERSION, INK.dim).setOrigin(1, 0);
 
     if (hasSave) text(this, 98, y + 21, `${session.profile.name}  ${SPECIES[formOf()].name} Lv ${levelOf()}`, INK.sky).setOrigin(0.5, 0);
     const actions = new Actions(this);

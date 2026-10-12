@@ -27,6 +27,8 @@ const seeded = (seed) => () => {
 };
 const BEAM_SPEED = 420, BEAM_STEP = 5; // how fast a beam travels outward (px/s), and the spacing of the points along it
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V']; // the pixel font has no digits
+const DETECT_STUN = 0.7; // seconds a foe that hit a Detect is stunned
+const WEB_SNARE = 2; // seconds a web holds what steps into it
 const LUNGE_REACH = 14; // how much further out a lunging melee move lands
 const DART = 9; // a shove of v px/s carries a mon v / 9 px before it dies away (see Mon.update), so this times the distance is the shove
 export const COMBAT = {
@@ -519,7 +521,8 @@ export class Play extends Phaser.Scene {
     // a move that costs more each time it is repeated
     const reps = mv.repeat && m.rep?.mv === mv ? m.rep.n : 0, cost = mv.cost * (1 + (mv.repeat ?? 0) * reps);
     if (!free && m.stamina < cost) return false;
-    if (mv.sub && (m.sub || m.hp <= m.maxHp * mv.hpCost)) return false; // already a doll, or not enough health to make one
+    if (mv.sub && (m.sub || m.hp <= m.maxHp * mv.hpCost)) return false;
+    if (mv.dream && !this.targets.some((t) => t.team !== m.team && t.alive && t.status?.kind === 'sleep')) return false; // nobody is asleep to feed on // already a doll, or not enough health to make one
     if (mv.element && m.locks[mv.element] > 0) return false; // locked out of that element for now
     if (m.beaming || ((mv.fly || mv.leap) && (m.roost > 0 || this.heavy(m)))) return false; // busy with a beam, or grounded
     if (mv.repeat) m.rep = { mv, n: reps + 1, t: 4 };
@@ -562,6 +565,7 @@ export class Play extends Phaser.Scene {
       return mv.buff.stat === 'random' ? this.rand() < 0.3 : m.mul(mv.buff.stat) === 1;
     }
     if (mv.sucker) return d < mv.range && this.player.state === 'windup';
+    if (mv.dream) return this.targets.some((t) => t.team !== m.team && t.alive && t.status?.kind === 'sleep');
     if (mv.catch) return this.shots.some((q) => q.owner.team !== m.team && Math.hypot(q.x - m.x, q.y - m.y) < 110); // only with something to catch
     if (mv.kind === 'dash') return d < mv.dash;
     if (mv.kind === 'hold') return d < 120;
@@ -681,7 +685,7 @@ export class Play extends Phaser.Scene {
       } else if (mv.lob) {
         const a = w?.aim ?? this.aimOf(m, 'pointer'), d = Phaser.Math.Clamp(a.dist, 30, mv.range);
         ring(m.x + a.dx * d, m.y + a.dy * d, mv.burst, color, alpha);
-      } else if (mv.kind === 'aoe' && w) ring(m.x, m.y, mv.radius, color, alpha);
+      } else if (mv.kind === 'aoe' && w && !mv.dream) ring(m.x, m.y, mv.radius, color, alpha);
       else if (mv.kind === 'melee' && w) {
         const s = this.landSpot(m, mv, this.aimOf(m, w.track));
         ring(s.hx, s.hy, mv.radius, color, 0.5);
@@ -800,13 +804,14 @@ export class Play extends Phaser.Scene {
     if (!mv.ramp) return 1;
     const n = m.ramp && m.ramp.mv === mv && m.ramp.t > 0 ? m.ramp.n : 0;
     m.ramp = { mv, n: Math.min(n + 1, 4), t: mv.combo ?? 3 };
-    if (n && mv.combo) this.popup(m, `COMBO ${ROMAN[n + 1]}`);
+    if (n && mv.combo) this.popup(m, `COMBO ${ROMAN[n + 1]}`, this.registry.get('callouts') !== false ? 12 : 0); // clear of the move's own name
     return 1 + mv.ramp * n;
   }
 
   // A word that pops up over a mon and fades.
-  popup(m, text) {
-    const tag = this.add.image(Math.round(m.x), Math.round(m.y) - 40, labelTexture(this, text)).setDepth(9500);
+  // (lift: how much higher than usual, for a second label over the same mon)
+  popup(m, text, lift = 0) {
+    const tag = this.add.image(Math.round(m.x), Math.round(m.y) - 40 - lift, labelTexture(this, text)).setDepth(9500);
     this.tweens.add({ targets: tag, y: tag.y - 10, alpha: 0, delay: 400, duration: 300, onComplete: () => tag.destroy() });
   }
 
@@ -848,6 +853,19 @@ export class Play extends Phaser.Scene {
       const foe = this.nearestFoe(m, m.x, m.y, mv.range);
       if (!foe || !this.sight(m, foe)) return this.spark(m.x, m.y - 12);
     }
+    if (mv.dream) {
+      // wherever they are, every sleeping foe is fed on: the screen darkens, each takes the hit, and the user is healed by it
+      const prey = this.targets.filter((t) => t.team !== m.team && t.alive && t.status?.kind === 'sleep');
+      if (!prey.length) return this.spark(m.x, m.y - 12);
+      this.shadeT = this.shadeDur = 0.9;
+      const power = mv.dmg * m.power * m.mul('atk') * (m.charged ? 2 : 1);
+      if (m.charged) m.setCharged(false);
+      for (const t of prey) {
+        this.fx.push({ img: this.add.image(Math.round(t.x), Math.round(t.y) - 8, mv.frames[0]).setDepth(60 + t.y), frames: mv.frames, t: 0, fps: mv.fps ?? 30 });
+        this.after(250, () => t.alive && this.hitCircle(m, t.x, t.y, 6, power, { ...mv, radius: 6 }));
+      }
+      return;
+    }
     if (mv.sucker) {
       // only lands on a foe caught charging a move: the user is on it in an instant. Otherwise it fizzles and costs double.
       const foe = this.targets.filter((t) => t.team !== m.team && t.alive && t.state === 'windup' && Math.hypot(t.x - m.x, t.y - m.y) <= mv.range)
@@ -876,7 +894,7 @@ export class Play extends Phaser.Scene {
     const hpK = mv.hpScale ? 0.4 + (0.8 * m.hp) / m.maxHp : 1;
     // Reversal, Flail: the worse hurt, the harder they hit
     const low = mv.lowHp ? 1 + mv.lowHp * (1 - m.hp / m.maxHp) : 1;
-    const dmg = (mv.dmg ?? 0) * m.power * m.mul('atk') * (big ? 2 : 1) * this.rampOf(m, mv) * grown * hpK * low;
+    const dmg = (mv.dmg ?? 0) * m.power * m.mul('atk') * (big ? 2 : 1) * this.rampOf(m, mv) * grown * hpK * low * (mv.spdScale ? m.mul('spd') : 1); // (Electro Ball hits harder the faster its user)
     if (mv.selfDebuff) m.addBuff(mv.selfDebuff.stat, mv.selfDebuff.mul, mv.selfDebuff.time);
     if (big) m.setCharged(false);
     const angle = Math.atan2(dy, dx);
@@ -914,11 +932,16 @@ export class Play extends Phaser.Scene {
         foe = this.targets.find((t) => t.team !== m.team && t.alive && !t.under && !t.airborne && Math.hypot(t.x - x, (t.y - y) * 1.3) < 11) ?? null;
         if (foe || !this.walkable(x, y)) { end = d; wall = !foe; }
       }
-      this.whips.push({ m, x: m.x + dx * end, y: m.y + dy * end, t: 0.22, color: mv.tint ?? 0x6ee06e });
+      this.whips.push({ m, x: m.x + dx * end, y: m.y + dy * end, t: mv.meet ? 0.32 : 0.22, color: mv.tint ?? 0x6ee06e });
       if (foe) {
         if (this.hitCircle(m, foe.x, foe.y, 8, dmg, mv) && foe.alive && !foe.ingrain) {
           foe.kx = foe.ky = 0;
-          this.arcs.push({ m: foe, x0: foe.x, y0: foe.y, to: this.blinkSpot(m, { range: 20 }, { dx, dy, dist: 20 }), t: 0, dur: 0.2, h: 0 });
+          if (mv.meet) {
+            // the vine hauls both ends in: user and foe meet in the middle
+            const half = Math.hypot(foe.x - m.x, foe.y - m.y) / 2;
+            this.arcs.push({ m: foe, x0: foe.x, y0: foe.y, to: this.blinkSpot(m, { range: half + 9 }, { dx, dy, dist: half + 9 }), t: 0, dur: 0.22, h: 0 });
+            this.arcs.push({ m, x0: m.x, y0: m.y, to: this.blinkSpot(m, { range: Math.max(0, half - 9) }, { dx, dy, dist: half }), t: 0, dur: 0.22, h: 0 });
+          } else this.arcs.push({ m: foe, x0: foe.x, y0: foe.y, to: this.blinkSpot(m, { range: 20 }, { dx, dy, dist: 20 }), t: 0, dur: 0.2, h: 0 });
         }
       } else if (wall && end > 26) this.arcs.push({ m, x0: m.x, y0: m.y, to: this.blinkSpot(m, { range: end - 8 }, { dx, dy, dist: end }), t: 0, dur: 0.2, h: 0 });
       return;
@@ -954,7 +977,7 @@ export class Play extends Phaser.Scene {
       burst();
       Object.assign(m, this.blinkSpot(m, mv, aim));
       burst();
-      this.hitCircle(m, m.x, m.y, mv.radius, dmg, mv);
+      if (mv.dmg) this.hitCircle(m, m.x, m.y, mv.radius, dmg, mv); // (Teleport only moves)
       return;
     }
 
@@ -988,7 +1011,7 @@ export class Play extends Phaser.Scene {
       // each link of a chain is quicker than the last
       const n = mv.chain && m.acro?.mv === mv ? m.acro.n : 0, dur = mv.dur * 0.8 ** n, v = mv.dash / dur;
       m.acro = null;
-      if (n) this.popup(m, ROMAN[n + 1]);
+      if (n) this.popup(m, ROMAN[n + 1], this.registry.get('callouts') !== false ? 12 : 0);
       this.dashes.push({ m, vx: dx * v, vy: dy * v, t: 0, hit: false, mv, dmg, dur, n, x0: m.x, y0: m.y });
       return;
     }
@@ -1047,7 +1070,8 @@ export class Play extends Phaser.Scene {
       }
       if (mv.shield) m.shield = mv.shield * k;
       // a ritual's buff grows with its stacks; stances and fields hand theirs out for as long as they last
-      if (mv.buff && !mv.stance && !field) m.addBuff(mv.buff.stat, mv.ritual ? 1 + mv.ritual.per * (aim.stacks ?? 1) : mv.buff.mul, mv.buff.time * k);
+      const boost = mv.buff && (mv.ritual ? 1 + mv.ritual.per * (aim.stacks ?? 1) : mv.buff.mul);
+      if (mv.buff && !mv.stance && !field) { m.addBuff(mv.buff.stat, boost, mv.buff.time * k); if (mv.buff.also) m.addBuff(mv.buff.also, boost, mv.buff.time * k); } // (also: a second stat raised the same)
       if (mv.ingrain) m.ingrain = { t: mv.ingrain.time, hps: mv.ingrain.hps };
       if (mv.dark) { this.shadeT = this.shadeDur = mv.dark; }
       if (mv.decoys) this.spawnDecoys(m, mv.decoys);
@@ -1073,6 +1097,8 @@ export class Play extends Phaser.Scene {
           if (!m.alive) return;
           m.heal(mv.heal * k);
           this.healFx(m);
+          // a pulse mends the user's side all around it as well
+          if (mv.healAllies) for (const t of [this.player, ...this.npcs]) if (t !== m && t.team === m.team && t.alive && Math.hypot(t.x - m.x, t.y - m.y) <= mv.healAllies) { t.heal(mv.heal * k); this.healFx(t); }
         });
       }
       return;
@@ -1248,6 +1274,8 @@ export class Play extends Phaser.Scene {
   }
 
   updateDecoys(dt) {
+    for (const m of [this.player, ...this.npcs]) m.cloaked = false;
+    for (const d of this.decoys) d.owner.cloaked = true; // nothing over its head gives the real one away while its copies are out
     this.decoys = this.decoys.filter((d) => {
       const { m, owner } = d;
       // gone when hit, when time is up, or the moment the real one takes a hit
@@ -1257,6 +1285,11 @@ export class Play extends Phaser.Scene {
         return false;
       }
       d.hp0 = Math.max(d.hp0, owner.hp);
+      // a copy looks like the real one in every way: the same boosts, the same condition
+      m.buffs = Object.fromEntries(Object.entries(owner.buffs).map(([k, b]) => [k, { ...b }]));
+      const kind = owner.status?.kind ?? null;
+      if (kind !== (m.status?.kind ?? null)) { m.status = kind ? { kind, t: 9 } : null; m.applyTint(); }
+      if (m.charged !== owner.charged) { m.charged = owner.charged; m.applyTint(); }
       if ((d.turn -= dt) <= 0) {
         // a new heading every so often, back toward the owner if it has strayed
         d.turn = 0.25 + this.rand() * 0.5;
@@ -1474,6 +1507,7 @@ export class Play extends Phaser.Scene {
 
   // An ice move leaves a stack of chill; the third one freezes.
   chillOn(t) {
+    if (t.status?.kind === 'freeze') return; // already frozen solid: nothing to add
     const n = (t.chill?.n ?? 0) + 1;
     if (n < 3) { t.chill = { n, t: 6 }; return; } // shown as snowflakes over its head
     t.chill = null;
@@ -1756,6 +1790,20 @@ export class Play extends Phaser.Scene {
         }
       }
       for (let k = 0; k < 6; k++) { const d = noise(k) * len; sq(d, (noise(k + 9) - 0.5) * (w + d * cone * 3), 1, c2); } // embers
+    } else if (L.style === 'mud') {
+      // clods of different sizes tumbling down the line, each with a wet highlight, and drips falling off underneath
+      const flow = t * 150;
+      for (let pass = 0; pass < 3; pass++) {
+        for (let d = 2; d <= len; d += 5) {
+          const k = Math.floor((d - flow) / 5), lump = Math.sin(k * 12.9898) * 43758.5453, u = lump - Math.floor(lump);
+          const rad = w * (0.38 + 0.34 * u), q = at(d), off = (u - 0.5) * 3;
+          const x = Math.round(q.x + q.px * off), y = Math.round(q.y + q.py * off);
+          if (pass === 0) g.fillStyle(c0, 1).fillCircle(x, y, rad + 1.5);
+          else if (pass === 1) g.fillStyle(c1, 1).fillCircle(x, y, rad);
+          else if (u > 0.45) g.fillStyle(c2, 1).fillRect(x - 1, y - Math.round(rad * 0.5), 2, 1);
+        }
+      }
+      for (let k = 0; k < 6; k++) { const d = noise(k + 11) * len, q = at(d), fall = ((t * 3 + k * 0.37) % 1) * 9; g.fillStyle(c1, 1 - fall / 9).fillRect(Math.round(q.x), Math.round(q.y + w * 0.5 + fall), 1, 2); }
     } else {
       const pulse = 1 + 0.12 * Math.sin(t * 30);
       const offAt = (d) => (L.style === 'wave' ? Math.sin(d * 0.22 - t * 18) * 2.2 : L.style === 'jag' ? ((Math.floor(d / 5) + Math.floor(t * 20)) % 2 ? 1.5 : -1.5) : 0);
@@ -1964,6 +2012,8 @@ export class Play extends Phaser.Scene {
     const d = Math.hypot(by.x - m.x, by.y - m.y) || 1, x = by.x + ((by.x - m.x) / d) * 16, y = by.y + ((by.y - m.y) / d) * 16;
     if (this.walkable(x, y)) { m.x = x; m.y = y; }
     m.face(by.x, by.y);
+    // and whoever swung at thin air is left open for a moment
+    if (by.alive) { by.stun = Math.max(by.stun, DETECT_STUN); by.kx = by.ky = 0; this.popup(by, 'STUNNED'); }
   }
 
   // Destiny Bond: the blow that felled its user lands on whoever struck it.
@@ -2227,12 +2277,18 @@ export class Play extends Phaser.Scene {
       if (z.follow) { z.x = z.follow.x; z.y = z.follow.y; img.setPosition(Math.round(z.x), Math.round(z.y) - z.lift).setDepth(40 + z.y); }
       z.t += dt;
       if (mv.web) {
-        // slows whoever of the other side stands in it, and they cannot run
+        // the first foe to step in is held fast for a moment (an electric web paralyses it too), and then the web is spent
         const now = new Set();
         for (const t of this.targets) {
           if (!t.alive || t.airborne || t.under || Math.hypot(t.x - z.x, (t.y - z.y) * 1.3) > mv.radius) continue;
           now.add(t);
-          if (t.team !== z.owner.team) { t.addBuff('spd', 0.5, 0.2); t.webbed = 0.2; }
+          if (t.team === z.owner.team || z.sprung) continue;
+          z.sprung = true;
+          z.t = Math.max(z.t, mv.linger - WEB_SNARE); // it lasts as long as its catch does
+          if (!t.remote) { t.snare = WEB_SNARE; t.kx = t.ky = 0; }
+          t.webbed = WEB_SNARE;
+          if (mv.status) this.inflict(t, mv.status.kind);
+          this.popup(t, 'SNARED');
         }
         // the web shivers when anything steps onto it or pulls free
         if (now.size !== z.inside.size || [...now].some((t) => !z.inside.has(t))) z.wob = 1;
@@ -2283,7 +2339,8 @@ export class Play extends Phaser.Scene {
       for (const t of z.inside) { const d = Math.hypot(t.x - x, t.y - y); if (d < 16) { x += (t.x - x) * 0.45 * (1 - d / 16); y += (t.y - y) * 0.45 * (1 - d / 16); } }
       return [x, y];
     };
-    g.lineStyle(1, 0xffffff, 0.75 * fade);
+    // (an electric web is its own colour, and flickers)
+    g.lineStyle(1, z.mv.webTint ?? 0xffffff, (z.mv.webTint && Math.floor(z.t * 14) % 3 === 0 ? 1 : 0.75) * fade);
     for (let i = 0; i < n; i++) g.lineBetween(z.x, z.y, ...knot(i, 1));
     for (const k of [0.36, 0.68, 1]) {
       for (let i = 0; i < n; i++) {
@@ -2436,7 +2493,16 @@ export class Play extends Phaser.Scene {
         }
       }
       m.slide(d.vx * dt, d.vy * dt);
+      if (d.mv.blaze && Math.hypot(m.x - (d.lx ?? d.x0), m.y - (d.ly ?? d.y0)) >= 14) {
+        // a patch of fire every few steps, burning whoever of the other side stands in it for a while
+        d.lx = m.x; d.ly = m.y;
+        const tm = { ...MOVES.fireSpin, id: d.mv.id, tag: 'strike', radius: 10, linger: 1.8, status: { kind: 'burn', chance: 0.25 }, bury: 0 };
+        const img = this.add.image(Math.round(m.x), Math.round(m.y), tm.frames[0]).setOrigin(0.5, 0.9).setScale(0.42).setDepth(40 + m.y);
+        this.zones.push({ img, mv: tm, owner: m, x: m.x, y: m.y, lift: 0, t: 0, next: 0.3, hits: 0, dmg: 5 * m.power });
+      }
       if (!d.returning && this.hitCircle(m, m.x, m.y, d.mv.radius, d.dmg, d.mv)) {
+        // a reckless charge hurts its user too, by a share of the blow, the first time it lands
+        if (d.mv.recoilHit && !d.hit && !m.remote) m.hp = Math.max(1, m.hp - d.dmg * d.mv.recoilHit);
         d.hit = true;
         if (d.mv.back) {
           // connected: straight back to where it set off from
@@ -2591,6 +2657,11 @@ export class Play extends Phaser.Scene {
         s.done.clear();
         s.life = s.life0 * 2;
         return true;
+      }
+      if (!hit && s.mv?.missPillar && this.walkable(s.x, s.y)) {
+        // flew its whole way and met nobody: the boulder stays where it stops, as cover
+        const img = this.add.image(Math.round(s.x), Math.round(s.y) + 4, s.mv.frames[0]).setOrigin(0.5, 0.85).setDepth(10 + s.y).setScale(s.mv.scale ?? 1);
+        this.pillars.push({ x: s.x, y: s.y, r: 11, t: s.mv.missPillar, img });
       }
       if (!hit && s.mv?.burst) {
         // came down without hitting anyone: it bursts where it lands

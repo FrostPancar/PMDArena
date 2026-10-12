@@ -303,8 +303,8 @@ export class Hub extends Phaser.Scene {
   // The pillar: what it offers depends on who is with you.
   async touchPillar() {
     const d = new Dialog(this, this.actions, this.hints);
-    if (loadoutOf().length < LOADOUT_SIZE) {
-      await d.say(`The pillar stays dim. You need ${LOADOUT_SIZE} moves ready before it will take you anywhere.`);
+    if (!loadoutOf().length) {
+      await d.say('The pillar stays dim. You need a move ready before it will take you anywhere.');
       d.close();
       return this.openMoves();
     }

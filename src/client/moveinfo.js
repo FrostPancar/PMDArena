@@ -2,23 +2,23 @@ import { MOVES, STATUS, TAGS, KIND_LABEL } from '../moves.js';
 
 // What the move menu and the battle HUD say about a move: its elemental type and a plain-words read of its data.
 const TYPE_MOVES = {
-  grass: 'razorLeaf leafStorm leafBlade magicalLeaf powerWhip grassKnot gigaDrain bulletSeed petalDance stunSpore energyBall vineWhip woodHammer leechSeed petalBlizzard aromatherapy seedBomb needleArm ingrain sleepPowder cottonGuard',
-  fire: 'flameBurst fireSpin fireFang ember fireBlast flamethrower willOWisp eruption overheat incinerate lavaPlume blastBurn firePunch',
+  grass: 'solarBeam razorLeaf leafStorm leafBlade magicalLeaf powerWhip grassKnot gigaDrain bulletSeed petalDance stunSpore energyBall vineWhip woodHammer leechSeed petalBlizzard aromatherapy seedBomb needleArm ingrain sleepPowder cottonGuard',
+  fire: 'blazeKick flareBlitz flameBurst fireSpin fireFang ember fireBlast flamethrower willOWisp eruption overheat incinerate lavaPlume blastBurn firePunch',
   water: 'bubble waterSpout waterPulse hydroBurst hydroPump whirlpool crabhammer bubbleBeam razorShell surf brine waterfall waterGun rainDance aquaRing lifeDew',
-  psychic: 'confusion psybeam psychic hypnosis futureSight psychoCut kinesis rest agility barrier gravity reflect lightScreen',
-  dark: 'bite nightSlash darkPulse nightDaze snarl taunt suckerPunch torment',
+  psychic: 'teleport healPulse dreamEater confusion psybeam psychic hypnosis futureSight psychoCut kinesis rest agility barrier gravity reflect lightScreen',
+  dark: 'knockOff bite nightSlash darkPulse nightDaze snarl taunt suckerPunch torment',
   ghost: 'shadowBall shadowClaw shadowSneak hex confuseRay nightShade phantomForce destinyBond spite',
   fairy: 'drainingKiss moonblast moonlight',
-  fighting: 'drainPunch hammerArm wakeUpSlap focusBlast focusPunch auraSphere forcePalm crossChop dynamicPunch machPunch seismicToss circleThrow closeCombat detect brickBreak reversal',
-  electric: 'thunderFang thunderbolt discharge thunder chargeBeam shockWave thunderShock charge',
+  fighting: 'counter drainPunch hammerArm wakeUpSlap focusBlast focusPunch auraSphere forcePalm crossChop dynamicPunch machPunch seismicToss circleThrow closeCombat detect brickBreak reversal',
+  electric: 'electroweb zapCannon electroBall thunderFang thunderbolt discharge thunder chargeBeam shockWave thunderShock charge',
   bug: 'xScissor bugBite spiderWeb pinMissile megahorn furyCutter attackOrder defendOrder healOrder bugBuzz uTurn signalBeam stringShot stickyWeb',
   dragon: 'dragonBreath dragonPulse outrage dualChop dragonClaw dragonRush dracoMeteor dragonDance dragonTail',
   flying: 'gust whirlwind airSlash aerialAce featherDance tailwind roost braveBird fly bounce acrobatics hurricane',
-  ground: 'bonemerang earthquake mudBomb sandTomb magnitude',
+  ground: 'mudShot spikes boneRush bonemerang earthquake mudBomb sandTomb magnitude',
   rock: 'rockSlide stoneEdge rockBlast rockTomb rockWrecker stealthRock rockThrow powerGem rollout',
-  poison: 'poisonSting sludgeBomb poisonJab acid crossPoison sludgeWave toxicSpikes',
-  steel: 'metalClaw flashCannon gyroBall meteorMash ironDefense bulletPunch magnetPull',
-  ice: 'iceArmor iceFang iceShard blizzard avalanche iceBall iceBeam auroraBeam haze icicleCrash',
+  poison: 'venoshock poisonPowder poisonSting sludgeBomb poisonJab acid crossPoison sludgeWave toxicSpikes',
+  steel: 'steelWing ironTail metalClaw flashCannon gyroBall meteorMash ironDefense bulletPunch magnetPull',
+  ice: 'auroraVeil icyWind iceArmor iceFang iceShard blizzard avalanche iceBall iceBeam auroraBeam haze icicleCrash',
 };
 const TYPE_OF = {};
 for (const [type, ids] of Object.entries(TYPE_MOVES)) for (const id of ids.split(' ')) TYPE_OF[id] = type;
@@ -48,8 +48,8 @@ const secs = (n) => `${+n.toFixed(1)}s`;
 // number of notches, and always at least one.
 export const METERS = {
   power: { notches: 16, full: 36, color: '#ff7a6a' },
-  stamina: { notches: 10, full: 100, color: '#f2c94c' }, // in half notches of the energy bar
-  range: { notches: 16, full: 330, color: '#8fdcff' },
+  stamina: { notches: 5, full: 100, color: '#f2c94c' }, // the energy bar itself: a move lights what it costs, half notches too
+  speed: { notches: 16, full: 1, color: '#8fdcff' },
 };
 export const litNotches = (key, value) => {
   const m = METERS[key];
@@ -57,27 +57,55 @@ export const litNotches = (key, value) => {
 };
 const reachOf = (mv) => mv.range ?? mv.length ?? mv.dash ?? (mv.kind === 'aoe' ? mv.grow?.max ?? mv.radius : mv.kind === 'melee' ? mv.reach + mv.radius : null);
 
-// { type, role, kind, how, power, cost, charge (seconds), reach (px, or null), reachLabel, notes: [...] }
+// How to answer a move that is not a plain strike, in a few words.
+const ANSWER = {
+  grab: 'Grab: beats parry and shield.',
+  heavy: 'Heavy: a parry only halves it.',
+  sweep: 'Sweep: cannot be jumped.',
+  curse: 'Curse: beats parry, jump and shield.',
+};
+// The picture a move's kind is shown with in the move menu (art.js draws kind<Name>).
+export const DELIVERY_LABEL = { melee: 'Melee', mid: 'Mid range', projectile: 'Ranged', beam: 'Beam', aoe: 'Area', self: 'Self', dash: 'Dash', hold: 'Hold', blink: 'Teleport' };
+const DELIVERY = { melee: 'melee', mid: 'mid', auto: 'mid', projectile: 'projectile', homing: 'projectile', slight: 'projectile', beam: 'beam', aoe: 'aoe', self: 'self', dash: 'dash', hold: 'hold', blink: 'blink' };
+// Type colours, for tinting things by a move's type.
+export const TYPE_TINT = {
+  normal: 0xa8a878, fire: 0xf08030, water: 0x6890f0, electric: 0xe8c028, grass: 0x78c850, ice: 0x78c8c8, fighting: 0xc03028, poison: 0xa040a0, ground: 0xd0a850,
+  flying: 0xa890f0, psychic: 0xf85888, bug: 0xa8b820, rock: 0xb8a038, ghost: 0x705898, dragon: 0x7038f8, dark: 0x705848, steel: 0xa0a0c0, fairy: 0xee99ac,
+};
+
+// How quick a move is, 0..1: the less time between pressing it and it landing on a foe a little way off, the higher.
+// That time is its wind-up plus what its delivery takes: a lunge, a shot's flight, the wait before a blast lands.
+function quickness(mv) {
+  const shot = mv.kind === 'projectile' || mv.kind === 'homing' || mv.kind === 'slight';
+  const travel = mv.kind === 'self' ? 0
+    : mv.kind === 'melee' ? (mv.jab || mv.step > 16 ? 0 : 0.1)
+      : shot ? 100 / (mv.speed || 150)
+        : mv.kind === 'mid' || mv.kind === 'auto' || mv.kind === 'aoe' ? ((mv.hitDelay ?? 120) + (mv.appear ?? 0)) / 1000 + (mv.fall?.time ?? 0)
+          : 0.1;
+  return Math.max(0.06, 1 - ((mv.charge ?? 0) + travel) / 1.2);
+}
+
+// { type, role, held, delivery, kind, how, power, cost, charge (seconds), speed (0..1), reach (px, or null), notes: [...] }
 export function describe(id) {
   const mv = MOVES[id];
   const n = [];
-  if (mv.tag && mv.tag !== 'strike') n.push(TAGS[mv.tag].how);
+  if (mv.tag && mv.tag !== 'strike') n.push(ANSWER[mv.tag]);
   if (mv.random) n.push('Uses some other move at random.');
-  if (mv.kind === 'beam') n.push(`Burns ${+(mv.upkeep / 20).toFixed(1)} energy a second while held. You walk slowly, and it destroys enemy shots it crosses. Two beams that meet lock in a clash: press any move button to push.`);
+  if (mv.kind === 'beam') n.push(`Costs ${+(mv.upkeep / 20).toFixed(1)} energy a second. Destroys shots it crosses.`, 'Beams that meet clash: mash a move to push.');
   if (mv.cone) n.push('A short cone that turns fast.');
   if (mv.push) n.push('Shoves foes back, and you too.');
   if (mv.bend) n.push('Goes to the point you aim at, then bends toward the nearest foe.');
   if (mv.ghost) n.push('Passes through Light Screens.');
-  if (mv.catch) n.push('Hold to stop enemy shots inside the circle in mid-air; let go to throw them where you aim. It does no damage of its own.');
-  if (mv.reverse) n.push('Turns the nearest enemy shot in range back on its owner. With none about it strikes the nearest foe.');
-  if (mv.steer) n.push('Hold to bend your latest shot toward your aim.');
+  if (mv.catch) n.push('Catches enemy shots in the circle; let go to throw them back.');
+  if (mv.reverse) n.push('Turns the nearest enemy shot back on its owner.');
+  if (mv.steer) n.push('Bends your latest shot toward your aim.');
   if (mv.wall === 'reflect') n.push('Leaves a wall for 6s that foes cannot walk or dash through.');
-  if (mv.wall === 'screen') n.push('Leaves a wall for 6s that stops enemy shots and beams; light shots bounce back as yours. Your own beam splits in three through it.');
+  if (mv.wall === 'screen') n.push('A wall for 6s that stops shots and beams; light shots bounce back.', 'Your own beam splits in three through it.');
   if (mv.hideFor) n.push(`The foe does not see where it will land for the first ${secs(mv.hideFor)}.`);
   if (mv.seek) n.push('Curves toward the nearest foe ahead. If it is parried you are left stunned.');
-  if (mv.fly) n.push(`Hold to fly for up to ${secs(mv.fly)}, out of reach, and come down with the hit. Thunder, Hurricane and Gravity bring a flyer down.`);
+  if (mv.fly) n.push(`Fly out of reach for up to ${secs(mv.fly)}, then dive.`, 'Thunder, Hurricane and Gravity bring you down.');
   if (mv.leap) n.push('You leap to the spot, out of reach on the way.');
-  if (mv.chain) n.push(`If it connects, the next is free and faster, up to ${mv.chain} in a row. A miss leaves you stunned.`);
+  if (mv.chain) n.push(`A hit makes the next one free, up to ${mv.chain} in a row. A miss stuns you.`);
   if (mv.back) n.push('Returns to where you started as soon as it connects.');
   if (mv.pull) n.push('Drags foes and their shots toward its centre.');
   if (mv.blow) n.push('Throws enemy shots back out.');
@@ -88,40 +116,47 @@ export function describe(id) {
   if (mv.hpScale) n.push('Stronger the healthier you are.');
   if (mv.selfDebuff) n.push(`Lowers your own ${STAT[mv.selfDebuff.stat]} for ${secs(mv.selfDebuff.time)} afterwards.`);
   if (mv.lead) n.push('Lands where its target is heading.');
-  if (mv.fixedDmg) n.push(`Always does ${mv.fixedDmg} damage, whatever either side has boosted, and goes through shields.`);
+  if (mv.fixedDmg) n.push(`Always ${mv.fixedDmg} damage. Goes through shields.`);
   if (mv.toss) n.push('Lifts the foe and slams it down.');
   if (mv.throw) n.push('Throws the foe to where you aim.');
-  if (mv.flurry) n.push('Hold to keep punching, each blow harder. You are rooted and take more damage, during and just after.');
-  if (mv.detect) n.push('For an instant the next hit misses and you appear behind whoever threw it.');
+  if (mv.flurry) n.push('Each blow hits harder. You are rooted and take more damage.');
+  if (mv.detect) n.push('For an instant the next hit misses: you appear behind whoever threw it, and they are stunned.');
   if (mv.bide) n.push(`For ${secs(mv.bide.time)} you soak up hits without flinching, then pay them back doubled.`);
   if (mv.breaker) n.push('Smashes shields, the substitute, walls and standing rocks, and stuns their owner.');
   if (mv.repeat) n.push('Costs more each time it is used in a row.');
-  if (mv.grapple) n.push('Drags the first foe it reaches to you; hitting a wall, it pulls you there.');
+  if (mv.grapple) n.push(mv.meet ? 'Pulls you and the first foe it reaches together.' : 'Drags the first foe it reaches to you.', 'Hitting a wall, it pulls you there.');
   if (mv.cloud) n.push('A slow drifting cloud. Wind blows it about, and it works for whoever blew it last.');
-  if (mv.vanish) n.push(mv.vanish.behind ? 'You sink into the ground and come up behind the foe you aimed at.' : `You vanish for ${secs(mv.vanish.time)} and strike where you are aiming when you return. Goes through shields.`);
+  if (mv.vanish) n.push(mv.vanish.behind ? 'You come up behind the foe you aimed at.' : `Vanish for ${secs(mv.vanish.time)}, then strike where you aim. Goes through shields.`);
   if (mv.bond) n.push(`For ${secs(mv.bond)}, whoever knocks you out takes the same blow.`);
   if (mv.sap) n.push(`Burns ${+(mv.sap / 20).toFixed(1)} of the foe's energy.`);
   if (mv.torment) n.push(`For ${secs(mv.torment)} the foe cannot use the same move twice in a row.`);
   if (mv.tether) n.push(`For ${secs(mv.tether.time)} the foe cannot leave a circle around you.`);
-  if (mv.string) n.push(`A thread slows the foe for ${secs(mv.string.time)}; use it again to yank the foe toward you. Slashes cut it.`);
-  if (mv.web) n.push('Foes inside are slowed and cannot run.');
-  if (mv.roll) n.push('You become the shot: hold to keep rolling. It turns slowly, bounces off walls, and speeds up with every bounce and hit. A parry stops you dead.');
+  if (mv.string) n.push(`Slows the foe for ${secs(mv.string.time)}. Use again to yank it to you.`);
+  if (mv.web) n.push(`Holds the first foe to step in for 2s${mv.status ? ', paralysed' : ''}, then it is gone.`);
+  if (mv.dream) n.push('Only on sleeping foes, wherever they are.');
+  if (mv.blaze) n.push('Leaves a trail of fire.');
+  if (mv.recoilHit) n.push(`A hit costs you ${pct(mv.recoilHit)} of the damage.`);
+  if (mv.spdScale) n.push('Hits harder the faster you are.');
+  if (mv.healAllies) n.push('Heals allies near you too.');
+  if (mv.kind === 'blink' && !mv.dmg) n.push('Puts you where you aim. It does no damage.');
+  if (mv.roll) n.push('You roll: faster with every bounce and hit.', 'A parry stops you dead.');
+  if (mv.missPillar) n.push(`A miss leaves the boulder standing for ${secs(mv.missPillar)} as cover.`);
   if (mv.pillar) n.push(`Leaves a rock standing for ${secs(mv.pillar)} that blocks shots and movement.`);
   if (mv.ambush) n.push('Also catches foes that dash, blink or dig across it, and harder.');
   if (mv.grow?.cycle) n.push('Its size swings up and down while you hold: let go at the size you want.');
-  if (mv.deflect) n.push('Light shots bounce off. If a hit breaks the stance, letting go at once throws the blow back.');
+  if (mv.deflect) n.push('Light shots bounce off. Let go as a hit lands to throw it back.');
   if (mv.magnet) n.push('Catches enemy metal shots nearby; they circle you and fly with your next move.');
-  if (mv.dance) n.push(`Press any move button on each of ${mv.dance.n} beats: every one in time raises your Attack and Speed further. A hit loses them.`);
+  if (mv.dance) n.push(`Tap a move on each of ${mv.dance.n} beats: each raises Attack and Speed.`, 'A hit loses them.');
   if (mv.copy) n.push('Uses the last move anyone used.');
   if (mv.endure) n.push(`For ${secs(mv.endure)} your health cannot drop below 1.`);
   if (mv.lowHp) n.push('Hits harder the more hurt you are.');
   if (mv.drum) n.push('Halves your health for double Attack that does not wear off.');
-  if (mv.asleep) n.push(mv.asleep === 'talk' ? 'Only works while you are asleep: fires one of your other moves at random.' : 'Only works while you are asleep.');
-  if (mv.fuse) n.push(`Goes off ${secs(mv.fuse)} after you light it; you can walk meanwhile. Being knocked out defuses it.`);
+  if (mv.asleep) n.push(mv.asleep === 'talk' ? 'Only while asleep: uses another of your moves.' : 'Only while asleep.');
+  if (mv.fuse) n.push(`Goes off after ${secs(mv.fuse)}; you can walk meanwhile.`);
   if (mv.pass) n.push('Hands every boost you carry to the nearest ally and puts you beside it.');
   if (mv.metal) n.push('Metal: Magnet Pull can catch it.');
-  if (mv.sucker) n.push('Only works on a foe that is charging a move: you are on it at once and its charge is broken. Otherwise it fizzles and costs double.');
-  if (mv.step) n.push('You dart forward as you strike.');
+  if (mv.sucker) n.push('Only on a foe charging a move: breaks the charge.', 'Otherwise it fizzles and costs double.');
+  if (mv.step > 16) n.push('A longer dart in than most.'); // every melee move darts a little: only the long ones say so
   if (mv.jab) n.push('Counter: hits much harder on a foe caught charging a move.');
   if (mv.cut) n.push('Cuts light shots out of the air.');
   if (mv.latch) n.push(`Latches on: you and the foe are both held for ${secs(mv.latch)} while it keeps biting.`);
@@ -134,13 +169,13 @@ export function describe(id) {
   if (mv.ricochet) n.push(`Bounces off walls up to ${mv.ricochet} times, harder each time.`);
   if (mv.swell) n.push('Grows as it flies: weak up close, strong at range.');
   if (mv.appear && mv.kind === 'auto') n.push('A ring shows where it will land a moment before it does.');
-  if (mv.stance) n.push('Stance: hold the button to keep a strong guard up. You cannot move, and the first hit ends it.');
-  if (mv.ritual) n.push(`Hold to build up to ${mv.ritual.max} stacks, each raising your ${STAT[mv.buff.stat]} further. A hit loses them all.`);
-  if (mv.field?.lane) n.push(`Leaves a lane along your aim for ${secs(mv.field.time)}: it speeds up whoever of your side runs along it and slows enemy shots flying up it.`);
+  if (mv.stance) n.push('A strong guard while held. The first hit ends it.');
+  if (mv.ritual) n.push(`Builds up to ${mv.ritual.max} stacks of ${STAT[mv.buff.stat]}${mv.buff.also ? ` and ${STAT[mv.buff.also]}` : ''}. A hit loses them.`);
+  if (mv.field?.lane) n.push(`A lane for ${secs(mv.field.time)}: speeds your side, slows enemy shots.`);
   else if (mv.field) n.push(`Leaves a circle for ${secs(mv.field.time)}: it only works while you stand in it.`);
   if (mv.lob) n.push('Lobbed: it comes down where you aim.');
   if (mv.cycle) n.push(`Each use fires a different shot, ${mv.cycle.length} in rotation.`);
-  if (mv.grow) n.push('Hold to widen the blast, release to fire.');
+  if (mv.grow) n.push('Widens while held.');
   if (mv.status) {
     const what = mv.status.kind === 'tri' ? 'burned, paralysed or frozen' : STATUS[mv.status.kind].label;
     n.push(mv.status.chance >= 1 ? `Leaves foes ${what}.` : `${pct(mv.status.chance)} chance to leave foes ${what}.`);
@@ -174,9 +209,11 @@ export function describe(id) {
 
   // for the player's eyes only (Taunt has its own, stricter idea of a status move in mv.cls)
   const role = mv.kind === 'self' ? 'Support' : (mv.dmg ?? 0) >= 8 ? 'Attack' : 'Status';
+  // held: it lasts while its button is down (the same moves the touch pad starts on the press)
+  const held = !!(mv.grow || mv.catch || mv.ritual || mv.steer || mv.flurry || mv.stance || mv.kind === 'beam' || mv.kind === 'hold');
   return {
-    type: typeOf(id), role, tag: mv.tag ?? null, kind: cap(KIND_LABEL[mv.kind]), how: HOW[mv.kind],
-    power: mv.dmg ?? 0, cost: mv.cost, charge: mv.charge, reach: reachOf(mv) ?? null, reachLabel: mv.kind === 'aoe' ? 'Radius' : 'Range',
+    type: typeOf(id), role, held, delivery: DELIVERY[mv.kind] ?? 'projectile', tag: mv.tag ?? null, kind: cap(KIND_LABEL[mv.kind]), how: HOW[mv.kind],
+    power: mv.dmg ?? 0, cost: mv.cost, charge: mv.charge, speed: quickness(mv), reach: reachOf(mv) ?? null,
     notes: n,
   };
 }

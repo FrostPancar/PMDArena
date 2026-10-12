@@ -228,8 +228,9 @@ export function controlsCard(scene) {
 // What a finished fight earned: EXP, the level bar, and anything the new level brought (moves, a new form).
 // `earned` is what session.bookBattle returned; `shown` is the face on it (the mon that earned it). Returns its objects.
 export function resultCard(scene, species, earned, shown = scene.player.species.id) {
-  const { exp, from, to, unlocked, evolved, ready } = earned;
+  const { exp, from, to, unlocked, evolved, ready, tm } = earned;
   const lines = [];
+  if (tm) lines.push([`TM found: ${MOVES[tm].name}`, INK.gold]);
   if (to.level > from.level) lines.push([`Level up!  Lv ${from.level} > Lv ${to.level}`, INK.gold]);
   for (const id of unlocked.slice(0, 3)) lines.push([`New move: ${MOVES[id].name}`, INK.mint]);
   if (unlocked.length > 3) lines.push([`...and ${unlocked.length - 3} more moves`, INK.mint]);

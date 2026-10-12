@@ -66,7 +66,9 @@ export class CpuController {
       const pool = ready.length ? ready : this.moves;
       m.move = pool[Math.floor(Math.random() * pool.length)];
     }
-    if (this.cool <= 0 && s.wantsMove(m, d) && s.useMove(m, this.aimAt(foe))) { this.cool = (1.1 + Math.random() * 1.3) * k.cool; return; }
+    // a wall goes up between the two, a little way out from itself: never on top of the foe, which only shut it in
+    const wall = MOVES[m.move]?.wall, ahead = wall && { x: m.x + ux * Math.min(34, d * 0.5), y: m.y + uy * Math.min(34, d * 0.5) };
+    if (this.cool <= 0 && s.wantsMove(m, d) && s.useMove(m, ahead || this.aimAt(foe))) { this.cool = (1.1 + Math.random() * 1.3) * k.cool; return; }
     if (d < 22 && this.cool <= 0 && !m.ailment.noAttack) {
       this.walk(0, 0);
       m.face(foe.x, foe.y);

@@ -57,17 +57,18 @@ export const panel = (scene, x, y, w, h, style = 'win') => pin(scene.add.image(x
 const NOTCH_W = 5, BAR_H_PX = 5;
 let meterCount = 0;
 export class Meter {
-  constructor(scene, x, y, notches) {
+  constructor(scene, x, y, notches, notchW = NOTCH_W) {
     this.scene = scene;
     this.notches = notches;
-    this.w = notches * NOTCH_W + 2;
+    this.notchW = notchW;
+    this.w = notches * notchW + 2;
     this.key = `meter-${meterCount++}`;
     this.tex = scene.textures.createCanvas(this.key, this.w, BAR_H_PX);
     this.img = pin(scene.add.image(x, y, this.key).setOrigin(0), 2);
   }
 
   set(notches, color) {
-    const g = this.tex.getContext(), inner = this.w - 2, lit = Math.min(this.notches, Math.max(0, notches)) * NOTCH_W;
+    const g = this.tex.getContext(), inner = this.w - 2, NW = this.notchW, lit = Math.round(Math.min(this.notches, Math.max(0, notches)) * NW); // (part of a notch may be lit)
     g.clearRect(0, 0, this.w, BAR_H_PX);
     g.fillStyle = '#0a1826';
     g.fillRect(0, 0, this.w, BAR_H_PX);
@@ -78,7 +79,7 @@ export class Meter {
     g.fillStyle = 'rgba(255,255,255,0.45)';
     g.fillRect(1, 1, lit, 1);
     g.fillStyle = '#0a1826';
-    for (let i = 1; i < this.notches; i++) g.fillRect(1 + i * NOTCH_W - 1, 0, 1, BAR_H_PX);
+    for (let i = 1; i < this.notches; i++) g.fillRect(1 + i * NW - 1, 0, 1, BAR_H_PX);
     this.tex.refresh();
     return this;
   }

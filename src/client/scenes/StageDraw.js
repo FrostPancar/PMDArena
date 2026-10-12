@@ -118,7 +118,7 @@ export class StageDraw extends Phaser.Scene {
   // May this stage be picked? Always, unless the fight is on the ladder and the stage is still shut.
   pickable(id) { return !this.ladder || (isOpen(id) && !this.opening.includes(id)); }
 
-  // The difficulty pips (one strip per level) and the padlock a shut stage wears.
+  // The difficulty pips, one strip per level. (A shut stage wears the padlock from the icon sheet.)
   ladderArt() {
     const make = (key, w, h, paint) => {
       if (this.textures.exists(key)) return;
@@ -133,11 +133,6 @@ export class StageDraw extends Phaser.Scene {
         for (let i = 0; i < MAX_LEVEL; i++) { g.fillStyle = i < lv ? ['#8fe07a', '#d8e05a', '#ffd24a', '#ff9a4a', '#ff5a4a'][lv - 1] : '#3a4254'; g.fillRect(1 + i * 4, 1, 3, 3); }
       });
     }
-    const LOCK = ['..kkkkk..', '.kwwwwwk.', '.kwkkkwk.', 'kkkkkkkkk', 'kgggggggk', 'kggkkkggk', 'kgggkgggk', 'kgggggggk', 'kkkkkkkkk'];
-    make('lock', 9, 9, (g) => LOCK.forEach((row, y) => [...row].forEach((ch, x) => {
-      if (ch === '.') return;
-      g.fillStyle = { k: '#1a1f2e', w: '#c8d0dc', g: '#8b93a3' }[ch]; g.fillRect(x, y, 1, 1);
-    })));
   }
 
   // A stage the last win opened: the map goes to it, its padlock rattles and bursts, and it is a stage like the others.
@@ -155,7 +150,7 @@ export class StageDraw extends Phaser.Scene {
     this.time.delayedCall(800, () => this.tweens.add({ targets: n.img, x: n.x + 2, duration: 45, yoyo: true, repeat: 5, onComplete: () => { n.img.x = n.x; } }));
     this.time.delayedCall(1450, () => {
       this.opening = this.opening.map((o) => (o === id ? null : o)); // no longer drawn locked
-      const ring = this.add.image(n.x, n.y, 'nodeSel').setDepth(8), flash = this.add.image(n.x, n.y, 'lock').setDepth(9).setTintFill(0xffffff);
+      const ring = this.add.image(n.x, n.y, 'nodeSel').setDepth(8), flash = this.add.image(n.x, n.y, 'art-icons', 'unlocked').setDepth(9);
       this.tweens.add({ targets: ring, scale: 6, alpha: 0, duration: 600, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
       this.tweens.add({ targets: flash, y: n.y - 14, scale: 2, alpha: 0, duration: 500, ease: 'Cubic.easeOut', onComplete: () => flash.destroy() });
       const word = this.add.image(n.x, n.y - 12, labelTexture(this, 'New stage!')).setDepth(9101);
@@ -381,7 +376,8 @@ export class StageDraw extends Phaser.Scene {
     const lit = this.spot ? [this.spot] : this.players.filter((p) => !p.gone && p.shown).map((p) => p.shown);
     for (const n of this.nodes) {
       const shut = !this.pickable(n.id);
-      n.img.setTexture(shut ? 'lock' : lit.includes(n.id) ? 'nodeSel' : 'node').setTint(shut ? 0x9aa3b5 : 0xffffff);
+      if (shut) n.img.setTexture('art-icons', 'lock').setScale(0.75);
+      else n.img.setTexture(lit.includes(n.id) ? 'nodeSel' : 'node').setScale(1);
       n.pips?.setVisible(!shut);
     }
     const id = this.spot ?? this.me.node;

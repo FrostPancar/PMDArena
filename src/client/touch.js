@@ -204,8 +204,8 @@ function build() {
   }
   buildStick();
 
-  // fight: the four moves in the corner under the thumb, two by two; beside them Jump with Parry over it, and Run
-  // further in along the bottom
+  // fight: the four moves in the corner under the thumb, two by two; Jump and Run above them at the right, where the
+  // thumb slides up to; Parry beside them at the bottom
   const cell = (col, row) => ({ right: edge(M + (1 - col) * (MOVE_W + GAP), 'right'), bottom: edge(M + (1 - row) * (MOVE_H + GAP), 'bottom') });
   let from = null;
   ui.moves = [0, 1, 2, 3].map((i) => makeKey(root, MOVE_W, MOVE_H, cell(i % 2, i >> 1), {
@@ -230,12 +230,13 @@ function build() {
     },
   }));
   const side = M + 2 * (MOVE_W + GAP) + 1;
-  ui.jump = makeKey(root, ROUND, ROUND, { right: edge(side, 'right'), bottom: edge(M, 'bottom') }, { down: () => fight('jump') });
-  ui.parry = makeKey(root, ROUND, ROUND, { right: edge(side, 'right'), bottom: edge(M + ROUND + GAP, 'bottom') }, {
+  const above = M + 2 * (MOVE_H + GAP);
+  ui.jump = makeKey(root, ROUND, ROUND, { right: edge(M, 'right'), bottom: edge(above, 'bottom') }, { down: () => fight('jump') });
+  ui.parry = makeKey(root, ROUND, ROUND, { right: edge(side, 'right'), bottom: edge(M, 'bottom') }, {
     // with a move being aimed, this calls it off instead (and with one charging, the scene does)
     down: () => { if (touch.aiming >= 0) touch.aiming = -1; else fight('parry'); },
   });
-  ui.run = makeKey(root, ROUND, ROUND, { right: edge(side + ROUND + GAP, 'right'), bottom: edge(M, 'bottom') }, {
+  ui.run = makeKey(root, ROUND, ROUND, { right: edge(M + ROUND + GAP, 'right'), bottom: edge(above, 'bottom') }, {
     down: () => { touch.run = true; },
     up: () => { touch.run = false; },
   });

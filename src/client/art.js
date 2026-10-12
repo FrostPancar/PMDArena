@@ -26,6 +26,9 @@ const ICONS = {
   select: [128, 130, 23, 12], start: [152, 130, 23, 12],
   dpad: [128, 176, 16, 16], dpadUD: [144, 176, 16, 16], dpadLR: [160, 176, 16, 16],
   pageL: [128, 192, 16, 16], pageR: [144, 192, 16, 16],
+  lock: [112, 112, 16, 16], unlocked: [160, 96, 16, 16], // the padlock on anything not yet earned, and the one that has sprung open
+  new: [96, 112, 16, 16], // on a move that has just opened and has not been taken yet
+  tm: [208, 16, 16, 16], // the disc a taught move is marked with (the silver one, so it takes the tint of the move's type)
   caretR: [112, 208, 16, 16], caretDown: [64, 208, 16, 16], caretUp: [80, 208, 16, 16],
 };
 
@@ -295,19 +298,33 @@ function buildFont(scene) {
 }
 
 // Small things drawn by hand, a character per pixel ('.' is clear): one white pixel, stretched and tinted for bars,
-// shades and backdrops; a white arrowhead, tinted to mark whose side a fighter is on; a padlock for moves not yet
-// earned; a mouse with its left or right button lit, for the battle HUD; and the glyphs of the move stats (power,
-// stamina, range, charge time) that the move menu draws beside its bars.
-const INKS = { '#': '#0a1826', f: '#ffffff', y: '#ffd84a', g: '#8fa3b8', r: '#ff7a6a', Y: '#f2c94c', b: '#8fdcff' };
+// shades and backdrops; a white arrowhead, tinted to mark whose side a fighter is on; a mouse with its left or right button lit, for the battle HUD; and the glyphs of the move stats (power,
+// energy, speed, charge time) that the move menu draws beside its bars.
+const INKS = { '#': '#0a1826', f: '#ffffff', y: '#ffd84a', g: '#8fa3b8', r: '#ff7a6a', Y: '#f2c94c', b: '#8fdcff', p: '#c79bff', G: '#8fe07a' };
 const DRAWN = {
   tag: ['#######', '#fffff#', '.#fff#.', '..#f#..', '...#...'],
-  lock: ['..###..', '.#...#.', '.#...#.', '#######', '#yyyyy#', '#yy#yy#', '#yyyyy#', '#######'],
   mouseL: ['.#######.', '#yyy#ggg#', '#yyy#ggg#', '#yyy#ggg#', '#########', '#fffffff#', '#fffffff#', '#fffffff#', '.#fffff#.', '..#####..'],
   // a burst, a bolt, an arrow with both ends marked, and a clock face
   statPower: ['r..#..r', '.r.r.r.', '..rfr..', '#rfffr#', '..rfr..', '.r.r.r.', 'r..#..r'],
   statStamina: ['....YY.', '...YY..', '..YY...', '.YYYYY.', '...YY..', '..YY...', '.YY....'],
-  statRange: ['.........', '..b...b..', '.bb...bb.', 'bbbbbbbbb', '.bb...bb.', '..b...b..', '.........'],
+  statSpeed: ['.........', 'b...b....', '.bb..bb..', '..bbb.bbb', '.bb..bb..', 'b...b....', '.........'],
   statClock: ['..#####..', '.#fffff#.', '#fff#fff#', '#fff#fff#', '#fff###f#', '#fffffff#', '#fffffff#', '.#fffff#.', '..#####..'],
+  // what a move is for (a blade: attack; a swirl: status; a cross: support)
+  roleAttack: ['.......rr', '......rfr', '.....rfr.', 'r...rfr..', '.r.rfr...', '..rrr....', '..rr.r...', '.r..r....', 'r........'],
+  roleStatus: ['..ppppp..', '.p.....p.', 'p..ppp..p', 'p.p...p.p', 'p.p.pp..p', 'p.p....p.', 'p..pppp..', '.p.......', '..pppppp.'],
+  roleSupport: ['...GGG...', '...GfG...', '...GfG...', 'GGGGfGGGG', 'GfffffffG', 'GGGGfGGGG', '...GfG...', '...GfG...', '...GGG...'],
+  // how it is delivered: claw marks (melee), a target (lands on a spot), an arrow (a shot), a bar (a beam), a burst
+  // (all around), an arrow up from the ground (on yourself), chevrons (a dash), a sparkle (a teleport), and a press
+  // on a bar (held)
+  kindMelee: ['......b..', '.....b..b', '....b..b.', '...b..b..', '..b..b..b', '.b..b..b.', '...b..b..', '..b..b...', '....b....'],
+  kindMid: ['..bbbbb..', '.b.....b.', 'b..bbb..b', 'b.b...b.b', 'b.b.b.b.b', 'b.b...b.b', 'b..bbb..b', '.b.....b.', '..bbbbb..'],
+  kindProjectile: ['.........', '......b..', '.......b.', 'b.bbbbbbb', '.......b.', '......b..', '.........'],
+  kindBeam: ['.........', 'bb.......', 'bbbbbbbbb', 'bbbbbbbbb', 'bbbbbbbbb', 'bb.......', '.........'],
+  kindAoe: ['b...b...b', '.b..b..b.', '..b...b..', '.........', 'bb..b..bb', '.........', '..b...b..', '.b..b..b.', 'b...b...b'],
+  kindSelf: ['....b....', '...bbb...', '..bbbbb..', '.bbbbbbb.', '...bbb...', '...bbb...', '...bbb...', '.........', '.bbbbbbb.'],
+  kindDash: ['b...b....', '.b...b...', '..b...b..', '...b...b.', '..b...b..', '.b...b...', 'b...b....'],
+  kindBlink: ['b.......b', '.b.....b.', '.........', '...bbb...', '...bbb...', '...bbb...', '.........', '.b.....b.', 'b.......b'],
+  kindHold: ['...yyy...', '...yyy...', '...yyy...', '.yyyyyyy.', '..yyyyy..', '...yyy...', '....y....', '.........', 'yyyyyyyyy'],
   mouseR: ['.#######.', '#ggg#yyy#', '#ggg#yyy#', '#ggg#yyy#', '#########', '#fffffff#', '#fffffff#', '#fffffff#', '.#fffff#.', '..#####..'],
 };
 

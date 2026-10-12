@@ -1,7 +1,7 @@
 import { SPECIES, SPECIES_ORDER } from '../sprites.js';
 import { MOVES } from '../moves.js';
 import { CHOICES } from '../evolutions.js';
-import { levelFor, unlockPlan, formAt, formsOf, needsChoice, battleExp } from './progress.js';
+import { levelFor, unlockPlan, tmsFor, formAt, formsOf, needsChoice, battleExp } from './progress.js';
 
 // What the player has chosen and earned, kept between visits.
 const SAVE_KEY = 'pmd-client-v1';
@@ -14,6 +14,8 @@ export const session = {
   partner: null, // species id of the CPU partner waiting on the other bed, if one was asked along
   briefed: {}, // one-time prompts already shown: species id for the move menu, 'controls' for the battle card
   lastMap: null,
+  news: [], // move ids that have just opened (by level, or as a TM found) and have not been taken to battle yet
+  tms: [], // move ids of the TMs found so far: any mon that can be taught one may use it
   ladder: { open: [], shown: [] }, // the CPU ladder (ladder.js): stages opened, and those whose opening the map has shown
   crew: [], // species ids last taken to a crew battle, in the order they were sent out
   mons: {}, // species id -> { exp, battles, wins }: how far each mon has come
@@ -30,6 +32,8 @@ export function loadSession() {
     const saved = JSON.parse(localStorage.getItem(SAVE_KEY));
     if (saved && typeof saved === 'object') {
       hasSave = true;
+      // a save from before TMs were found: it keeps the taught moves its mons were already taking to battle
+      if (!Array.isArray(saved.tms)) session.tms = [...new Set(Object.entries(saved.loadouts ?? {}).flatMap(([id, moves]) => (SPECIES[id] && Array.isArray(moves) ? moves.filter((m) => tmsFor(id, saved.mons?.[id]?.branch).includes(m)) : [])))];
       const { profile, records, ...rest } = saved;
       Object.assign(session, rest);
       Object.assign(session.profile, profile);
@@ -40,6 +44,8 @@ export function loadSession() {
   session.loadouts ??= {};
   session.briefed ??= {};
   session.mons ??= {};
+  session.tms = (Array.isArray(session.tms) ? session.tms : []).filter((id) => MOVES[id]);
+  session.news = (Array.isArray(session.news) ? session.news : []).filter((id) => MOVES[id]);
   session.crew = (Array.isArray(session.crew) ? session.crew : []).filter((id) => SPECIES[id] && !SPECIES[id].form);
   if (!SPECIES[session.partner]) session.partner = null;
   if (!SPECIES[session.profile.face]) session.profile.face = null;
@@ -84,8 +90,26 @@ export function chooseBranch(id, form) {
 }
 // The look it has grown into.
 export const formOf = (id = session.species) => formAt(id, levelOf(id), branchOf(id));
-// The moves it may use so far, in menu order.
-export const unlockedMoves = (id = session.species) => unlockPlan(id, branchOf(id)).filter((m) => m.level <= levelOf(id)).map((m) => m.id);
+// The moves it may use so far, in menu order: those of its own that its level has opened, then the TMs it can be
+// taught that have been found.
+export const unlockedMoves = (id = session.species) => [
+  // (a move of its own that is also a TM is open early to whoever has found that TM)
+  ...unlockPlan(id, branchOf(id)).filter((m) => m.level <= levelOf(id) || ownsTM(m.id)).map((m) => m.id),
+  ...tmsFor(id, branchOf(id)).filter(ownsTM),
+];
+export const ownsTM = (id) => session.tms.includes(id);
+// Every TM there is: each move some mon (or one of Eevee's evolutions) has to be taught.
+export const allTMs = () => [...new Set(SPECIES_ORDER.flatMap((id) => [undefined, ...(CHOICES[id] ?? [])].flatMap((branch) => tmsFor(id, branch))))];
+// A fight is over: a TM not yet owned turns up, more often than not one that the mon that fought can use.
+function findTM(species) {
+  const left = allTMs().filter((id) => !ownsTM(id));
+  if (!left.length) return null;
+  const mine = left.filter((id) => tmsFor(species, branchOf(species)).includes(id));
+  const pool = mine.length && Math.random() < 0.6 ? mine : left;
+  const tm = pool[Math.floor(Math.random() * pool.length)];
+  session.tms.push(tm);
+  return tm;
+}
 
 // The moves a species takes to battle. Until the player picks, the first four it has.
 export function loadoutOf(id = session.species) {
@@ -97,6 +121,7 @@ export function loadoutOf(id = session.species) {
 
 export function setLoadout(id, moves) {
   session.loadouts[id] = moves.slice(0, LOADOUT_SIZE);
+  session.news = session.news.filter((m) => !moves.includes(m)); // taken: no longer news
   saveSession();
 }
 
@@ -115,7 +140,8 @@ export const publicProfile = () => ({
 // ---- after a fight ----
 // Books a finished battle: EXP for the mon that fought (`species`: the one that led a crew), and the records. `mode` is the label the records file it under
 // ('1v1 vs CPU'...). Returns what changed, for the result screen:
-//   { exp, from, to, unlocked: [move ids], evolved: form id or null, ready: true if a branching mon now awaits its choice }
+//   { exp, from, to, tm: the move id of the TM found (none for a fight walked out of, or when all are owned),
+//     unlocked: [move ids], evolved: form id or null, ready: true if a branching mon now awaits its choice }
 //   (from / to are levelFor() results)
 export function bookBattle({ mode, won, gaveUp, dealt, kept, seconds, kos, species }) {
   const id = species ?? session.species, mon = (session.mons[id] ??= { exp: 0, battles: 0, wins: 0 });
@@ -132,10 +158,12 @@ export function bookBattle({ mode, won, gaveUp, dealt, kept, seconds, kos, speci
   if (won) { r.wins++; m.wins++; r.streak++; r.bestStreak = Math.max(r.bestStreak, r.streak); } else { r.losses++; r.streak = 0; }
   r.kos += kos;
   r.seconds += Math.round(seconds);
+  const tm = gaveUp ? null : findTM(id);
+  const unlocked = unlockPlan(id, branch).filter((u) => u.level > from.level && u.level <= to.level).map((u) => u.id);
+  session.news = [...new Set([...session.news, ...unlocked, ...(tm ? [tm] : [])])];
   saveSession();
   return {
-    exp, from, to,
-    unlocked: unlockPlan(id, branch).filter((u) => u.level > from.level && u.level <= to.level).map((u) => u.id),
+    exp, from, to, tm, unlocked,
     evolved: formAt(id, to.level, branch) !== look ? formAt(id, to.level, branch) : null,
     ready: !needsChoice(id, from.level, branch) && needsChoice(id, to.level, branch),
   };
