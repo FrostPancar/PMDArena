@@ -4,7 +4,7 @@ import { MAPS, WORLD_URL, makeWalkable, inBlock, buildTestRealm, buildFxTextures
 import { SPECIES } from './sprites.js';
 import { Mon, dirVec, dirFromVec, DIR_NAMES, RUN_MULT } from './mon.js';
 import { STATUS_SHEET_URL, DECOY_SHEET_URL, buildStatusIcons, buildDecoy } from './statusfx.js';
-import { MOVES, PARRY, CANCEL, EMPOWER, POWERUP, LEECH, SPRINT, STATUS, TAGS, DANCE, HEAL, KIND_LABEL, movesOf, preloadMoves, grayFrames } from './moves.js';
+import { MOVES, PARRY, CANCEL, EMPOWER, POWERUP, LEECH, SPRINT, STATUS, TAGS, DANCE, HEAL, KIND_LABEL, movesOf, preloadMoves, grayFrames, ensureMove, moveReady } from './moves.js';
 
 export const VIEW_W = 384, VIEW_H = 216;
 export const WALK_SPEED = 62;
@@ -55,8 +55,9 @@ const SHOT = {
 };
 
 // Move effects and stage art: by far the most files. The player client loads these behind its title screen.
-export function loadStages(scene) {
-  preloadMoves(scene);
+// lazy: the moves' art is left to be loaded as fights need it (the player client; see moves.js)
+export function loadStages(scene, lazy = false) {
+  preloadMoves(scene, lazy);
   for (const m of Object.values(MAPS)) if (m.url) scene.load.image(m.image, m.url);
   scene.load.image('worldmap', WORLD_URL);
 }
@@ -76,8 +77,9 @@ export class Boot extends Phaser.Scene {
     });
   }
   // What the mons themselves need, and all that build() draws on.
-  loadCore() {
-    preloadSprites(this);
+  // sprites: every mon's sheets now (the tools), or none, each being loaded when a screen first needs it (the game)
+  loadCore(sprites = true) {
+    if (sprites) preloadSprites(this);
     this.load.image('status-sheet', STATUS_SHEET_URL);
     this.load.image('decoy-sheet', DECOY_SHEET_URL);
   }
@@ -495,13 +497,14 @@ export class Play extends Phaser.Scene {
   // Start charging the equipped move. Stamina drains during the wind-up, then the move goes off.
   useMove(m, track) {
     const mv = MOVES[m.move];
+    if (mv && !ensureMove(this, mv)) return false; // its art is still on the way (a move nobody brought to this fight)
     if (this.clashTap(m)) return false; // locked in a beam clash: any move button is a push
     if (m.dance) { this.danceTap(m); return false; } // dancing: any move button is a step
     if (mv?.asleep) {
       // only in its sleep: Sleep Talk blurts out one of the user's other moves, Snore is the move itself
       const cost = mv.cost;
       if (m.status?.kind !== 'sleep' || !m.alive || m.stamina < cost) return false;
-      const pool = movesOf(m.species.id).map((id) => MOVES[id]).filter((q) => q && !q.asleep && !q.selfStatus && !q.grow && !q.fuse && q.kind !== 'hold' && q.kind !== 'beam');
+      const pool = movesOf(m.species.id).map((id) => MOVES[id]).filter((q) => q && !q.asleep && !q.selfStatus && !q.grow && !q.fuse && q.kind !== 'hold' && q.kind !== 'beam' && moveReady(this, q));
       const pick = mv.asleep === 'talk' ? pool[Math.floor(this.rand() * pool.length)] : mv;
       if (!pick) return false;
       m.spend(cost);
@@ -784,7 +787,7 @@ export class Play extends Phaser.Scene {
     }
     if (mv.random) {
       // Metronome: some other move comes out instead, named over the user's head
-      const pool = Object.values(MOVES).filter((q) => !q.random && !q.grow && q.kind !== 'hold');
+      const pool = Object.values(MOVES).filter((q) => !q.random && !q.grow && q.kind !== 'hold' && moveReady(this, q)); // (of the moves whose art is in)
       this.fx.push({ img: this.add.image(m.x, m.y - 26, mv.frames[0]).setScale(mv.scale ?? 1), frames: mv.frames, t: 0, fps: mv.fps ?? 30, follow: m, lift: 26 });
       mv = pool[Math.floor(this.rand() * pool.length)];
       if (this.registry.get('callouts') === false) this.popup(m, mv.name.toUpperCase());

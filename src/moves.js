@@ -1010,14 +1010,55 @@ export function grayFrames(scene, mv) {
   mv.grayed = true;
 }
 
-export function preloadMoves(scene) {
+// ---- loading the art ----
+// Every move's frame lists are worked out up front (preloadMoves), but the pictures themselves need not all be loaded:
+// there are thousands, and a phone's browser gives up long before it holds them all. With `lazy`, only the few effects
+// every fight uses are loaded then; a move's own are loaded when it is needed (loadMoves before a fight, for everyone's
+// moves; ensureMove the moment something else is about to be used). The developers' tools load the lot as before.
+const FRAME_URL = new Map(); // texture key -> where its picture is
+
+// Every texture key a move draws with.
+const keysOf = (mv) => [
+  mv.frames, mv.chargeFrames, mv.bonusFrames, mv.impactFrames, mv.altFrames, mv.addFrames, mv.landFrames, mv.endFrames, mv.selfFrames, mv.bounceFrames,
+  ...(mv.dirFrames ?? []), ...(mv.cycle ?? []).map((v) => v.frames),
+].flatMap((list) => list ?? []);
+// The other moves whose art a move borrows as it plays out.
+const needs = (mv) => (mv.blaze ? [MOVES.fireSpin] : []);
+const missing = (scene, mv) => [...new Set([mv, ...needs(mv)].flatMap(keysOf))].filter((key) => FRAME_URL.has(key) && !scene.textures.exists(key));
+
+// Is all of a move's art in?
+export const moveReady = (scene, mv) => !missing(scene, mv).length;
+
+// Queue the art of these moves on a scene's loader (what is not in yet). From a scene's preload that is all it takes;
+// anywhere else, follow with scene.load.start(). Returns how many pictures were queued.
+export function loadMoves(scene, ids) {
+  const queued = scene.load.list?.entries ?? [];
+  let n = 0;
+  for (const key of new Set(ids.map((id) => MOVES[id]).filter(Boolean).flatMap((mv) => missing(scene, mv)))) {
+    if ([...queued].some((f) => f.key === key)) continue; // already on its way
+    scene.load.image(key, FRAME_URL.get(key));
+    n++;
+  }
+  return n;
+}
+
+// Is this move ready to be used? If not, its art is sent for and the answer is no: ask again in a moment.
+export function ensureMove(scene, mv) {
+  if (moveReady(scene, mv)) return true;
+  if (loadMoves(scene, [mv.id, ...needs(mv).map((q) => q.id)])) scene.load.start();
+  return false;
+}
+
+export function preloadMoves(scene, lazy = false) {
+  let always = false; // the shared effects below are loaded whatever `lazy` says
   // file numbers are ticks; a skipped number holds the previous frame
   const build = (fx, seqs) => {
     const frames = [];
     for (const seq of seqs ?? []) {
       const fs = files(fx, seq);
       fs.forEach((f, i) => {
-        if (!scene.textures.exists(f.key)) scene.load.image(f.key, f.url);
+        FRAME_URL.set(f.key, f.url);
+        if ((!lazy || always) && !scene.textures.exists(f.key)) scene.load.image(f.key, f.url);
         const hold = (fs[i + 1]?.tick ?? f.tick + 1) - f.tick;
         for (let n = 0; n < hold; n++) frames.push(f.key);
       });
@@ -1037,6 +1078,7 @@ export function preloadMoves(scene) {
     mv.endFrames = build(mv.fx, mv.endSeqs);
     for (const v of mv.cycle ?? []) v.frames = build(mv.fx, [v.seq]);
   }
+  always = true;
   LEECH.seededFrames = build(LEECH.seeded[0], [LEECH.seeded[1]]);
   LEECH.healFrames = build(LEECH.heal[0], [LEECH.heal[1]]);
   EMPOWER.frames = build(EMPOWER.fx[0], [EMPOWER.fx[1]]);
@@ -1044,9 +1086,10 @@ export function preloadMoves(scene) {
   CANCEL.frames = build(CANCEL.fx[0], [CANCEL.fx[1]]).slice(...CANCEL.slice);
   PARRY.hitFrames = build(PARRY.hit[0], [PARRY.hit[1]]);
   HEAL.frames = build(HEAL.fx[0], [HEAL.fx[1]]);
-  for (const mv of Object.values(MOVES)) if (mv.dir8 !== undefined) mv.dirFrames = Array.from({ length: 8 }, (_, k) => build(mv.fx, [String(mv.dir8 + k).padStart(3, '0')]));
   DANCE.cueFrames = build(DANCE.cue[0], [DANCE.cue[1]]);
   DANCE.hitFrames = build(DANCE.hit[0], [DANCE.hit[1]]);
+  always = false;
+  for (const mv of Object.values(MOVES)) if (mv.dir8 !== undefined) mv.dirFrames = Array.from({ length: 8 }, (_, k) => build(mv.fx, [String(mv.dir8 + k).padStart(3, '0')]));
   for (const mv of Object.values(MOVES)) {
     mv.selfFrames = mv.selfFx ? build(mv.selfFx[0], [mv.selfFx[1]]) : [];
     mv.bounceFrames = mv.bounceFx ? build(mv.bounceFx[0], [mv.bounceFx[1]]) : [];

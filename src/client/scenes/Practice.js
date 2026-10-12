@@ -107,12 +107,14 @@ export class Practice extends Battle {
     return null;
   }
 
-  spawn(kind) {
+  // (species: the one already chosen, when this is a second try after its sprites had to be sent for)
+  spawn(kind, species) {
     const foes = this.npcs.filter((n) => (kind === 'dummy') === (n.ai === 'dummy'));
     const at = this.spotNear();
     if (!at || foes.length >= MAX_SPAWNS) return banner(this, foes.length >= MAX_SPAWNS ? `${MAX_SPAWNS} is plenty` : 'No room here');
     const pool = SPECIES_ORDER.filter((id) => id !== session.species);
-    const species = pool[Math.floor(Math.random() * pool.length)];
+    species ??= pool[Math.floor(Math.random() * pool.length)];
+    if (!ensureSpecies(this, species)) return void this.time.delayedCall(200, () => this.spawn(kind, species));
     const [x, y] = at;
     if (kind === 'dummy') {
       const mon = new Mon(this, x, y, { team: 'n', ai: 'dummy', tint: DUMMY_TINT, species, hp: DUMMY_HP });

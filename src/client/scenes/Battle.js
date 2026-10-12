@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Play, KEYS, COMBAT, VIEW_W, VIEW_H } from '../../scene.js';
-import { MOVES } from '../../moves.js';
+import { MOVES, loadMoves, movesOf } from '../../moves.js';
 import { SPECIES, loadSpecies, ensureSpecies } from '../../sprites.js';
 import { Mon, dirVec } from '../../mon.js';
 import { Actions, keyGuard } from '../input.js';
@@ -67,7 +67,13 @@ export class Battle extends Play {
   }
 
   // Evolved forms are only loaded when someone in the fight wears one.
-  preload() { loadSpecies(this, this.cfg.fighters.flatMap((f) => f.crew ?? [f]).map(lookOf)); }
+  // and the art of the moves anyone in the fight can use: their four, and for a mon that may talk in its sleep, the
+  // rest of its own
+  preload() {
+    const all = this.cfg.fighters.flatMap((f) => f.crew ?? [f]);
+    loadSpecies(this, all.map(lookOf));
+    loadMoves(this, all.flatMap((f) => [...f.moves, ...(f.moves.includes('sleepTalk') ? movesOf(f.species) : [])]));
+  }
 
   create() {
     for (const f of this.cfg.fighters.flatMap((q) => q.crew ?? [q])) ensureSpecies(this, lookOf(f));

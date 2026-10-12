@@ -127,6 +127,7 @@ export class Hub extends Phaser.Scene {
     }
     // the friend as they look now (their evolved form once its sprites are in)
     const look = SPECIES[friend.form]?.base === friend.species && ensureSpecies(this, friend.form) ? friend.form : friend.species;
+    if (!ensureSpecies(this, look)) return; // their sprites are on the way
     const m = this.friend ??= new Mon(this, this.ox + seen.x, seen.y, { team: 'p', species: look });
     if (m.species.id !== look) m.setSpecies(look);
     const k = Math.min(1, dt * 14);

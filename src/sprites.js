@@ -89,7 +89,7 @@ export function preloadSprites(scene) {
 
 // Is this species drawable yet? Once its sheets are in, this finishes them (see finalizeSpecies) and says yes.
 // Until then it says no, having started the load the first time it was asked: callers simply ask again next frame.
-const requested = new Set();
+const requested = new Map(); // species id -> the scene that sent for it
 export function ensureSpecies(scene, id) {
   const all = sheets(SPECIES[id]);
   if (all.every((a) => scene.textures.exists(`s-${a.key}`))) return true;
@@ -97,8 +97,10 @@ export function ensureSpecies(scene, id) {
     finalizeSpecies(scene, SPECIES[id]);
     return true;
   }
-  if (!requested.has(id)) {
-    requested.add(id);
+  // (sent for again if the scene that asked first has gone, or its loader has stopped, before the sheets came in)
+  const by = requested.get(id);
+  if (!by || by !== scene || !scene.load.isLoading()) {
+    requested.set(id, scene);
     loadSpecies(scene, [id]);
     scene.load.start();
   }
@@ -107,8 +109,9 @@ export function ensureSpecies(scene, id) {
 
 // Shadow sheets encode three nested shadow sizes: white+green (small), +red (medium), +blue (large).
 // The single white pixel is the shadow centre, i.e. where the feet are.
+// (only those whose sheets are in: the player client loads a species when it is first needed)
 export function finalizeSprites(scene) {
-  for (const id of SPECIES_ORDER) finalizeSpecies(scene, SPECIES[id]);
+  for (const id of SPECIES_ORDER) if (sheets(SPECIES[id]).every((a) => scene.textures.exists(`sraw-${a.key}`))) finalizeSpecies(scene, SPECIES[id]);
 }
 
 export function finalizeSpecies(scene, s) {

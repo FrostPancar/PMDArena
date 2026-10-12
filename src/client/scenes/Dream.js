@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { VIEW_W, VIEW_H } from '../../scene.js';
-import { SPECIES, SPECIES_ORDER, ensureSpecies } from '../../sprites.js';
+import { SPECIES, SPECIES_ORDER, ensureSpecies, loadSpecies } from '../../sprites.js';
 import { Mon } from '../../mon.js';
 import { DREAM_GLOW } from '../art.js';
 import { Actions } from '../input.js';
@@ -27,6 +27,12 @@ export class Dream extends Phaser.Scene {
     this.from = data?.from === 'base' ? 'base' : 'title';
   }
 
+  // the mon the dream opens on; the others are sent for as they are looked at
+  preload() {
+    const current = this.pickFor === 'partner' ? session.partner : session.species;
+    loadSpecies(this, [SPECIES_ORDER[Math.max(0, SPECIES_ORDER.indexOf(current))]]);
+  }
+
   create() {
     this.walkable = () => true; // Mon asks its scene where it may stand
     this.add.image(0, 0, 'px').setOrigin(0).setDisplaySize(VIEW_W, VIEW_H).setTint(DREAM_GLOW);
@@ -36,6 +42,7 @@ export class Dream extends Phaser.Scene {
 
     const current = this.pickFor === 'partner' ? session.partner : session.species;
     this.index = Math.max(0, SPECIES_ORDER.indexOf(current));
+    ensureSpecies(this, SPECIES_ORDER[this.index]);
     this.mon = new Mon(this, ...STAND, { team: 'p', species: SPECIES_ORDER[this.index] });
     this.float = 0;
 
@@ -120,7 +127,7 @@ export class Dream extends Phaser.Scene {
     if (mystery) {
       this.plateName.setText('Random Pokémon');
       this.plateInfo.setText('Shown once you wake.');
-      this.look = null;
+      this.look = this.base = null;
       return;
     }
     const sp = SPECIES[cell.id];
@@ -128,7 +135,7 @@ export class Dream extends Phaser.Scene {
     this.plateName.setText(sp.name);
     this.plateInfo.setText(`${cap(sp.type)} type · Lv ${levelOf(cell.id)}`);
     this.look = formOf(cell.id); // an evolved look appears as soon as its sprites are in (see update)
-    this.mon.setSpecies(cell.id);
+    this.base = cell.id; // shown as soon as its own sprites are in (see update)
     this.mon.dir = 0;
   }
 
@@ -169,7 +176,10 @@ export class Dream extends Phaser.Scene {
     this.float += dt;
     this.mon.y = STAND[1] + Math.sin(this.float * 2.2) * 2;
     this.mystery.y = STAND[1] - 10 + Math.sin(this.float * 2.2) * 2;
-    if (this.look && this.mon.species.id !== this.look && this.mon.free && ensureSpecies(this, this.look)) { this.mon.setSpecies(this.look); this.mon.dir = 0; }
+    // the mon in the highlighted cell: its evolved look if that is in, else itself, and nothing until one of them is
+    const want = this.look && ensureSpecies(this, this.look) ? this.look : this.base && ensureSpecies(this, this.base) ? this.base : null;
+    if (want && this.mon.species.id !== want && this.mon.free) { this.mon.setSpecies(want); this.mon.dir = 0; }
+    if (this.base) this.mon.hidden = !want || (this.mon.species.id !== this.look && this.mon.species.id !== this.base);
     this.mon.update(dt);
     const note = stagesNote(this.game);
     if (note !== this.note.text) this.note.setText(note);

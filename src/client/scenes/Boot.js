@@ -3,12 +3,12 @@ import { preloadArt, buildArt } from '../art.js';
 import { loadSession, session } from '../session.js';
 import { reveal } from '../transition.js';
 
-// Loads the mons and the art sheets, then opens the title screen. The move effects and stages (thousands of
-// files) are fetched by the title screen while the player looks at it.
+// Loads the art sheets, then opens the title screen. Mon sprites and move effects are loaded by the screens that
+// need them; the stages are fetched by the title screen while the player looks at it.
 export class ClientBoot extends Boot {
   preload() {
     this.loadingBar();
-    this.loadCore();
+    this.loadCore(false); // no mon sprites yet: each screen loads the ones it shows (a phone cannot hold them all)
     preloadArt(this);
   }
 

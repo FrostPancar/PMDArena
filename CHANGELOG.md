@@ -3,6 +3,13 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.3
+
+**Loading** (for phones: the game ran out of memory while loading on iOS Safari)
+- Move effects are loaded for the moves in the fight you enter, not all at the title screen.
+- Mon sprites are loaded when a screen first shows that mon, not all at start-up.
+- At the title the game now holds about 400 pictures instead of several thousand.
+
 ## alpha 0.5.2
 
 **Game feel** (all visual only; switches in `FEEL`, `src/scene.js`)

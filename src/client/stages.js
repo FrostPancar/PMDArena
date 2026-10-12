@@ -1,13 +1,14 @@
 import { loadStages } from '../scene.js';
 
-// The move effects and stage art (thousands of files) are fetched behind the title and dream screens.
+// The stage art and the handful of effects every fight shares are fetched behind the title and dream screens.
+// (The moves' own effects, thousands of files, are loaded fight by fight: see moves.js.)
 // The always-running wipe scene does the loading, so changing screens does not interrupt it.
 export function fetchStages(game) {
   if (game.registry.get('stagesProgress') !== undefined) return;
   game.registry.set('stagesProgress', 0);
   const loader = game.scene.getScene('wipe').load;
   loader.maxParallelDownloads = 96; // downloads are only started once a frame
-  loadStages(loader.scene);
+  loadStages(loader.scene, true);
   loader.on('progress', (v) => game.registry.set('stagesProgress', v));
   loader.once('complete', () => {
     game.registry.set('stagesProgress', 1);
