@@ -21,10 +21,15 @@ export const session = {
   records: { battles: 0, wins: 0, losses: 0, streak: 0, bestStreak: 0, kos: 0, seconds: 0, modes: {} }, // modes: '1v1 vs CPU' -> { battles, wins }
 };
 
+// Is there a game saved on this device? (set by loadSession)
+export let hasSave = false;
+const FRESH = JSON.stringify(session);
+
 export function loadSession() {
   try {
     const saved = JSON.parse(localStorage.getItem(SAVE_KEY));
     if (saved && typeof saved === 'object') {
+      hasSave = true;
       const { profile, records, ...rest } = saved;
       Object.assign(session, rest);
       Object.assign(session.profile, profile);
@@ -41,7 +46,26 @@ export function loadSession() {
 }
 
 export function saveSession() {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(session)); } catch { /* play on without saving */ }
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(session)); hasSave = true; } catch { /* play on without saving */ }
+}
+
+// Ask the browser to keep this site's storage for good, so it does not clear the save when the device runs short of
+// room (it may say no; the save still works, it is only less safe).
+export function keepSave() {
+  try { navigator.storage?.persist?.().catch(() => {}); } catch { /* not offered here */ }
+}
+
+// Start over: the save so far is set aside under its own key (not thrown away) and the game is as on a first visit.
+export function newGame() {
+  try {
+    const old = localStorage.getItem(SAVE_KEY);
+    if (old) localStorage.setItem(`${SAVE_KEY}-backup`, old);
+    localStorage.removeItem(SAVE_KEY);
+  } catch { /* nothing was being kept */ }
+  const fresh = JSON.parse(FRESH);
+  for (const k of Object.keys(session)) delete session[k];
+  Object.assign(session, fresh);
+  hasSave = false;
 }
 
 // ---- how far a mon has come ----

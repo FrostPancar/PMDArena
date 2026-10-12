@@ -128,6 +128,9 @@ export class Battle extends Play {
     });
   }
 
+  // The match so far, as the announcer's pips.
+  tally() { return { ours: this.wins[this.me.team], theirs: this.wins[1 - this.me.team], need: this.need }; }
+
   showScore() {
     const [a, b] = [this.me.team, 1 - this.me.team];
     if (!this.crewed) return this.score.set(`Round ${this.round}`, this.wins[a], this.wins[b]);
@@ -155,7 +158,7 @@ export class Battle extends Play {
       return this.end(won ? 'You won!' : drawn ? 'A draw!' : this.cfg.mode === '2v2' ? 'Your team fainted...' : this.crewed ? 'Your crew fainted...' : 'You fainted...', won);
     }
     for (const x of this.fighters) if (!x.mon.remote) x.mon.invuln = 9; // nothing still in the air changes anything now
-    callout(this, drawn ? 'Double KO' : 'KO!', drawn ? 'Nobody takes the round' : won ? 'You take the round' : 'The round goes to the other side', 1500, drawn ? INK.white : won ? INK.gold : INK.rose);
+    callout(this, drawn ? 'Double KO' : 'KO!', drawn ? 'Nobody takes the round' : won ? 'You take the round' : 'The round goes to the other side', 1600, drawn ? INK.white : won ? INK.gold : INK.rose, this.tally());
     this.after(1900, () => this.cameras.main.fadeOut(200, 0, 0, 0));
     this.after(2150, () => {
       if (this.over) return;
@@ -298,7 +301,7 @@ export class Battle extends Play {
     const opened = won === true && this.level ? wonOn(this.mapId) : null;
     if (opened) this.time.delayedCall(1400, () => banner(this, 'New stage opened!', MAPS[opened].name));
     if (won === null) banner(this, message);
-    else callout(this, won ? 'You win!' : message === 'A draw!' ? 'Draw' : 'You lose', this.need > 1 ? `${this.wins[this.me.team]} - ${this.wins[1 - this.me.team]}` : won ? null : message, 1900, won ? INK.gold : INK.rose);
+    else callout(this, won ? 'You win!' : message === 'A draw!' ? 'Draw' : 'You lose', this.need > 1 || won ? null : message, 1900, won ? INK.gold : INK.rose, this.need > 1 ? this.tally() : null);
     this.time.delayedCall(2200, () => (earned ? this.showResult(earned) : this.leave()));
   }
 
@@ -581,7 +584,11 @@ export class Battle extends Play {
   padState() {
     if (!this.live) return null;
     const p = this.player;
-    return { moves: this.moves, stamina: p.stamina, hot: p.state === 'windup' || p.state === 'bird' ? this.slot : -1 };
+    // instant: the moves that go off on the press rather than being aimed first (held ones, or any press while a
+    // beam clash or a dance is taking taps)
+    const tapping = !!p.dance || !!p.beaming?.clash;
+    const instant = this.moves.map((id) => { const mv = MOVES[id]; return tapping || !mv || !!(mv.grow || mv.catch || mv.ritual || mv.steer || mv.flurry || mv.stance || mv.kind === 'beam' || mv.kind === 'hold'); });
+    return { moves: this.moves, instant, running: p.running, stamina: p.stamina, hot: p.state === 'windup' || p.state === 'bird' ? this.slot : -1 };
   }
 
   // A fight button went down: 'move' (with its slot), 'jump', or 'parry', which calls off a charging move instead.
@@ -590,6 +597,25 @@ export class Battle extends Play {
     if (button === 'move') this.fire(i, 'touch');
     else if (button === 'jump') this.jump();
     else if (!this.cancelMove(this.player)) this.parry(this.player);
+    // (Run is not a press: the pad holds touch.run while its button is down, see sprinting)
+  }
+
+  // While a move's button is held on the pad, a guide on the ground shows where it will go: a dotted line from the
+  // player and a ring where it lands (or how far it reaches).
+  drawAim() {
+    const i = touch.on && this.live ? touch.aiming : -1, mv = MOVES[this.moves[i]];
+    if (!mv && !this.aimG) return;
+    const g = (this.aimG ??= this.add.graphics().setDepth(7)).clear();
+    if (!mv) return;
+    const p = this.player, a = this.aimOf(p, 'touch'), col = p.stamina >= mv.cost ? 0xfff3a0 : 0xff9a8a;
+    const ring = (x, y, r) => g.fillStyle(col, 0.14).fillEllipse(x, y, r * 2, r * 1.54).lineStyle(1, col, 0.95).strokeEllipse(x, y, r * 2, r * 1.54);
+    if (mv.kind === 'self') return ring(p.x, p.y, 13);
+    if (mv.kind === 'aoe') return ring(p.x, p.y, mv.radius);
+    const spot = mv.kind === 'mid' || mv.kind === 'blink' || mv.lob;
+    const reach = spot ? Phaser.Math.Clamp(a.dist, 24, mv.range ?? 100) : mv.kind === 'melee' ? mv.reach + 14 + (mv.step ?? 0) : mv.range ?? mv.length ?? mv.dash ?? 100;
+    g.fillStyle(col, 0.9);
+    for (let d = 12; d < reach - 6; d += 8) g.fillRect(Math.round(p.x + a.dx * d) - 1, Math.round(p.y + a.dy * d) - 1, 2, 2);
+    ring(p.x + a.dx * reach, p.y + a.dy * reach, spot ? mv.burst ?? mv.radius ?? 12 : Math.max(5, mv.radius ?? 6));
   }
 
   setMove() {}
@@ -607,8 +633,8 @@ export class Battle extends Play {
     return x || y ? [x, y] : touch.stick;
   }
 
-  // Shift, or the d-pad pushed out to its rim.
-  sprinting() { return this.cfg.auto ? !!this.autoWalk?.run : super.sprinting() || touch.full; }
+  // Shift, or the pad's Run button.
+  sprinting() { return this.cfg.auto ? !!this.autoWalk?.run : super.sprinting() || touch.run; }
 
   // Moves 1 and 2 are the left and right mouse buttons, 3 and 4 are Q and E; all four go where the pointer is.
   bindInput() {
@@ -703,6 +729,7 @@ export class Battle extends Play {
       mon.sprite.setAlpha(mon.alive ? 1 : 0.45); // down and out
     }
     if (this.score) this.showScore();
+    this.drawAim();
     this.hud.refresh(this.player.state === 'windup' || this.player.state === 'bird' ? this.slot : -1, this.slot);
   }
 }

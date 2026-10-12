@@ -798,6 +798,9 @@ give('shadowBall willOWisp gyroBall', (mv) => ({ kind: 'projectile', turn: 0, sp
 give('magicalLeaf hypnosis bubbleBeam', (mv) => ({ kind: 'projectile', turn: 0, speed: mv.speed * 1.55 }));
 give('avalanche attackOrder', { lead: 0.5 }); // aimed near a foe, these land where it is heading
 for (const mv of Object.values(MOVES)) if (mv.kind !== 'self') mv.tag ??= 'strike';
+// Shots thrown a long way get there sooner: a slow one was too easy to walk around at that distance.
+const LONG_SHOT = 200, LONG_SHOT_SPEED = 1.35;
+for (const mv of Object.values(MOVES)) if (mv.kind === 'projectile' && mv.range >= LONG_SHOT && !mv.lob) mv.speed = Math.round(mv.speed * LONG_SHOT_SPEED);
 // Melee moves come out at once and carry the user a short dart toward the aim (step), so they are easier to land.
 // The heaviest keep their wind-up: that wait is the price of the power.
 // (25 power and up: Focus Punch, Mega Punch, Mega Kick, Megahorn, Seismic Toss, Dynamic Punch, Cross Chop, Wood Hammer)

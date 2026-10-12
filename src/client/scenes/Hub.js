@@ -94,8 +94,6 @@ export class Hub extends Phaser.Scene {
     this.registry.remove('revealPartner');
     const who = SPECIES[rolled] ? `You are ${SPECIES[rolled].name}!` : SPECIES[ally] ? `Your partner is ${SPECIES[ally].name}!` : null;
     this.events.once('create', () => banner(this, who ?? a.name, who ? a.name : undefined));
-    // the first time a species walks into the dojo, its moves are put in front of the player
-    this.brief = this.areaId === 'dojo' && !session.briefed[session.species];
     // a branching mon (Eevee) that has grown ready asks which way to go
     this.evolve = awaitsChoice();
   }
@@ -363,7 +361,6 @@ export class Hub extends Phaser.Scene {
     if (!this.free) return;
 
     if (this.evolve) { this.evolve = false; return this.openEvolve(); }
-    if (this.brief) { this.brief = false; return this.openMoves(); }
     const lx = p.x - this.ox;
     const door = this.area.doors.find(({ rect: [x, y, w, h] }) => lx >= x && lx <= x + w && p.y >= y && p.y <= y + h);
     if (door) return go(this, 'hub', door.to);

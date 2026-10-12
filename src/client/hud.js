@@ -110,51 +110,76 @@ export class BattleHud {
 }
 
 // The score, top centre: a pip for each fight a side has to win, lit as they are won (yours on the left, in blue).
-// In a crew battle the pips are the mons each side has left instead.
+// In a crew battle the pips are the mons each side has left instead. A pip that changes gives a little jump.
+const OURS = 0x8fdcff, THEIRS = 0xff7a6a, UNLIT = 0x2a3c52;
 export class ScoreStrip {
   constructor(scene, each) {
-    const gap = 9, mid = VIEW_W / 2, w = 46 + each * gap * 2;
+    const gap = 9, mid = VIEW_W / 2, w = 52 + each * gap * 2;
+    this.scene = scene;
     panel(scene, mid - w / 2, 3, w, 15, 'dim');
     this.label = text(scene, mid, 5, '', INK.dim).setOrigin(0.5, 0);
     const pip = (x) => {
-      shade(scene, x - 1, 7, 7, 7, 0x06101c, 1).setDepth(DEPTH + 1);
-      return shade(scene, x, 8, 5, 5, 0xffffff, 1).setDepth(DEPTH + 2);
+      shade(scene, x - 4, 7, 7, 7, 0x06101c, 1).setDepth(DEPTH + 1);
+      return shade(scene, x, 10.5, 5, 5, 0xffffff, 1).setOrigin(0.5).setDepth(DEPTH + 2);
     };
-    this.ours = Array.from({ length: each }, (_, i) => pip(mid - w / 2 + 6 + i * gap));
-    this.theirs = Array.from({ length: each }, (_, i) => pip(mid + w / 2 - 11 - i * gap));
+    this.ours = Array.from({ length: each }, (_, i) => pip(mid - w / 2 + 9 + i * gap));
+    this.theirs = Array.from({ length: each }, (_, i) => pip(mid + w / 2 - 8 - i * gap));
   }
 
   // ours / theirs: how many pips of each side are lit.
   set(label, ours, theirs) {
     const key = `${label} ${ours} ${theirs}`;
     if (key === this.shown) return;
+    const first = this.shown === undefined;
     this.shown = key;
     this.label.setText(label);
-    this.ours.forEach((p, i) => p.setTint(i < ours ? 0x8fdcff : 0x2a3c52));
-    this.theirs.forEach((p, i) => p.setTint(i < theirs ? 0xff7a6a : 0x2a3c52));
+    const paint = (pips, lit, color) => pips.forEach((p, i) => {
+      const tint = i < lit ? color : UNLIT;
+      if (!first && p.tintTopLeft !== tint) this.scene.tweens.add({ targets: p, scaleX: 9, scaleY: 9, duration: 110, yoyo: true, ease: 'Quad.easeOut' });
+      p.setTint(tint);
+    });
+    paint(this.ours, ours, OURS);
+    paint(this.theirs, theirs, THEIRS);
   }
 }
 
-// The announcer: a dark band across the middle of the screen with a call in large letters (ROUND 1, FIGHT!, KO!) and a
-// line under it. It opens, holds for `hold` ms and closes by itself.
-export function callout(scene, title, sub, hold = 900, tint = INK.gold) {
-  const cy = (VIEW_H >> 1) - 22, d = DEPTH - 30;
-  const band = shade(scene, 0, cy, VIEW_W, sub ? 44 : 32, 0x06101c, 0.72).setOrigin(0, 0.5).setDepth(d);
-  band.y = cy + band.displayHeight / 2;
-  const rules = [-1, 1].map((k) => shade(scene, 0, band.y + (k * band.displayHeight) / 2 - (k > 0 ? 1 : 0), VIEW_W, 1, tint, 0.9).setDepth(d + 1));
-  const big = pinned(scene.add.bitmapText(VIEW_W / 2, cy + 7, 'pmd', title.toUpperCase()).setOrigin(0.5, 0).setScale(2).setTint(tint)).setDepth(d + 2);
-  const parts = [band, ...rules, big];
-  if (sub) parts.push(text(scene, VIEW_W / 2, cy + 29, sub).setOrigin(0.5, 0).setDepth(d + 2));
-  const letters = parts.slice(3), h = band.scaleY;
+// The announcer: a dark band across the middle of the screen with a call in large letters (ROUND 1, FIGHT!, KO!) that
+// lands with a thump, and a line under it. `score` ({ ours, theirs, need }) adds the pips of the match so far.
+// It opens, holds for `hold` ms and closes by itself.
+export function callout(scene, title, sub, hold = 900, tint = INK.gold, score = null) {
+  const lines = (sub ? 1 : 0) + (score ? 1 : 0), h = 30 + lines * 12, mid = (VIEW_H >> 1) - 14, top = mid - (h >> 1), d = DEPTH - 30;
+  const band = shade(scene, 0, mid, VIEW_W, h, 0x06101c, 0.78).setOrigin(0, 0.5).setDepth(d);
+  // a bright rule and a faint one outside it, top and bottom
+  const rules = [-1, 1].flatMap((k) => [
+    shade(scene, 0, mid + k * (h / 2) - (k > 0 ? 1 : 0), VIEW_W, 1, tint, 0.95).setDepth(d + 1),
+    shade(scene, 0, mid + k * (h / 2 + 2) - (k > 0 ? 1 : 0), VIEW_W, 1, tint, 0.35).setDepth(d + 1),
+  ]);
+  const word = (dx, dy, color) => pinned(scene.add.bitmapText(VIEW_W / 2 + dx, top + 17 + dy, 'pmd', title.toUpperCase()).setOrigin(0.5).setScale(2).setTint(color)).setDepth(d + 2 + (color === tint ? 1 : 0));
+  const big = [word(2, 2, 0x06101c), word(0, 0, tint)];
+  const small = [];
+  if (sub) small.push(text(scene, VIEW_W / 2, top + 28, sub, 0xdfe8f4).setOrigin(0.5, 0).setDepth(d + 3));
+  if (score) {
+    const y = top + 31 + (sub ? 12 : 0), gap = 9;
+    const pip = (x, lit, color) => small.push(shade(scene, x - 1, y - 1, 7, 7, 0x000000, 1).setDepth(d + 3), shade(scene, x, y, 5, 5, lit ? color : UNLIT, 1).setDepth(d + 4));
+    for (let i = 0; i < score.need; i++) {
+      pip(VIEW_W / 2 - 14 - (score.need - 1 - i) * gap - 5, i < score.ours, OURS);
+      pip(VIEW_W / 2 + 14 + i * gap, i < score.theirs, THEIRS);
+    }
+    small.push(text(scene, VIEW_W / 2, y - 3, '-', INK.dim).setOrigin(0.5, 0).setDepth(d + 3));
+  }
+  const all = [band, ...rules, ...big, ...small];
+  const full = band.scaleY;
   band.scaleY = 0;
-  for (const o of [...rules, ...letters]) o.setAlpha(0);
-  for (const o of letters) o.x -= 40;
-  scene.tweens.add({ targets: band, scaleY: h, duration: 110 });
-  scene.tweens.add({ targets: rules, alpha: 0.9, duration: 110 });
-  scene.tweens.add({ targets: letters, alpha: 1, x: '+=40', duration: 150, ease: 'Cubic.easeOut' });
+  for (const o of [...rules, ...big, ...small]) o.setAlpha(0);
+  for (const o of big) o.setScale(3.2);
+  scene.tweens.add({ targets: band, scaleY: full, duration: 110, ease: 'Quad.easeOut' });
+  rules.forEach((r, i) => scene.tweens.add({ targets: r, alpha: i % 2 ? 0.35 : 0.95, duration: 140 }));
+  scene.tweens.add({ targets: big, alpha: 1, scale: 2, duration: 170, ease: 'Back.easeOut' });
+  scene.tweens.add({ targets: small, alpha: 1, delay: 120, duration: 160 });
   scene.time.delayedCall(hold, () => {
-    scene.tweens.add({ targets: letters, alpha: 0, x: '+=40', duration: 130, ease: 'Cubic.easeIn' });
-    scene.tweens.add({ targets: [band, ...rules], alpha: 0, delay: 80, duration: 120, onComplete: () => parts.forEach((o) => o.destroy()) });
+    scene.tweens.add({ targets: [...big, ...small], alpha: 0, duration: 130 });
+    scene.tweens.add({ targets: big, scale: 2.4, duration: 130, ease: 'Quad.easeIn' });
+    scene.tweens.add({ targets: [band, ...rules], alpha: 0, delay: 90, duration: 130, onComplete: () => all.forEach((o) => o.destroy()) });
   });
 }
 
@@ -172,10 +197,11 @@ export const CONTROLS = [
 ];
 // the same card for the touch pad
 const PAD_CONTROLS = [
-  ['D-pad', 'Move'],
-  ['Push it to the rim', 'Run'],
-  ['Move buttons', 'Aimed at the nearest foe'],
-  ['Drag a move', 'Aim it yourself'],
+  ['Stick', 'Move'],
+  ['Run', 'A burst of speed'],
+  ['Hold a move', 'Aim it at the nearest foe'],
+  ['Drag it', 'Aim it yourself'],
+  ['Let go', 'Use the move'],
   ['Jump', 'Jump over attacks'],
   ['Parry', 'Parry, or call off a move'],
   ['Menu', 'Pause'],

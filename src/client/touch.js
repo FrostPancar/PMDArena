@@ -4,10 +4,16 @@ import { typeOf } from './moveinfo.js';
 import { wipe } from './transition.js';
 import { paintFrame } from './ui.js';
 
-// On a phone the keyboard and mouse become a pad drawn over the game (touch.css): a d-pad in the left corner and
-// buttons in the right one. Which buttons depends on what the screen on top can do with them:
-//   in a fight   the d-pad walks (pushed out to its rim: runs), and the six buttons are the four moves, parry, jump
-//   elsewhere    the d-pad walks or steps through a menu, with A (confirm), B (cancel) and START (menu) as needed
+// On a phone the keyboard and mouse become a pad drawn over the game (touch.css): a thumb stick in the left corner
+// and buttons in the right one. Which buttons depends on what the screen on top can do with them:
+//   in a fight   the stick walks (it comes to wherever the thumb lands); on the right are the four moves, as wide
+//                plates in the colour of their type, and three round buttons that look nothing like them: Jump, Parry
+//                and Run. Running is its own button so that it is never set off by a hard push of the stick.
+//                A move is aimed before it is thrown: hold its button and a guide shows where it will go (at the
+//                nearest foe, or wherever the button is dragged toward), let go and it goes; Parry calls the aim off.
+//                Moves that are held (beams, flights, widening blasts) start on the press instead and are steered
+//                by the same drag.
+//   elsewhere    the stick walks or steps through a menu, with A (confirm), B (cancel) and START (menu) as needed
 //   typing       a letter board (room codes, the profile name)
 // Screens never talk to the pad: it reads the Actions (input.js) of whichever scene is up, so anything that works
 // from the keyboard works from here. A Battle scene also answers padState() and takes padPress().
@@ -16,9 +22,10 @@ const phone = navigator.maxTouchPoints > 0 && matchMedia('(pointer: coarse)').ma
 
 export const touch = {
   on: asked || phone,
-  stick: [0, 0], // which way the d-pad is pushed: a unit vector, or 0, 0
-  full: false, // pushed all the way out to its rim
+  stick: [0, 0], // which way the stick is pushed: a unit vector, or 0, 0
+  run: false, // the Run button is down
   held: [false, false, false, false], // the move buttons that are down
+  aiming: -1, // the move whose button is being held to aim it (it goes off on release), or -1
   aim: null, // { dx, dy, reach 0..1 } once a move button has been dragged away from where it was pressed
 };
 
@@ -27,9 +34,18 @@ export const touch = {
 export const tapActs = (ptr, already) => !ptr.wasTouch || already;
 
 const M = 4; // gap to the screen edge
-const KEY_W = 70, KEY_H = 22, GAP = 2; // the six fight buttons, two across
-const STICK = 64, RIM = 30, DEAD = 7; // the d-pad's art, how far it can be pushed, and how far before it counts
-const AIM_DEAD = 10, AIM_SPAN = 40; // dragging a move button: where aiming starts, and the drag that is full reach
+const MOVE_W = 64, MOVE_H = 27, GAP = 3; // the four move plates, two across
+const ROUND = 32; // Jump, Parry and Run
+const STICK = 64, RIM = 24, DEAD = 6; // the stick's art, how far it can be pushed, and how far before it counts
+const AIM_DEAD = 8, AIM_SPAN = 44; // dragging a move button: where aiming starts, and the drag that is full reach
+const NOTCH = 20; // of the energy bar (see Mon)
+// the three round buttons: [rim, fill] and a little picture, so each reads at a glance and none is taken for a move
+const ROUNDS = {
+  jump: { colors: ['#d9ffd0', 'rgba(52,150,78,0.62)'], label: 'Jump', art: ['...#...', '..###..', '.#####.', '#######', '..###..', '..###..'] },
+  parry: { colors: ['#e6eefa', 'rgba(64,104,190,0.62)'], label: 'Parry', art: ['#######', '#######', '#######', '.#####.', '..###..', '...#...'] },
+  run: { colors: ['#fff3a0', 'rgba(196,146,36,0.62)'], label: 'Run', art: ['#..#.....', '.#..#....', '..#..#...', '..#..#...', '.#..#....', '#..#.....'] },
+  cancel: { colors: ['#ffd9d2', 'rgba(204,62,50,0.78)'], label: 'Cancel', art: ['#.....#', '.#...#.', '..#.#..', '...#...', '..#.#..', '.#...#.', '#.....#'] },
+};
 const REPEAT = [380, 130]; // a held direction steps a menu again after this long, then this often
 const TYPE_RGB = {
   normal: '168,168,120', fire: '240,128,48', water: '104,144,240', electric: '232,192,40', grass: '120,200,80', ice: '120,200,200',
@@ -138,6 +154,7 @@ function makeKey(parent, w, h, at, on = {}) {
     if (key.pressed) return;
     key.pressed = true;
     key.finger = e.pointerId;
+    try { navigator.vibrate?.(8); } catch { /* no buzz here */ }
     try { el.setPointerCapture(e.pointerId); } catch { /* the finger is already gone */ }
     el.classList.add('down');
     on.down?.(e, key);
@@ -187,26 +204,41 @@ function build() {
   }
   buildStick();
 
-  // fight: moves 1 and 2, moves 3 and 4, parry and jump (jump in the corner, under the thumb)
-  const cell = (col, row) => ({ right: edge(M + (1 - col) * (KEY_W + GAP), 'right'), bottom: edge(M + (2 - row) * (KEY_H + GAP), 'bottom') });
+  // fight: the four moves in the corner under the thumb, two by two; beside them Jump with Parry over it, and Run
+  // further in along the bottom
+  const cell = (col, row) => ({ right: edge(M + (1 - col) * (MOVE_W + GAP), 'right'), bottom: edge(M + (1 - row) * (MOVE_H + GAP), 'bottom') });
   let from = null;
-  ui.moves = [0, 1, 2, 3].map((i) => makeKey(root, KEY_W, KEY_H, cell(i % 2, i >> 1), {
+  ui.moves = [0, 1, 2, 3].map((i) => makeKey(root, MOVE_W, MOVE_H, cell(i % 2, i >> 1), {
     down: (e) => {
       touch.held[i] = true;
       touch.aim = null;
       from = [e.clientX, e.clientY];
-      fight('move', i);
+      // a held move, or a press that is only a tap (a beam clash, a dance), goes at once; the rest are aimed first
+      if (current()?.scene.padState?.()?.instant[i]) fight('move', i);
+      else touch.aiming = i;
     },
     // dragged away from where it went down, the move is aimed along the drag instead of at the nearest foe
     move: (e) => {
       const dx = e.clientX - from[0], dy = e.clientY - from[1], d = Math.hypot(dx, dy) / scale;
       if (d > AIM_DEAD) touch.aim = { dx: dx / (d * scale), dy: dy / (d * scale), reach: Math.min(1, (d - AIM_DEAD) / AIM_SPAN) };
     },
-    up: () => { touch.held[i] = false; },
+    up: (e) => {
+      touch.held[i] = false;
+      if (touch.aiming !== i) return;
+      touch.aiming = -1;
+      if (e.type === 'pointerup') fight('move', i); // let go: it is thrown (a finger that was taken away throws nothing)
+    },
   }));
-  ui.parry = makeKey(root, KEY_W, KEY_H, cell(0, 2), { down: () => fight('parry') });
-  ui.jump = makeKey(root, KEY_W, KEY_H, cell(1, 2), { down: () => fight('jump') });
-  framed(ui.jump, 'jump', 'pad', 'Jump');
+  const side = M + 2 * (MOVE_W + GAP) + 1;
+  ui.jump = makeKey(root, ROUND, ROUND, { right: edge(side, 'right'), bottom: edge(M, 'bottom') }, { down: () => fight('jump') });
+  ui.parry = makeKey(root, ROUND, ROUND, { right: edge(side, 'right'), bottom: edge(M + ROUND + GAP, 'bottom') }, {
+    // with a move being aimed, this calls it off instead (and with one charging, the scene does)
+    down: () => { if (touch.aiming >= 0) touch.aiming = -1; else fight('parry'); },
+  });
+  ui.run = makeKey(root, ROUND, ROUND, { right: edge(side + ROUND + GAP, 'right'), bottom: edge(M, 'bottom') }, {
+    down: () => { touch.run = true; },
+    up: () => { touch.run = false; },
+  });
 
   // menus: A low in the corner, B beside it, START above
   ui.a = makeKey(root, 34, 34, { right: edge(M, 'right'), bottom: edge(M + 18, 'bottom') }, { down: () => fire('confirm') });
@@ -227,68 +259,81 @@ function build() {
   BOARD.forEach((line, row) => [...line].forEach((ch, i) => letter(ch, row * 11 + i * 23, row, 22, ch)));
   letter('Del', 2 * 11 + BOARD[2].length * 23, 2, 45, null);
 
-  for (const el of [ui.stick, ...ui.moves.map((k) => k.el), ui.parry.el, ui.jump.el, ui.a.el, ui.b.el, ui.start.el, ui.board]) show(el, false);
+  for (const el of [ui.stick, ...ui.moves.map((k) => k.el), ui.parry.el, ui.jump.el, ui.run.el, ui.a.el, ui.b.el, ui.start.el, ui.board]) show(el, false);
   document.body.append(root);
   return true;
 }
 
-// The d-pad: a cross to press, a nub that follows the thumb, and (in a fight) the rim that a full push reaches.
+// A round button: its picture over its name, dimmed while it cannot be used.
+function round(key, what, can = true) {
+  const r = ROUNDS[what], c = ROUND / 2;
+  face(key, `${what} ${can}`, (g) => {
+    shape(key.el, (x, y) => Math.hypot(x - c, y - c) <= c - 0.5, r.colors);
+    g.globalAlpha = can ? 1 : 0.4;
+    g.fillStyle = r.colors[0];
+    const w = r.art[0].length, x0 = Math.round(c - w / 2), y0 = 6;
+    r.art.forEach((row, y) => [...row].forEach((ch, x) => { if (ch === '#') g.fillRect(x0 + x, y0 + y, 1, 1); }));
+    write(g, r.label, c, 14, 0.5);
+    g.globalAlpha = 1;
+  });
+}
+
+// The stick: a ring with a nub that follows the thumb. Where it is walked with it has no fixed place: it comes to
+// wherever the thumb lands in its corner. Over a menu it stays put, and a push steps the menu.
 function buildStick() {
   const zone = ui.stick = document.createElement('div');
   zone.className = 'stick';
   root.append(zone);
-  const c = STICK / 2, arm = 9, len = 25;
-  const cross = (x, y) => (Math.abs(x - c) < arm && Math.abs(y - c) < len) || (Math.abs(y - c) < arm && Math.abs(x - c) < len);
-  const base = shape(sheet(STICK, STICK), cross, ['#e6eefa', 'rgba(12,24,40,0.4)']);
-  // an arrowhead on each arm
+  const c = STICK / 2;
+  const base = shape(sheet(STICK, STICK, 'base'), (x, y) => Math.hypot(x - c, y - c) <= RIM + 6, ['#e6eefa', 'rgba(12,24,40,0.34)']);
+  // an arrowhead toward each side
   const g = base.getContext('2d');
-  g.fillStyle = '#e6eefa';
+  g.fillStyle = 'rgba(230,238,250,0.8)';
   for (const [ax, ay] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
-    for (let k = 0; k < 4; k++) for (let s = -k; s <= k; s++) g.fillRect(Math.floor(c + ax * (20 - k) + ay * s), Math.floor(c + ay * (20 - k) + ax * s), 1, 1);
+    for (let k = 0; k < 4; k++) for (let s = -k; s <= k; s++) g.fillRect(Math.floor(c + ax * (25 - k) + ay * s), Math.floor(c + ay * (25 - k) + ax * s), 1, 1);
   }
-  const ring = (x, y) => { const d = Math.hypot(x - c, y - c); return d <= RIM + 1.5 && d > RIM - 1.5; };
-  const disc = (x, y) => Math.hypot(x - 10, y - 10) <= 9.5;
-  ui.nubs = [
-    shape(sheet(20, 20, 'nub plain'), disc, ['#e6eefa', 'rgba(150,190,235,0.6)']),
-    shape(sheet(20, 20, 'nub gold'), disc, ['#fff3a0', 'rgba(255,214,90,0.75)']),
-  ];
-  zone.append(
-    shape(sheet(STICK, STICK, 'rim plain'), ring, ['#e6eefa']), shape(sheet(STICK, STICK, 'rim gold'), ring, ['#ffe45c']),
-    base, ...ui.nubs,
-  );
+  const nub = shape(sheet(24, 24, 'nub'), (x, y) => Math.hypot(x - 12, y - 12) <= 11.5, ['#e6eefa', 'rgba(150,190,235,0.7)']);
+  zone.append(base, nub);
 
-  let finger = null, mid = null;
+  let finger = null, mid = null, home = null, off = [0, 0];
+  const place = (dx, dy) => {
+    base.style.transform = `translate(${off[0]}px, ${off[1]}px)`;
+    nub.style.transform = `translate(${off[0] + dx}px, ${off[1] + dy}px)`;
+  };
   const push = (e) => {
     const dx = (e.clientX - mid[0]) / scale, dy = (e.clientY - mid[1]) / scale, d = Math.hypot(dx, dy);
     touch.stick = d < DEAD ? [0, 0] : [dx / d, dy / d];
-    touch.full = d >= RIM - 3;
-    zone.classList.toggle('full', touch.full);
     const k = Math.min(1, RIM / (d || 1)) * scale;
-    for (const n of ui.nubs) n.style.transform = `translate(${dx * k}px, ${dy * k}px)`;
+    place(dx * k, dy * k);
   };
   zone.addEventListener('pointerdown', (e) => {
     if (finger !== null) return;
     finger = e.pointerId;
     try { zone.setPointerCapture(finger); } catch { /* the finger is already gone */ }
-    const r = base.getBoundingClientRect();
-    mid = [r.left + r.width / 2, r.top + r.height / 2];
+    if (!home) { const r = base.getBoundingClientRect(); home = [r.left + r.width / 2, r.top + r.height / 2]; }
+    // walked with: the stick's middle is where the thumb came down (kept clear of the screen's edges)
+    const z = zone.getBoundingClientRect(), pad = (RIM + 8) * scale, floats = root.classList.contains('roam');
+    mid = floats ? [Math.min(z.right - pad, Math.max(z.left + pad, e.clientX)), Math.min(z.bottom - pad, Math.max(z.top + pad, e.clientY))] : home;
+    off = [mid[0] - home[0], mid[1] - home[1]];
     push(e);
   });
   zone.addEventListener('pointermove', (e) => { if (e.pointerId === finger) push(e); });
   ui.rest = () => {
     finger = null;
     touch.stick = [0, 0];
-    touch.full = false;
-    zone.classList.remove('full');
-    for (const n of ui.nubs) n.style.transform = '';
+    off = [0, 0];
+    base.style.transform = nub.style.transform = '';
   };
   for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) zone.addEventListener(type, (e) => { if (e.pointerId === finger) ui.rest(); });
+  window.addEventListener('resize', () => { home = null; });
 }
 
 // Nothing is held any more: the window lost focus, or the buttons that were down have gone.
 function letGo() {
   ui.rest?.();
   touch.held.fill(false);
+  touch.run = false;
+  touch.aiming = -1;
   stepped = null;
 }
 
@@ -306,26 +351,36 @@ function sync() {
     show(ui.stick, steer && !typing);
     if (!steer && (touch.stick[0] || touch.stick[1])) ui.rest();
   }
-  if (!state && touch.held.some(Boolean)) touch.held.fill(false);
+  if (!state) { if (touch.held.some(Boolean)) touch.held.fill(false); touch.run = false; touch.aiming = -1; }
 
   ui.moves.forEach((key, i) => {
     const id = state?.moves[i], mv = MOVES[id];
     show(key.el, !!mv);
     if (!mv) return;
-    const can = state.stamina >= mv.cost, hot = state.hot === i;
-    // the colour of its type, faded while there is not the stamina for it
-    const fill = `rgba(${TYPE_RGB[typeOf(id)] ?? TYPE_RGB.normal},${hot ? 0.85 : can ? 0.6 : 0.12})`;
+    const can = state.stamina >= mv.cost, hot = state.hot === i || touch.aiming === i, type = typeOf(id);
+    // the colour of its type, faded while there is not the energy for it; lit while it is aimed, charged or held
+    const fill = `rgba(${TYPE_RGB[type] ?? TYPE_RGB.normal},${hot ? 0.88 : can ? 0.62 : 0.14})`;
     face(key, `${id} ${can} ${hot}`, (g) => {
       paintFrame(g, hot ? 'padHot' : 'pad', key.w, key.h, fill);
       g.globalAlpha = can || hot ? 1 : 0.45;
-      write(g, mv.name, key.w / 2, (key.h - 11) >> 1, 0.5);
+      // its name, on two lines if it is two words too long for one
+      const words = mv.name.split(' '), wide = (str) => [...str].reduce((w, ch) => w + (game.cache.bitmapFont.get('pmd').data.chars[ch.codePointAt(0)]?.xAdvance ?? 0), 0);
+      const lines = words.length > 1 && wide(mv.name) > key.w - 8 ? [words.slice(0, Math.ceil(words.length / 2)).join(' '), words.slice(Math.ceil(words.length / 2)).join(' ')] : [mv.name];
+      lines.forEach((line, n) => write(g, line, key.w / 2, (lines.length > 1 ? 2 : 6) + n * 10, 0.5));
+      // what it costs, in notches of the energy bar: a small pip is half of one
+      const pips = mv.cost / NOTCH;
+      g.fillStyle = '#ffe45c';
+      for (let k = 0; k < Math.ceil(pips); k++) g.fillRect(key.w - 7 - k * 5, key.h - 6, k + 1 > pips ? 2 : 4, 3);
       g.globalAlpha = 1;
     });
   });
-  show(ui.parry.el, !!state);
-  show(ui.jump.el, !!state);
-  // while a move is charging, the parry button calls it off instead
-  if (state) framed(ui.parry, state.hot >= 0 ? 'cancel' : 'parry', state.hot >= 0 ? 'padHot' : 'pad', state.hot >= 0 ? 'Cancel' : 'Parry');
+  for (const key of [ui.parry, ui.jump, ui.run]) show(key.el, !!state);
+  if (state) {
+    // while a move is being aimed or is charging, the parry button calls it off instead
+    round(ui.parry, state.hot >= 0 || touch.aiming >= 0 ? 'cancel' : 'parry');
+    round(ui.jump, 'jump', state.stamina >= 2 * NOTCH);
+    round(ui.run, 'run', state.stamina >= NOTCH / 2 || state.running);
+  }
 
   show(ui.a.el, !state && !!top?.confirm);
   show(ui.b.el, !state && !!top?.cancel);

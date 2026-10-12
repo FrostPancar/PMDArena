@@ -8,33 +8,31 @@
 #pad .key, #pad .stick { position: absolute; pointer-events: auto; touch-action: none; }
 #pad .key.down { filter: brightness(1.35); }
 
-/* over a menu the d-pad is only as big as its art, so the rows beside it can still be tapped; where it is walked
-   with, it takes a thumb anywhere in the corner */
+#pad .key { transition: transform 60ms; }
+#pad .key.down { transform: scale(0.94); }
+
+/* over a menu the stick is only as big as its art, so the rows beside it can still be tapped; where it is walked
+   with, it takes a thumb anywhere in the corner (and comes to where the thumb lands, see touch.js) */
 #pad .stick {
   left: 0; bottom: 0;
-  width: calc(70px * var(--px) + env(safe-area-inset-left, 0px));
-  height: calc(70px * var(--px) + env(safe-area-inset-bottom, 0px));
+  width: calc(72px * var(--px) + env(safe-area-inset-left, 0px));
+  height: calc(72px * var(--px) + env(safe-area-inset-bottom, 0px));
 }
 #pad.roam .stick {
-  width: calc(100px * var(--px) + env(safe-area-inset-left, 0px));
-  height: calc(100px * var(--px) + env(safe-area-inset-bottom, 0px));
+  width: calc(150px * var(--px) + env(safe-area-inset-left, 0px));
+  height: calc(130px * var(--px) + env(safe-area-inset-bottom, 0px));
 }
-#pad .stick canvas {
-  position: absolute; pointer-events: none;
-  left: calc(4px * var(--px) + env(safe-area-inset-left, 0px));
-  bottom: calc(4px * var(--px) + env(safe-area-inset-bottom, 0px));
+#pad .stick canvas { position: absolute; pointer-events: none; }
+#pad .stick .base {
+  left: calc(6px * var(--px) + env(safe-area-inset-left, 0px));
+  bottom: calc(6px * var(--px) + env(safe-area-inset-bottom, 0px));
   width: calc(64px * var(--px)); height: calc(64px * var(--px));
 }
 #pad .stick .nub {
   left: calc(26px * var(--px) + env(safe-area-inset-left, 0px));
   bottom: calc(26px * var(--px) + env(safe-area-inset-bottom, 0px));
-  width: calc(20px * var(--px)); height: calc(20px * var(--px));
+  width: calc(24px * var(--px)); height: calc(24px * var(--px));
 }
-/* the rim and the gold of a full push only show where running is possible */
-#pad .stick .rim, #pad .stick .gold { display: none; }
-#pad.fight .stick .rim { display: block; }
-#pad.fight .stick.full .gold { display: block; }
-#pad.fight .stick.full .plain { display: none; }
 
 #pad .board {
   position: absolute; left: 50%; bottom: calc(19px * var(--px));
