@@ -30,7 +30,9 @@ export class Practice extends Battle {
   init(data) {
     const me = { slot: 0, team: 0, kind: 'human', owner: ME, species: session.species, moves: loadoutOf(), form: formOf(), name: session.profile.name };
     super.init({ battle: { mode: 'practice', practice: true, seed: (Math.random() * 0x7fffffff) | 0, map: MAPS[data?.map] ? data.map : 'test', fighters: [me] } });
-    this.leaveLabel = 'Back to the lab';
+    // from the dojo (B there): a place to try the moveset out, and back to the dojo afterwards
+    this.back = data?.from === 'dojo' ? { area: 'dojo', entry: 'door' } : { area: 'lab', entry: 'console' };
+    this.leaveLabel = data?.from === 'dojo' ? 'Back to the dojo' : 'Back to the lab';
     this.hitboxes = false;
     this.lastHp = new Map();
     this.stats = { last: 0, total: 0 };
@@ -50,7 +52,7 @@ export class Practice extends Battle {
       if (tool) this.tool(tool);
     });
     this.events.once('create', () => {
-      const start = () => { banner(this, MAPS[this.mapId].name, 'Practice'); this.begin(); };
+      const start = () => { banner(this, MAPS[this.mapId].name, this.back.area === 'dojo' ? 'Moveset test' : 'Practice'); this.begin(); };
       if (session.briefed.controls) return start();
       session.briefed.controls = true;
       saveSession();
@@ -92,7 +94,7 @@ export class Practice extends Battle {
     else if (id === 'cpu') this.spawn('cpu');
     else if (id === 'dummy') this.spawn('dummy');
     else if (id === 'clear') this.clearAll();
-    else if (id === 'refill') this.player.revive(this.player.x, this.player.y);
+    else if (id === 'refill') { this.player.revive(this.player.x, this.player.y); this.player.healsUsed = 0; }
     this.refreshToolbar();
   }
 
@@ -166,7 +168,7 @@ export class Practice extends Battle {
   leave() {
     if (this.over) return;
     this.over = true;
-    go(this, 'hub', { area: 'lab', entry: 'console' });
+    go(this, 'hub', this.back);
   }
 
   // ---- seeing what a hit does ----

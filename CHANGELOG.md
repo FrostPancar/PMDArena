@@ -3,6 +3,22 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.5
+
+**Balance**
+- Psychic is held for as long as there is energy; its field drifts after the aim.
+- Rest heals 40 (was 60). Healing moves are limited to 5 uses a match.
+- Energy refills twice as fast.
+- Beams no longer stagger or break charges; they slow the target and hit twice as often for half the damage.
+
+**Controls**
+- Moves are used on release: holding the button or key aims with a guide. Held moves still start on the press.
+- Mobile: teleport moves go the way the stick is pushed.
+- B in the dojo opens a floor for trying the moveset out.
+
+**Feel**
+- A landed parry shakes the screen.
+
 ## alpha 0.5.4
 
 - Fixed the Pokémon choosing screen showing empty boxes: every mon's standing sprite is loaded for its grid.

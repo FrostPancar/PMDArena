@@ -1,4 +1,4 @@
-import { MOVES, STATUS, TAGS, KIND_LABEL } from '../moves.js';
+import { MOVES, STATUS, TAGS, KIND_LABEL, HEAL_LIMIT, healsOnly } from '../moves.js';
 
 // What the move menu and the battle HUD say about a move: its elemental type and a plain-words read of its data.
 const TYPE_MOVES = {
@@ -91,12 +91,12 @@ export function describe(id) {
   const n = [];
   if (mv.tag && mv.tag !== 'strike') n.push(ANSWER[mv.tag]);
   if (mv.random) n.push('Uses some other move at random.');
-  if (mv.kind === 'beam') n.push(`Costs ${+(mv.upkeep / 20).toFixed(1)} energy a second. Destroys shots it crosses.`, 'Beams that meet clash: mash a move to push.');
+  if (mv.kind === 'beam') n.push(`Costs ${+(mv.upkeep / 20).toFixed(1)} energy a second. Slows what it hits.`, 'Beams that meet clash: mash a move to push.');
   if (mv.cone) n.push('A short cone that turns fast.');
   if (mv.push) n.push('Shoves foes back, and you too.');
   if (mv.bend) n.push('Goes to the point you aim at, then bends toward the nearest foe.');
   if (mv.ghost) n.push('Passes through Light Screens.');
-  if (mv.catch) n.push('Catches enemy shots in the circle; let go to throw them back.');
+  if (mv.catch) n.push('Catches enemy shots in a field that drifts after your aim.', 'Let go to throw them back.');
   if (mv.reverse) n.push('Turns the nearest enemy shot back on its owner.');
   if (mv.steer) n.push('Bends your latest shot toward your aim.');
   if (mv.wall === 'reflect') n.push('Leaves a wall for 6s that foes cannot walk or dash through.');
@@ -180,6 +180,7 @@ export function describe(id) {
     const what = mv.status.kind === 'tri' ? 'burned, paralysed or frozen' : STATUS[mv.status.kind].label;
     n.push(mv.status.chance >= 1 ? `Leaves foes ${what}.` : `${pct(mv.status.chance)} chance to leave foes ${what}.`);
   }
+  if (healsOnly(mv)) n.push(`Healing moves: ${HEAL_LIMIT} uses a match between them.`);
   if (mv.drain) n.push(`Heals you for ${pct(mv.drain)} of the damage.`);
   if (mv.heal) n.push(`Restores ${mv.heal} HP${(mv.healDelay ?? 0) >= 2000 ? ` after ${secs(mv.healDelay / 1000)}` : ''}.`);
   if (mv.regen && !mv.field) n.push(`Heals ${mv.regen.hps} HP a second for ${secs(mv.regen.time)}.`);

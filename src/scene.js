@@ -4,7 +4,7 @@ import { MAPS, WORLD_URL, makeWalkable, inBlock, buildTestRealm, buildFxTextures
 import { SPECIES } from './sprites.js';
 import { Mon, dirVec, dirFromVec, DIR_NAMES, RUN_MULT } from './mon.js';
 import { STATUS_SHEET_URL, DECOY_SHEET_URL, buildStatusIcons, buildDecoy } from './statusfx.js';
-import { MOVES, PARRY, CANCEL, EMPOWER, POWERUP, LEECH, SPRINT, STATUS, TAGS, DANCE, HEAL, KIND_LABEL, movesOf, preloadMoves, grayFrames, ensureMove, moveReady } from './moves.js';
+import { MOVES, PARRY, CANCEL, EMPOWER, POWERUP, LEECH, SPRINT, STATUS, TAGS, DANCE, HEAL, KIND_LABEL, HEAL_LIMIT, healsOnly, movesOf, preloadMoves, grayFrames, ensureMove, moveReady } from './moves.js';
 
 export const VIEW_W = 384, VIEW_H = 216;
 export const WALK_SPEED = 62;
@@ -489,6 +489,7 @@ export class Play extends Phaser.Scene {
     m.stamina = Math.min(m.maxStamina, m.stamina + PARRY.gain);
     m.exhausted = false;
     m.flash = 0.4; // as long as the blocker stays untouchable
+    if (FEEL.on && FEEL.shake) this.cameras.main.shake(130, 0.006, true);
     const img = this.add.image(m.x, m.y - 8, PARRY.hitFrames[0]);
     this.fx.push({ img, frames: PARRY.hitFrames, t: 0, fps: 30, follow: m, lift: 8 });
   }
@@ -529,6 +530,7 @@ export class Play extends Phaser.Scene {
     const reps = mv.repeat && m.rep?.mv === mv ? m.rep.n : 0, cost = mv.cost * (1 + (mv.repeat ?? 0) * reps);
     if (!free && m.stamina < cost) return false;
     if (mv.sub && (m.sub || m.hp <= m.maxHp * mv.hpCost)) return false;
+    if (healsOnly(mv) && (m.healsUsed ?? 0) >= HEAL_LIMIT) { if (m === this.player) this.popup(m, 'NO HEALS LEFT'); return false; } // spent for this match
     if (mv.dream && !this.targets.some((t) => t.team !== m.team && t.alive && t.status?.kind === 'sleep')) return false; // nobody is asleep to feed on // already a doll, or not enough health to make one
     if (mv.element && m.locks[mv.element] > 0) return false; // locked out of that element for now
     if (m.beaming || ((mv.fly || mv.leap) && (m.roost > 0 || this.heavy(m)))) return false; // busy with a beam, or grounded
@@ -566,7 +568,7 @@ export class Play extends Phaser.Scene {
       if (mv.random) return d < 110;
       if (mv.decoys) return d < 100 && !this.decoys.some((q) => q.owner === m);
       if (mv.sub) return !m.sub && m.hp > m.maxHp * 0.5 && d < 90;
-      if (mv.heal || mv.ingrain || mv.regen) return m.hp < m.maxHp * 0.6;
+      if (mv.heal || mv.ingrain || mv.regen) return m.hp < m.maxHp * 0.6 && (m.healsUsed ?? 0) < HEAL_LIMIT;
       if (mv.shield) return d < 45 && m.shield <= 0;
       if (!mv.buff) return mv.empower ? !m.charged && d < 80 : !!m.status;
       return mv.buff.stat === 'random' ? this.rand() < 0.3 : m.mul(mv.buff.stat) === 1;
@@ -729,7 +731,17 @@ export class Play extends Phaser.Scene {
       aim.radius = w.radius;
     } else if (w.mv.catch) {
       // held: enemy shots that enter the circle hang there; let go and they are thrown where the user is aiming now
-      const c = w.mv.catch, charge = w.mv.charge, held = this.holding(m, w.track, w.t), spot = this.landSpot(m, w.mv, aim);
+      const c = w.mv.catch, charge = w.mv.charge, held = this.holding(m, w.track, w.t);
+      if (c.drift && w.aim) {
+        // the field is not fixed where it was first aimed: it drifts after the aim, slowly
+        const range = w.mv.range ?? 100, at = (a) => { const d = Phaser.Math.Clamp(a.dist, 24, range); return [m.x + a.dx * d, m.y + a.dy * d]; };
+        const [px, py] = at(w.aim), [tx, ty] = at(this.aimOf(m, w.track)), gap = Math.hypot(tx - px, ty - py);
+        if (gap > 0.5) {
+          const k = Math.min(1, (c.drift * dt) / gap), vx = px + (tx - px) * k - m.x, vy = py + (ty - py) * k - m.y, l = Math.hypot(vx, vy) || 1;
+          w.aim = { dx: vx / l, dy: vy / l, dist: l };
+        }
+      }
+      const spot = this.landSpot(m, w.mv, w.aim ?? aim);
       if (w.t < charge) m.spend((w.mv.cost * Math.min(dt, charge - w.t)) / charge);
       w.t += dt;
       for (const q of this.shots) {
@@ -1097,6 +1109,7 @@ export class Play extends Phaser.Scene {
           if (m.alive) this.fx.push({ img: this.add.image(m.x, m.y - lift, mv.endFrames[0]).setScale(mv.scale ?? 1), frames: mv.endFrames, t: 0, fps: mv.fps ?? 30, follow: m, lift });
         });
       }
+      if (healsOnly(mv)) m.healsUsed = (m.healsUsed ?? 0) + 1;
       if (mv.cure) m.clearStatus();
       if (mv.empower) m.setCharged(true);
       if (mv.selfStatus) this.inflict(m, mv.selfStatus);
@@ -1387,7 +1400,7 @@ export class Play extends Phaser.Scene {
     this.hits.push({ x, y, r, ttl: 0.18 });
     let any = false;
     this.guessed = false;
-    const hit = mv && { tag: mv.tag, jab: !!mv.jab, swat: mv.swat, thru: mv.thru, by: owner, raw: !!mv.fixedDmg, pierce: mv.pierceShield || !!mv.fixedDmg, deep: mv.deep };
+    const hit = mv && { tag: mv.tag, jab: !!mv.jab, swat: mv.swat, thru: mv.thru, by: owner, raw: !!mv.fixedDmg, pierce: mv.pierceShield || !!mv.fixedDmg, deep: mv.deep, soft: mv.kind === 'beam' };
     if (mv?.fixedDmg) dmg = mv.fixedDmg; // the same against anyone, whatever either side has boosted
     if (mv?.toss) { dmg = 0.5; hit.raw = true; } // the grab itself barely hurts: the slam does
     if (mv?.breaker) {
@@ -1760,8 +1773,8 @@ export class Play extends Phaser.Scene {
         if (runs.some((r) => r.pts.some((p) => Math.hypot(q.x - p.x, q.y - p.y) < 8 + q.r / 2))) { q.dead = true; this.sayShot(q, 'dead'); }
       }
       if ((b.tick -= dt) > 0) continue;
-      b.tick += 0.2;
-      const dmg = b.dmg * (b.first ? 2 : 1); // the opening tick carries the old single hit
+      b.tick += 0.1; // (a tick only lands once the last has worn off: see the soft hit in Mon.damage)
+      const dmg = b.dmg * (b.first ? 2 : 0.5); // light and often after the opening tick, which lands as hard as it always did
       b.first = false;
       for (const r of runs) {
         for (let i = 2; i < r.pts.length; i += 2) this.hitCircle(m, r.pts[i].x, r.pts[i].y, mv.cone ? 6 + i * BEAM_STEP * mv.cone : 9, dmg, mv);

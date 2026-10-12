@@ -58,6 +58,7 @@ export class Battle extends Play {
     this.need = fightsToWin(this.cfg);
     this.crewed = this.cfg.fighters.some((f) => f.crew);
     this.level = onLadder(this.cfg) ? this.cfg.level ?? null : null; // the CPU's difficulty, 1 to 5, in a fight on the ladder
+    this.aiming = -1; // the move whose button is being held to aim it (keyboard and mouse; the pad keeps its own)
     this.aimG = this.reticle = null; // the pad's aim guide and its colour on this stage (made when first needed)
     this.autoWalk = null; // where a computer playing the player's own mon wants it to go (cfg.auto, for testing)
     this.moves = this.me.moves; // the four on the player's buttons: those of whichever of a crew is out
@@ -632,6 +633,9 @@ export class Battle extends Play {
   aimOf(m, track) {
     if (track !== 'touch') return super.aimOf(m, track);
     const a = touch.aim, [sx, sy] = touch.stick;
+    // a teleport goes the way the stick is pushed (unless its button was dragged to aim it)
+    const mv = MOVES[m.move] ?? MOVES[this.moves[touch.aiming]];
+    if (!a && mv?.kind === 'blink' && (sx || sy)) return { dx: sx, dy: sy, dist: mv.range ?? 100 };
     if (a) return { dx: a.dx, dy: a.dy, dist: 40 + a.reach * 100 };
     if (m.state === 'bird' && (sx || sy)) return { dx: sx, dy: sy, dist: 99 };
     let foe = null, near = Infinity;
@@ -649,9 +653,27 @@ export class Battle extends Play {
     const p = this.player;
     // instant: the moves that go off on the press rather than being aimed first (held ones, or any press while a
     // beam clash or a dance is taking taps)
-    const tapping = !!p.dance || !!p.beaming?.clash;
-    const instant = this.moves.map((id) => { const mv = MOVES[id]; return tapping || !mv || !!(mv.grow || mv.catch || mv.ritual || mv.steer || mv.flurry || mv.stance || mv.kind === 'beam' || mv.kind === 'hold'); });
-    return { moves: this.moves, instant, running: p.running, stamina: p.stamina, hot: p.state === 'windup' || p.state === 'bird' ? this.slot : -1 };
+    return { moves: this.moves, instant: this.instantMoves(), running: p.running, stamina: p.stamina, hot: p.state === 'windup' || p.state === 'bird' ? this.slot : -1 };
+  }
+
+  // Which of the four go off on the press rather than being aimed first and thrown on the release.
+  instantMoves() {
+    const p = this.player, tapping = !!p.dance || !!p.beaming?.clash;
+    return this.moves.map((id) => { const mv = MOVES[id]; return tapping || !mv || !!(mv.grow || mv.catch || mv.ritual || mv.steer || mv.flurry || mv.stance || mv.kind === 'beam' || mv.kind === 'hold'); });
+  }
+
+  // A move's key or mouse button went down, and came up: a held move starts on the press; any other is aimed while the
+  // button is down (a guide shows where it will go) and used when it is let go.
+  press(i) {
+    if (!this.live || !this.moves[i]) return;
+    if (this.instantMoves()[i]) return this.fire(i);
+    this.aiming = i;
+  }
+
+  release(i) {
+    if (this.aiming !== i) return;
+    this.aiming = -1;
+    if (this.live) this.fire(i);
   }
 
   // A fight button went down: 'move' (with its slot), 'jump', or 'parry', which calls off a charging move instead.
@@ -667,11 +689,12 @@ export class Battle extends Play {
   // player and a ring where it lands (or how far it reaches).
   drawAim() {
     // the move being aimed, or a held one whose button is down
-    const i = touch.on && this.live ? (touch.aiming >= 0 ? touch.aiming : touch.held.findIndex(Boolean)) : -1, mv = MOVES[this.moves[i]];
+    const track = touch.on ? 'touch' : 'pointer';
+    const i = !this.live ? -1 : touch.on ? (touch.aiming >= 0 ? touch.aiming : touch.held.findIndex(Boolean)) : this.aiming, mv = MOVES[this.moves[i]];
     if (!mv && !this.aimG) return;
     const g = (this.aimG ??= this.add.graphics().setDepth(7)).clear();
     if (!mv) return;
-    const p = this.player, a = this.aimOf(p, 'touch'), col = (this.reticle ??= this.reticleColor()), dark = 0x06101c;
+    const p = this.player, a = this.aimOf(p, track), col = (this.reticle ??= this.reticleColor()), dark = 0x06101c;
     const on = p.stamina >= mv.cost || p.state === 'windup' || p.state === 'bird' || !!p.beaming ? 1 : 0.4; // faint: no energy for it
     // every mark is drawn dark first and then in colour over it, so it reads on any ground
     const ring = (x, y, r) => g.lineStyle(3, dark, 0.55 * on).strokeEllipse(x, y, r * 2, r * 1.54).fillStyle(col, 0.16 * on).fillEllipse(x, y, r * 2, r * 1.54).lineStyle(1, col, on).strokeEllipse(x, y, r * 2, r * 1.54);
@@ -728,10 +751,10 @@ export class Battle extends Play {
       if (e.code === 'Escape') return this.pause();
       if (!this.live) return;
       const p = this.player;
-      if (e.code === 'KeyQ') this.fire(2);
-      else if (e.code === 'KeyE') this.fire(3);
-      else if (e.code === 'KeyR') this.parry(p);
-      else if (e.code === 'KeyC') this.cancelMove(p);
+      if (e.code === 'KeyQ') this.press(2);
+      else if (e.code === 'KeyE') this.press(3);
+      else if (e.code === 'KeyR') { if (this.aiming >= 0) this.aiming = -1; else this.parry(p); } // (R calls off a move being aimed)
+      else if (e.code === 'KeyC') { this.aiming = -1; this.cancelMove(p); }
       else if (e.code === 'Space') this.jump();
       else if (e.code === 'KeyK') this.basicShot(null);
       else if (BASIC_KEYS[e.code] && !(p.ailment.noAttack && COMBAT[BASIC_KEYS[e.code]])) { p.aim = null; p.act(BASIC_KEYS[e.code]); }
@@ -739,9 +762,13 @@ export class Battle extends Play {
     this.input.mouse.disableContextMenu();
     this.input.on('pointerdown', (ptr) => {
       if (!this.live || ptr.wasTouch) return; // a finger on the arena does nothing: the moves are on the pad
-      if (ptr.button === 0) this.fire(0);
-      else if (ptr.button === 2) this.fire(1);
+      if (ptr.button === 0) this.press(0);
+      else if (ptr.button === 2) this.press(1);
     });
+    const up = (ptr) => { if (!ptr.wasTouch) this.release(ptr.button === 2 ? 1 : 0); };
+    this.input.on('pointerup', up);
+    this.input.on('pointerupoutside', up);
+    this.input.keyboard.on('keyup', (e) => { if (e.code === 'KeyQ') this.release(2); else if (e.code === 'KeyE') this.release(3); });
   }
 
   // ---- menus ----
@@ -812,6 +839,6 @@ export class Battle extends Play {
     }
     if (this.score) this.showScore();
     this.drawAim();
-    this.hud.refresh(this.player.state === 'windup' || this.player.state === 'bird' ? this.slot : -1, this.slot);
+    this.hud.refresh(this.aiming >= 0 ? this.aiming : this.player.state === 'windup' || this.player.state === 'bird' ? this.slot : -1, this.slot);
   }
 }

@@ -23,7 +23,7 @@ export const RUN_MULT = 1.7;
 export const NOTCH = 20, NOTCHES = 5;
 const RUN_TIME = 2, RUN_COST = NOTCH / 2; // a burst of running: how long it lasts and what it costs
 export const BASE_HP = 150; // every mon's health
-const STAMINA_REGEN = 24;
+const STAMINA_REGEN = 48;
 const REGEN_DELAY = 0.7;
 export const JUMP_COST = 2 * NOTCH;
 const JUMP_TIME = 0.55;
@@ -39,6 +39,7 @@ export class Mon {
     this.maxHp = o.hp ?? BASE_HP;
     this.hp = this.maxHp;
     this.maxStamina = NOTCH * NOTCHES;
+    this.healsUsed = 0; // healing moves used this match (see HEAL_LIMIT)
     this.snare = 0; // seconds it is still held fast in a web: it cannot walk or jump, but can still fight
     this.runT = 0; // seconds of running left from the notch last spent on it
     this.stamina = this.maxStamina;
@@ -364,6 +365,12 @@ export class Mon {
     this.reel = 0.4;
     this.sprite.setTintFill(0xffffff);
     this.scene.time.delayedCall(90, () => this.sprite.active && this.applyTint());
+    if (hit?.soft && this.hp > 0) {
+      // a beam's tick: it wears the target down and drags at it, but does not stagger it or break what it is doing
+      this.invuln = 0.28;
+      if (!(this.buffs.spd.t > 0.6 && this.buffs.spd.mul < 1)) this.addBuff('spd', 0.7, 0.6);
+      return true;
+    }
     // biding: the blow is banked and shrugged off
     if (this.bide && this.hp > 0) { this.bide.stored += dealt; return true; }
     // a jab stings but does not stop a heavy move that is already charging

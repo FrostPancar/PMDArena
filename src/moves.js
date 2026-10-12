@@ -482,7 +482,7 @@ export const MOVES = {
   confuseRay: { name: 'Confuse Ray', kind: 'auto', status: { kind: 'confuse', chance: 1 }, fx: '0211_sonic_rings', seqs: ['000'], scale: 0.6, range: 130, radius: 20, dmg: 6, cost: 26, charge: 0.35, fps: 45 },
   glare: { name: 'Glare', kind: 'auto', status: { kind: 'para', chance: 1 }, fx: '0065_glare_eye', seqs: ['000'], range: 130, radius: 18, dmg: 4, cost: 26, charge: 0.35, fps: 20, lift: 14 },
   payDay: { name: 'Pay Day', kind: 'projectile', fx: '0086_money_bag', seqs: ['000'], speed: 210, range: 230, radius: 9, dmg: 16, cost: 16, charge: 0.2, fps: 10, spin: false, coins: 6 },
-  rest: { name: 'Rest', kind: 'self', heal: 60, healDelay: 200, cure: true, selfStatus: 'sleep', cost: 20, charge: 0.4 },
+  rest: { name: 'Rest', kind: 'self', heal: 40, healDelay: 200, cure: true, selfStatus: 'sleep', cost: 20, charge: 0.4 },
   kinesis: { name: 'Kinesis', kind: 'auto', fx: '0115_spoon', seqs: ['000'], range: 130, radius: 18, dmg: 8, cost: 22, charge: 0.3, fps: 14, debuff: { stat: 'atk', mul: 0.6, time: 8 } },
   softBoiled: { name: 'Soft-Boiled', kind: 'self', fx: '0116_egg_hatch', seqs: ['000'], heal: 45, healDelay: 800, cost: 44, charge: 0.6, fps: 30 },
   disable: { name: 'Disable', kind: 'auto', status: { kind: 'disable', chance: 1 }, fx: '0123_red_x', seqs: ['000'], range: 130, radius: 18, dmg: 4, cost: 26, charge: 0.35, fps: 30, scale: 0.5 },
@@ -601,6 +601,9 @@ export const MOVES = {
 
 // Parry (L): the stance art plays on the user during the block window, the hit art when a move is blocked.
 // The attempt shows the cancel twinkle; the blossom is kept for a block that lands.
+// How many times in one match a mon may use moves that only heal it (Rest, Recover-likes, Ingrain, Aqua Ring...).
+export const HEAL_LIMIT = 5;
+export const healsOnly = (mv) => mv.kind === 'self' && !!(mv.heal || mv.regen || mv.ingrain);
 export const PARRY = { cost: 0, gain: 20, window: 0.55, perfect: 0.15, cooldown: 0.9, hit: ['0239_shine_orb', '003'] };
 
 // The sparks that loop on a mon whose next attack is boosted, and the trail behind one that is running.
@@ -730,7 +733,8 @@ give('lockOn', { lock: 8 });
 //   steer    held: the user's latest shot curves toward the aim
 //   wall     leaves a wall across the aim for 6 s: 'reflect' stops the other side's bodies and dashes, 'screen' their shots and
 //            beams (a light shot bounces back as the owner's); the owner's own beam splits in three passing through its screen
-give('psychic', { kind: 'mid', appear: undefined, radius: 30, catch: { upkeep: 14, max: 4 }, dmg: undefined, cost: 16, charge: 0.15, cls: 'status' });
+give('psychic', { kind: 'mid', appear: undefined, radius: 30, catch: { upkeep: 14, max: 30, drift: 55 }, // held for as long as there is the energy; the field drifts after the aim at `drift` px a second
+ dmg: undefined, cost: 16, charge: 0.15, cls: 'status' });
 give('confusion', { reverse: true });
 give('kinesis', { kind: 'self', steer: { upkeep: 16, turn: 5 }, tag: undefined, debuff: undefined, dmg: undefined, cost: 8, charge: 0.1 });
 give('futureSight', { hideFor: 1 }); // the foe does not see the ring for the first second

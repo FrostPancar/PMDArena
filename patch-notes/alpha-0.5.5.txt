@@ -1,0 +1,31 @@
+PMD: Dojo Battles
+alpha 0.5.5
+Patch size: M
+
+(Also includes the loading fixes from 0.5.3 and 0.5.4.)
+
+BALANCE
+- Psychic is now a hold move. It lasts as long as you have the energy, and
+  its field slowly follows your aim.
+- Rest heals 40, down from 60.
+- Healing moves are limited to 5 uses a match, shared between all of a mon's
+  self-heals. Drains and Leech Seed do not count.
+- Energy refills twice as fast.
+- Beams no longer stagger the target or break its charge. Every beam slows
+  what it hits, and hits twice as often for half the damage.
+
+CONTROLS
+- Moves are used when you let go. Holding a move's button or key shows the
+  aim guide; releasing uses the move. Held moves still start on the press.
+- R or C calls off a move you are aiming.
+- Mobile: teleport moves go the way the stick is pushed, unless you drag the
+  button to aim.
+- Pressing B in the dojo opens a training floor with your current moveset.
+
+FEEL
+- A landed parry shakes the screen.
+
+LOADING (0.5.3, 0.5.4)
+- Move effects and mon sprites are loaded when they are needed, not all at
+  start-up. This fixes the game running out of memory on iPhone.
+- Fixed the choosing screen showing empty boxes.
