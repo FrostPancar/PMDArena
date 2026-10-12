@@ -1,0 +1,39 @@
+PMD: Dojo Battles
+alpha 0.5.1
+Patch size: XL
+
+NEW MOVES (21)
+Teleport, Heal Pulse, Dream Eater, Electroweb, Counter, Mud Shot, Blaze Kick,
+Flare Blitz, Zap Cannon, Aurora Veil, Icy Wind, Spikes, Electro Ball, Venoshock,
+Knock Off, Bone Rush, Double-Edge, Poison Powder, Solar Beam, Steel Wing, Iron Tail
+
+MOVES AND PROGRESSION
+- Moves are split into the ones a mon learns by itself and TMs.
+- Natural moves unlock by level.
+- A random TM is found after every fight. Any mon that can be taught it may use it.
+- 36 existing moves added to mons that learn them naturally.
+- Sticky Web holds the first foe to step in for 2 seconds, then disappears.
+
+BALANCE AND FIXES
+- Chill can no longer be applied to frozen foes.
+- Detect now stuns the attacker it dodges.
+- Fury Swipes no longer attacks twice on one use.
+- Vine Whip pulls you and the foe to each other, or you to a wall.
+- Double Team: no cast animation. The user's HP bar and arrow are hidden while
+  copies are out. Copies show the user's stat changes and status.
+- Dragon Dance is held, like Swords Dance, and raises Attack and Speed.
+- Consecutive-use bonus (Fury Cutter and the like) scales less. The combo label
+  sits above the move name.
+- Stone Edge no longer leaves a pillar.
+- Rock Wrecker leaves a pillar where it stops if it misses.
+- CPUs no longer put Reflect on top of you.
+
+INTERFACE
+- Notches on the small energy bar over the player.
+- Mobile: Run and Jump sit above the moves at the top right.
+- Mobile: every move shows an aim guide while its button is held. Its colour is
+  picked to stand out on each stage.
+- Move menu: labelled icons for move kind, Speed instead of Range, a five-notch
+  energy bar, TM discs tinted by type, NEW marks, padlocks from the item sheet.
+- An evolution screen with congratulations after a fight that brings an evolution.
+- The version is shown on the title screen.

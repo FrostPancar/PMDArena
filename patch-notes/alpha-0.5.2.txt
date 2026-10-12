@@ -1,0 +1,19 @@
+PMD: Dojo Battles
+alpha 0.5.2
+Patch size: M
+
+GAME FEEL (visual only: nothing about how fights play has changed)
+- A shot that is cut or beaten freezes in a ring, splits in two and fades.
+- Every hit flashes its target and throws a burst of lines.
+- The screen shakes on a hit, harder for stronger hits.
+- Very heavy hits get a flash, a negative frame and a vignette.
+- Beam clashes rumble for as long as they last.
+- The camera trails dashes and glides after teleports.
+
+ART
+- Icy Wind uses Blizzard's hit effect.
+- Iron Tail uses Dragon Rush's effect in grey.
+- Knock Off uses Dragon Claw's effect.
+- Poison Powder is a cleaner purple.
+- Spikes has no purple left.
+- Beams have a soft glow (not Mud Shot).
