@@ -660,7 +660,7 @@ export class Battle extends Play {
   // Which of the four go off on the press rather than being aimed first and thrown on the release.
   instantMoves() {
     const p = this.player, tapping = !!p.dance || !!p.beaming?.clash;
-    return this.moves.map((id) => { const mv = MOVES[id]; return tapping || !mv || (touch.on && !!mv.volley) || !!(mv.stream || mv.grow || mv.catch || mv.ritual || mv.steer || mv.flurry || mv.stance || mv.kind === 'beam' || mv.kind === 'hold'); }); // (on the pad a volley is held for)
+    return this.moves.map((id) => { const mv = MOVES[id]; return tapping || !mv || (touch.on && !!mv.volley) || !!(mv.stream || mv.guard || mv.grow || mv.catch || mv.ritual || mv.steer || mv.flurry || mv.stance || mv.kind === 'beam' || mv.kind === 'hold'); }); // (on the pad a volley is held for)
   }
 
   // A move's key or mouse button went down, and came up: a held move starts on the press; any other is aimed while the

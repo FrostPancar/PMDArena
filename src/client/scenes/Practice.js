@@ -158,6 +158,7 @@ export class Practice extends Battle {
 
   // Everyone gets back up: the player at the spawn point, the rest where they stood.
   fainted(m) {
+    if (m.summon) return; // a summoned copy is simply gone
     this.time.delayedCall(m === this.player ? 1000 : 1500, () => {
       if (!m.sprite.active) return;
       if (m === this.player) m.revive(...this.map.spawn);

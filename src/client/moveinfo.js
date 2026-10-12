@@ -118,10 +118,10 @@ export function describe(id) {
   if (mv.lead) n.push('Lands where its target is heading.');
   if (mv.fixedDmg) n.push(`Always ${mv.fixedDmg} damage. Goes through shields.`);
   if (mv.toss) n.push('Lifts the foe and slams it down.');
-  if (mv.throw) n.push('Throws the foe to where you aim.');
+  if (mv.throw) n.push(mv.throwBack ? 'Throws the foe far behind you.' : 'Throws the foe to where you aim.');
   if (mv.flurry) n.push('Each blow hits harder. You are rooted and take more damage.');
   if (mv.detect) n.push('For an instant the next hit misses: you appear behind whoever threw it, and they are stunned.');
-  if (mv.bide) n.push(`For ${secs(mv.bide.time)} you soak up hits without flinching, then pay them back doubled.`);
+  if (mv.bide) n.push(`For ${secs(mv.bide.time)}, a hit you take makes your next attack hit twice as hard.`);
   if (mv.breaker) n.push('Smashes shields, the substitute, walls and standing rocks, and stuns their owner.');
   if (mv.repeat) n.push('Costs more each time it is used in a row.');
   if (mv.grapple) n.push(mv.meet ? 'Pulls you and the first foe it reaches together.' : 'Drags the first foe it reaches to you.', 'Hitting a wall, it pulls you there.');
@@ -190,7 +190,15 @@ export function describe(id) {
   if (mv.buff && !mv.stance && !mv.ritual && !mv.field) n.push(mv.buff.stat === 'eva' ? `Dodge half of all hits for ${secs(mv.buff.time)}.` : `Raises your ${STAT[mv.buff.stat] ?? 'stats'} for ${secs(mv.buff.time)}.`);
   if (mv.bonus) n.push(`${pct(mv.bonus.chance)} chance to raise your ${STAT[mv.bonus.buff.stat]}.`);
   if (mv.debuff) n.push(`Lowers the foe's ${STAT[mv.debuff.stat]} for ${secs(mv.debuff.time)}.`);
-  if (mv.shield) n.push(`Blocks every hit for ${secs(mv.shield)}.`);
+  if (mv.guard) n.push(`Blocks every hit while held, for ${+(mv.guard.upkeep / 20).toFixed(1)} energy a second.`);
+  else if (mv.shield) n.push(`Blocks every hit for ${secs(mv.shield)}.`);
+  if (mv.armor) n.push('Armoured: hits hurt but cannot stop it.');
+  if (mv.rain) n.push(`Your side's water moves hit harder for ${secs(mv.rain)}.`);
+  if (mv.summon) n.push(`Calls a copy of you with 1 HP for ${secs(mv.summon.time)}. It uses Pin Missile and Stun Spore.`);
+  if (mv.levitate) n.push(mv.kind === 'self' ? 'The shot it steers lifts what it hits.' : 'Lifts the foe helpless into the air for a moment.');
+  if (mv.twice) n.push('Goes off twice where it ends.');
+  if (mv.single) n.push('Cannot be used again until it has finished.');
+  if (mv.lobScale) n.push('Hits harder the further it is thrown.');
   if (mv.sub) n.push('A doll takes the next hit for you.');
   if (mv.empower) n.push('Your next attack hits twice as hard.');
   if (mv.cure) n.push('Cures your status condition.');
@@ -213,7 +221,7 @@ export function describe(id) {
   // for the player's eyes only (Taunt has its own, stricter idea of a status move in mv.cls)
   const role = mv.kind === 'self' ? 'Support' : (mv.dmg ?? 0) >= 8 ? 'Attack' : 'Status';
   // held: it lasts while its button is down (the same moves the touch pad starts on the press)
-  const held = !!(mv.stream || mv.grow || mv.catch || mv.ritual || mv.steer || mv.flurry || mv.stance || mv.kind === 'beam' || mv.kind === 'hold');
+  const held = !!(mv.stream || mv.guard || mv.grow || mv.catch || mv.ritual || mv.steer || mv.flurry || mv.stance || mv.kind === 'beam' || mv.kind === 'hold');
   return {
     type: typeOf(id), role, held, delivery: DELIVERY[mv.kind] ?? 'projectile', tag: mv.tag ?? null, kind: cap(KIND_LABEL[mv.kind]), how: HOW[mv.kind],
     power: mv.dmg ?? 0, cost: mv.cost, charge: mv.charge, speed: quickness(mv), reach: reachOf(mv) ?? null,

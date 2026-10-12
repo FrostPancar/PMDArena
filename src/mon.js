@@ -39,6 +39,11 @@ export class Mon {
     this.maxHp = o.hp ?? BASE_HP;
     this.hp = this.maxHp;
     this.maxStamina = NOTCH * NOTCHES;
+    this.armored = false; // in a move that cannot be knocked out of: hits hurt but do not stagger or shove
+    this.leap = 0; // seconds left of a jump made from inside a held move (Surf, a roll)
+    this.levi = 0; // seconds left hanging helpless in the air (Hurricane, Kinesis); leviImmune: until it can be lifted again
+    this.leviImmune = 0;
+    this.buryImmune = 0; // seconds after digging itself out during which it cannot be buried again
     this.healsUsed = 0; // healing moves used this match (see HEAL_LIMIT)
     this.snare = 0; // seconds it is still held fast in a web: it cannot walk or jump, but can still fight
     this.runT = 0; // seconds of running left from the notch last spent on it
@@ -128,11 +133,11 @@ export class Mon {
   get free() { return this.state === 'idle' || this.state === 'walk' || this.state === 'loop'; }
   get grounded() { return this.state === 'idle' || this.state === 'walk'; }
   // in the air nothing can hit you
-  get airborne() { return this.state === 'jump' || this.state === 'dash' || this.animName === 'Hop'; }
+  get airborne() { return this.state === 'jump' || this.state === 'dash' || this.animName === 'Hop' || this.leap > 0; }
 
   get ailment() { return STATUS[this.status?.kind] ?? {}; }
   // held in place: buried, frozen or asleep
-  get stuck() { return this.buried > 0 || this.grip > 0 || this.stun > 0 || this.braced || !!this.bide || !!this.dance || !!this.ailment.hold; }
+  get stuck() { return this.levi > 0 || this.buried > 0 || this.grip > 0 || this.stun > 0 || this.braced || !!this.bide || !!this.dance || !!this.ailment.hold; }
 
   mul(stat) { return (this.buffs[stat].t > 0 ? this.buffs[stat].mul : 1) * (STATUS[this.status?.kind]?.[stat] ?? 1); }
 
@@ -366,13 +371,21 @@ export class Mon {
     this.sprite.setTintFill(0xffffff);
     this.scene.time.delayedCall(90, () => this.sprite.active && this.applyTint());
     if (hit?.soft && this.hp > 0) {
-      // a beam's tick: it wears the target down and drags at it, but does not stagger it or break what it is doing
+      // a beam's tick, or one shot of a stream: it wears the target down without staggering it or breaking what it is
+      // doing. A beam drags at it too.
+      if (hit.soft === 'stream') { this.invuln = 0.1; return true; }
       this.invuln = 0.28;
       if (!(this.buffs.spd.t > 0.6 && this.buffs.spd.mul < 1)) this.addBuff('spd', 0.7, 0.6);
       return true;
     }
-    // biding: the blow is banked and shrugged off
-    if (this.bide && this.hp > 0) { this.bide.stored += dealt; return true; }
+    if (this.armored && this.hp > 0) { this.invuln = 0.3; return true; } // ploughs on through it
+    if (this.bide && this.hp > 0) {
+      // braced for it: the blow is taken standing, and the next attack comes back twice as hard
+      this.bide = null;
+      this.setCharged(true);
+      this.scene.popup?.(this, 'BIDE');
+      return true;
+    }
     // a jab stings but does not stop a heavy move that is already charging
     if (hit?.jab && this.hp > 0 && this.state === 'windup' && this.windup?.mv.tag === 'heavy') return true;
     this.cancel();
@@ -394,7 +407,7 @@ export class Mon {
   }
 
   revive(x, y) {
-    Object.assign(this, { x, y, hp: this.maxHp, stamina: this.maxStamina, exhausted: false, runT: 0, snare: 0, kx: 0, ky: 0, invuln: 1, buried: 0, shield: 0, leech: null, ingrain: null, regen: null, sub: false, lx: x, ly: y, detect: 0, bide: null, bond: 0, bondTo: null, endure: 0, webbed: 0, torment: null, tether: null, dance: null, fuse: null, rep: null, grip: 0, stun: 0, roost: 0, chill: null, locked: null, acro: null, locks: {}, ramp: null, status: null, freezeImmune: 0 });
+    Object.assign(this, { x, y, hp: this.maxHp, stamina: this.maxStamina, exhausted: false, runT: 0, snare: 0, armored: false, leap: 0, levi: 0, leviImmune: 0, buryImmune: 0, hop: 0, kx: 0, ky: 0, invuln: 1, buried: 0, shield: 0, leech: null, ingrain: null, regen: null, sub: false, lx: x, ly: y, detect: 0, bide: null, bond: 0, bondTo: null, endure: 0, webbed: 0, torment: null, tether: null, dance: null, fuse: null, rep: null, grip: 0, stun: 0, roost: 0, chill: null, locked: null, acro: null, locks: {}, ramp: null, status: null, freezeImmune: 0 });
     for (const b of Object.values(this.buffs)) b.t = 0;
     this.cancel();
     this.sprite.setAlpha(1);
@@ -444,7 +457,18 @@ export class Mon {
     for (const k of ['detect', 'bond', 'endure', 'webbed']) this[k] = Math.max(0, this[k] - dt);
     if (this.tether && !this.tether.to.alive) this.tether = null;
     for (const k of ['chill', 'locked', 'acro', 'torment', 'tether', 'rep', 'bondTo']) if (this[k] && ((this[k].t -= dt) <= 0 || !this.alive)) this[k] = null;
+    const wasBuried = this.buried > 0;
     this.buried = this.alive ? Math.max(0, this.buried - dt) : 0;
+    if (wasBuried && this.buried <= 0) this.buryImmune = 2;
+    this.buryImmune = Math.max(0, this.buryImmune - dt);
+    if (this.leap > 0) { this.leap = Math.max(0, this.leap - dt); this.hop = this.leap > 0 ? 34 * Math.sin(Math.PI * (1 - this.leap / 0.5)) : 0; }
+    if (this.levi > 0) {
+      // hanging in the air, turning slowly; then dropped, and for a while it cannot be lifted again
+      this.levi = Math.max(0, this.levi - dt);
+      this.hop = this.levi > 0 ? Math.min(22, this.hop + 90 * dt) : 0;
+      if (this.levi <= 0) this.leviImmune = 2;
+    }
+    this.leviImmune = Math.max(0, this.leviImmune - dt);
     this.shield = this.alive ? Math.max(0, this.shield - dt) : 0;
     this.parry = Math.max(0, this.parry - dt);
     this.parryCd = Math.max(0, this.parryCd - dt);
@@ -577,6 +601,7 @@ export class Mon {
     if (b.eva.t > 0) out.push('eye');
     if (Object.values(b).some((q) => q.t > 0 && q.mul < 1)) out.push('down');
     if (this.charged) out.push('fist');
+    if (this.torment) out.push('cross');
     return out;
   }
 

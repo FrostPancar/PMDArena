@@ -3,6 +3,43 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.7
+
+**Streams, lobs and beams**
+- Held streams (Water Gun, Bubble, Bubble Beam, Ember, Star Shoot, Powder Snow, Thunder Shock) no longer stagger, so
+  they can't stun lock.
+- Lobbed moves burst 50% wider and deal 75% damage up close, rising to 150% at full range.
+- Aurora Beam is a short held stream of rings. Hypnosis is two of those rings back to back, at shorter range.
+- Ice Beam's particles are diamonds.
+
+**Costs and charges**
+- Earthquake costs 2. Hurricane, Outrage and Uproar cost 4; Outrage and Uproar can't be reused while one is going.
+- Area moves with no charged build-up come out at once; charged ones grow faster and wider. Earthquake is unchanged.
+- Eruption and Hammer Arm charge faster.
+
+**Hold moves**
+- Jumping works during Surf, Ice Ball, Rollout and Gyro Ball.
+- Brave Bird, Rollout, Ice Ball and Gyro Ball are armoured: damage still lands, knockback and interruption don't.
+- Gyro Ball is a hold move like Ice Ball. Protect is held for energy and no longer slides.
+- Earthquake and Magnitude reach a mon that is underground with Dig; nothing else does.
+
+**Moves**
+- Zap Cannon and Sleep Powder home in. Venoshock is purple.
+- Fire Blast bursts twice where it ends.
+- Circle Throw always throws behind the user, much further.
+- Acrobatics springs off on a hit the way the stick or keys are held.
+- Rain Dance powers up the side's water moves for 10 s.
+- Bide and Counter: a hit taken during them gives the empowered next attack.
+- Attack Order summons a 1 HP copy that uses Pin Missile and Stun Spore.
+- Petal Blizzard sits higher and lingers. Roost charges with the Sleep animation.
+- Hurricane and Kinesis levitate the target; no second lift for 2 s after landing.
+- Gravity is a much larger grey zone that stops jumps.
+- Future Sight and Waterfall hit a much bigger area.
+- A mon that digs out of a burial can't be buried again for 2 s.
+
+**Looks**
+- Lock-On's reticle follows its target. Heals use Leech Seed's heal animation. Torment shows the red cross overhead.
+
 ## alpha 0.5.6
 
 **Volleys and streams**

@@ -871,6 +871,49 @@ for (const mv of Object.values(MOVES)) {
   mv.weight = mv.cost;
   if (mv.cost > 0) mv.cost = mv.cost >= STRONG_COST ? 40 : mv.cost <= LIGHT_COST ? 10 : 20;
 }
+
+// ---- the alpha 0.5.7 list (costs here are final: 20 is a notch of energy) ----
+// softStream: a stream's shots wear the target down without staggering it, so a held stream is not a stun lock.
+give('waterGun bubble bubbleBeam ember starShoot powderSnow thunderShock', { softStream: true, thru: undefined });
+// lobbed shots burst wider and hit harder the further they are thrown (lobScale: from point blank to full range)
+for (const mv of Object.values(MOVES)) if (mv.lob) Object.assign(mv, { burst: Math.round(mv.burst * 1.5), impactScale: (mv.impactScale ?? 1) * 1.3, lobScale: [0.75, 1.5] });
+give('earthquake', { cost: 40 });
+give('earthquake magnitude', { deep: true }); // the only things that reach a mon underground
+// armor: while the move lasts its user takes damage but is not knocked back or out of it
+give('braveBird rollout iceBall', { armor: true });
+give('zapCannon', { kind: 'homing', turn: 1.3 });
+give('venoshock', { gray: true, tint: 0xb04dff });
+give('sleepPowder', { kind: 'homing', speed: 75, turn: 1.5, range: 210, radius: 12 });
+give('gyroBall', { kind: 'hold', roll: { turn: 2.6, max: 5, gain: 0.2 }, parryStun: 1, armor: true, turn: undefined, speed: 130, radius: 14, dmg: 12, cost: 20, upkeep: 30, charge: 0.2 });
+give('fireBlast', { twice: 24 }); // where it ends it goes off, and again as the first blast dies down
+give('auroraBeam', { stream: { gap: 0.07, upkeep: 40 }, softStream: true, range: 120, speed: 300, dmg: 3, charge: 0.1, chill: undefined, pierce: undefined, status: { kind: 'freeze', chance: 0.04 } });
+give('hypnosis', { fx: '0003_rainbow_rings', seqs: ['002'], slice: undefined, rotate: true, tint: 0xd9a8ff, volley: { n: 2, gap: 0.14 }, range: 150, thru: true });
+give('iceBeam', (mv) => ({ look: { ...mv.look, diamond: true } }));
+// moves that go on around their user for a while: dear, and not to be used again until the last one has finished
+give('outrage uproar', { cost: 80, once: undefined, single: true });
+// area moves come out at once; the ones that are charged up grow faster and wider (Earthquake is as it was)
+for (const [id, mv] of Object.entries(MOVES)) {
+  if (mv.kind !== 'aoe') continue;
+  if (!mv.grow) { if (!mv.fuse && !mv.chargeSeqs && mv.tag !== 'heavy') mv.charge = 0; continue; }
+  if (id === 'earthquake') continue;
+  mv.grow = mv.grow.cycle || mv.grow.random ? { ...mv.grow, rate: mv.grow.rate * 1.6 } : { ...mv.grow, rate: mv.grow.rate * 2.5, max: Math.min(90, Math.round(mv.grow.max * 1.3)) };
+}
+give('circleThrow', { throw: 170, throwBack: true });
+give('acrobatics', { bounce: 55 }); // a hit sends its user springing off the way it is steering
+// held: the shield stays up while the button is down, for energy
+give('protect', { shield: 0.3, guard: { upkeep: 24 }, drift: undefined, repeat: undefined });
+give('rainDance', { rain: 10 });
+for (const id of 'bubble waterSpout waterPulse hydroBurst hydroPump whirlpool crabhammer bubbleBeam razorShell surf brine waterfall waterGun aquaJet'.split(' ')) if (MOVES[id]) MOVES[id].element ??= 'water';
+give('roost', { chargeAnim: 'Sleep' });
+give('attackOrder', { kind: 'self', summon: { time: 12, moves: ['pinMissile', 'stunSpore'] }, dmg: undefined, range: undefined, radius: undefined, hitDelay: undefined, cls: 'attack', cost: 40, charge: 0.3, tag: undefined });
+give('petalBlizzard', { linger: 4, dmg: 9, origin: [0.5, 0.72] });
+give('hurricane', { cost: 80, levitate: 1.1 });
+give('kinesis', { levitate: 1.1 }); // on whatever the shot it is steering hits
+give('gravity', { fx: '0017_pink_sphere', seqs: ['000'], gray: true, radius: 72, range: 120, scale: 2.3, fps: 30, alpha: 0.5 });
+give('futureSight', (mv) => ({ radius: 42, scale: (mv.scale ?? 1) * 1.5 }));
+give('waterfall', (mv) => ({ radius: 34, scale: (mv.scale ?? 1) * 1.5 }));
+give('eruption', { charge: 0.2 });
+give('hammerArm', { charge: 0.15 });
 for (const [id, mv] of Object.entries(MOVES)) mv.id = id; // carried by the one-use copies the engine makes, for messages between clients
 // ---- from the move notes ----
 // selfFx / selfScale: a piece of art played on the user as the move goes off. pillarStill: the standing rock is the move's own
@@ -1048,7 +1091,7 @@ const keysOf = (mv) => [
   ...(mv.dirFrames ?? []), ...(mv.cycle ?? []).map((v) => v.frames),
 ].flatMap((list) => list ?? []);
 // The other moves whose art a move borrows as it plays out.
-const needs = (mv) => (mv.blaze ? [MOVES.fireSpin] : []);
+const needs = (mv) => [...(mv.blaze ? [MOVES.fireSpin] : []), ...(mv.summon?.moves ?? []).map((id) => MOVES[id])];
 const missing = (scene, mv) => [...new Set([mv, ...needs(mv)].flatMap(keysOf))].filter((key) => FRAME_URL.has(key) && !scene.textures.exists(key));
 
 // Is all of a move's art in?
