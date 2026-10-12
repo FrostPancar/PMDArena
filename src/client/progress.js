@@ -25,7 +25,7 @@ export function levelFor(exp) {
 // The front half of the attacks and the front half of everything else are open from the start; the rest unlock one
 // by one, attacks and other moves taking turns, the strongest last.
 const reachOf = (mv) => (mv.kind === 'self' ? 'self' : (mv.dmg ?? 0) < 8 ? 'status' : mv.kind === 'melee' || mv.kind === 'dash' || mv.kind === 'hold' ? 'close' : 'far');
-const strength = (mv) => (mv.dmg ?? 0) + mv.cost * 0.25 + (mv.linger ? 4 : 0) + (mv.status ? 6 * mv.status.chance : 0)
+const strength = (mv) => (mv.dmg ?? 0) + (mv.weight ?? mv.cost) * 0.25 + (mv.linger ? 4 : 0) + (mv.status ? 6 * mv.status.chance : 0)
   + (mv.drain ? 4 : 0) + (mv.heal ?? 0) * 0.2 + (mv.shield ? 6 : 0) + (mv.empower ? 6 : 0);
 const STEP_UP = 12; // how far each weaker relative pushes a move back
 const FIRST_UNLOCK = 2, LAST_UNLOCK = 20;

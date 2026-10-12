@@ -7,10 +7,13 @@ const RETRY_MS = 3000;
 const handlers = {};
 let ws = null;
 let profile = null;
+let pinger = null, pings = 0;
 
 export const net = {
   id: null,
   online: false,
+  rtt: null, // ms there and back to the relay, smoothed
+  offset: 0, // relay clock minus this machine's clock, in ms
   party: { code: null, open: false, leader: null, members: [] },
 
   connect() {
@@ -24,6 +27,13 @@ export const net = {
     ws.onmessage = (e) => {
       let msg;
       try { msg = JSON.parse(e.data); } catch { return; }
+      if (msg.t === 'pong') {
+        // half the round trip is how old the relay's timestamp was when it got here
+        const rtt = performance.now() - msg.at;
+        net.rtt = net.rtt === null ? rtt : net.rtt * 0.8 + rtt * 0.2;
+        net.offset = msg.now + rtt / 2 - Date.now();
+        return;
+      }
       if (msg.t === 'welcome') net.id = msg.id;
       else if (msg.t === 'party') net.party = msg;
       emit(msg.t, msg);
@@ -38,6 +48,8 @@ export const net = {
       setTimeout(() => net.connect(), RETRY_MS);
     };
     ws.onerror = () => {};
+    clearInterval(pinger);
+    pinger = setInterval(() => net.send('ping', { n: ++pings, at: performance.now() }), 2000);
   },
 
   send(t, data) {

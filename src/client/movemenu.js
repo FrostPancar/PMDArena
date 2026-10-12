@@ -13,7 +13,7 @@ const LIST = { x: 6, y: 5, w: 150, h: 24 + ROWS * ROW_H + 5 };
 const INFO = { x: 160, y: 5, w: 218, h: 128 };
 const SLOTS = { x: 160, y: 136, w: 218, h: 52 };
 // the stat rows of the info panel: glyph, name, notched bar
-const STAT_ROWS = [['power', 'statPower', 'Power'], ['stamina', 'statStamina', 'Stamina'], ['range', 'statRange', 'Range']];
+const STAT_ROWS = [['power', 'statPower', 'Power'], ['stamina', 'statStamina', 'Energy'], ['range', 'statRange', 'Range']];
 const PREVIEW = 46;
 
 // Full-screen move picker: everything the mon can learn on the left (the ones it has not earned yet padlocked, with
@@ -195,7 +195,7 @@ export class MoveMenu {
       const v = have[s.key];
       s.bar.set(litNotches(s.key, v), METERS[s.key].color);
       s.art.setAlpha(v ? 1 : 0.35);
-      s.label.setText(s.key === 'range' ? info.reachLabel : s.key === 'power' ? 'Power' : 'Stamina').setTint(v ? INK.dim : INK.off);
+      s.label.setText(s.key === 'range' ? info.reachLabel : s.key === 'power' ? 'Power' : 'Energy').setTint(v ? INK.dim : INK.off);
     }
     this.infoCharge.setText(`${+info.charge.toFixed(2)}s`);
     this.infoBody.setText([info.how, ...info.notes].slice(0, 4).join('\n'));

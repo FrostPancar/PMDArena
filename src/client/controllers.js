@@ -1,5 +1,7 @@
 import { WALK_SPEED } from '../scene.js';
 import { MOVES } from '../moves.js';
+import { NOTCH } from '../mon.js';
+import { skillOf } from './ladder.js';
 
 // Who drives a fighter that is not the local player. The Battle scene calls update(dt) on each before the mons move.
 // CpuController plays a fighter this client owns; RemoteController shows one that another client owns.
@@ -10,11 +12,14 @@ const HOLD_ANIMS = new Set(['Sit', 'LookUp', 'Faint']);
 
 // ---- the computer ----
 // Picks the nearest foe, keeps at the distance its chosen move likes while circling, uses moves when they would
-// reach, swings when toe to toe, backs off when out of breath and sometimes jumps clear of a move it sees coming.
+// reach, swings when toe to toe, backs off when out of breath and sometimes jumps clear of a move it sees coming
+// or parries what is about to hit it. How well it does all that is its skill, 1 to 5 (ladder.js); a fighter that
+// names none plays at 3.
 export class CpuController {
   constructor(scene, mon, fighter) {
-    Object.assign(this, { scene, mon, moves: fighter.moves, slot: fighter.slot });
-    this.cool = 1.2 + Math.random(); // until it may attack again
+    Object.assign(this, { scene, mon, moves: fighter.moves, slot: fighter.slot, skill: skillOf(fighter.skill) });
+    this.cool = (1.2 + Math.random()) * this.skill.cool; // until it may attack again
+    this.seen = new WeakSet(); // the shots and swings it has already decided whether to parry
     this.swap = 0; // until it reconsiders its move
     this.side = Math.random() < 0.5 ? 1 : -1; // which way it circles
     this.sideFor = 1;
@@ -36,17 +41,19 @@ export class CpuController {
   update(dt) {
     const { scene: s, mon: m } = this;
     const foe = s.fighting && m.alive ? this.target() : null;
-    if (!foe) { if (m.state === 'walk') m.walk(0, 0); return; }
+    if (!foe) { if (m.state === 'walk') this.walk(0, 0); return; }
+    const k = this.skill;
     const dx = foe.x - m.x, dy = foe.y - m.y, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
 
     // a foe starts charging something: decide once whether to jump out of it
     const w = foe.state === 'windup' ? foe.windup : null;
-    if (w && w !== this.watched) { this.watched = w; this.dodging = Math.random() < 0.4; }
+    if (w && w !== this.watched) { this.watched = w; this.dodging = Math.random() < k.dodge; }
     if (w && this.dodging && w.t >= w.mv.charge * 0.5 && d < 130 && m.grounded) {
       this.dodging = false;
       m.jump(-uy * this.side, ux * this.side, WALK_SPEED * 1.15);
     }
     if (!m.grounded) return;
+    if (this.threatened(foe, d) && s.parry(m)) return;
 
     this.cool -= dt;
     this.swap -= dt;
@@ -59,22 +66,60 @@ export class CpuController {
       const pool = ready.length ? ready : this.moves;
       m.move = pool[Math.floor(Math.random() * pool.length)];
     }
-    if (this.cool <= 0 && s.wantsMove(m, d) && s.useMove(m, foe)) { this.cool = 1.1 + Math.random() * 1.3; return; }
+    if (this.cool <= 0 && s.wantsMove(m, d) && s.useMove(m, this.aimAt(foe))) { this.cool = (1.1 + Math.random() * 1.3) * k.cool; return; }
     if (d < 22 && this.cool <= 0 && !m.ailment.noAttack) {
-      m.walk(0, 0);
+      this.walk(0, 0);
       m.face(foe.x, foe.y);
       m.aim = null;
-      if (m.act('Attack')) this.cool = 1.1 + Math.random() * 0.9;
+      if (m.act('Attack')) this.cool = (1.1 + Math.random() * 0.9) * k.cool;
       return;
     }
 
     const mv = MOVES[m.move], close = mv.kind === 'melee' || mv.kind === 'dash' || mv.kind === 'aoe';
-    const keep = m.exhausted || m.stamina < 20 ? 110 : close ? 16 : 72;
+    const keep = m.exhausted || m.stamina < NOTCH ? 110 : close ? 16 : 72;
     let vx = -uy * this.side * 0.7, vy = ux * this.side * 0.7;
     if (d > keep + 12) { vx += ux; vy += uy; } else if (d < keep - 12) { vx -= ux; vy -= uy; }
+    // the best of them run in when the gap is long and they have the energy to spare for it
+    const run = k.run && d > keep + 70 && m.stamina >= NOTCH * 2;
+    const moved = this.walk(vx, vy, WALK_SPEED * k.speed, dt, run);
+    if (!moved) this.side = -this.side; // walked into something: go round the other way
+  }
+
+  // Walk the mon. The player's own mon (a fight played by the computer, for testing) is moved by its scene from what
+  // is asked for here; anyone else is moved at once. Says whether it got anywhere.
+  walk(vx, vy, speed, dt, run = false) {
+    const m = this.mon, was = this.at ?? [NaN, NaN];
+    if (m === this.scene.player) {
+      this.scene.autoWalk = vx || vy ? { vx, vy, run } : null;
+      this.at = [m.x, m.y];
+      return was[0] !== m.x || was[1] !== m.y;
+    }
     const bx = m.x, by = m.y;
-    m.walk(vx, vy, WALK_SPEED * 0.85, dt);
-    if (bx === m.x && by === m.y) this.side = -this.side; // walked into something: go round the other way
+    m.walk(vx, vy, speed, dt, run);
+    return bx !== m.x || by !== m.y;
+  }
+
+  // What a move is aimed at: the foe, or a spot off to one side of it for a CPU whose aim is not true.
+  aimAt(foe) {
+    const off = this.skill.aim;
+    if (!off) return foe;
+    const a = Math.random() * Math.PI * 2, r = Math.random() * off;
+    return { get x() { return foe.x + Math.cos(a) * r; }, get y() { return foe.y + Math.sin(a) * r; } };
+  }
+
+  // Is something about to hit it that it has decided to parry? Each shot and each swing is decided on once.
+  threatened(foe, d) {
+    const { scene: s, mon: m, skill: k } = this;
+    if (!k.parry || m.parryCd > 0) return false;
+    const decide = (thing) => { if (this.seen.has(thing)) return false; this.seen.add(thing); return Math.random() < k.parry; };
+    // a swing in mid-lunge close by
+    if (foe.pending && d < 44 && decide(foe.pending)) return true;
+    for (const q of s.shots) {
+      if (q.owner.team === m.team || q.arc || q.caught) continue;
+      const dx = m.x - q.x, dy = m.y - q.y, gap = Math.hypot(dx, dy);
+      if (gap < 34 && dx * q.vx + dy * q.vy > 0 && decide(q)) return true; // near, and coming this way
+    }
+    return false;
   }
 }
 
@@ -97,8 +142,8 @@ export class RemoteController {
     Object.assign(this, { scene, mon, fighter, latest: null, gone: false });
     mon.remote = true;
     // hits on a puppet only report whether they would connect, so the attacker's own effects (a drain's heal) can play
-    mon.damage = () => {
-      if (!mon.alive || mon.invuln > 0 || mon.airborne || mon.shield > 0) return false;
+    mon.damage = (_n, _x, _y, hit) => {
+      if (!mon.canBeHit(hit)) return false; // the same gate the owner applies, answer types and all
       mon.invuln = 0.45;
       return true;
     };
@@ -109,7 +154,11 @@ export class RemoteController {
 
   receive(d) {
     if (d.k === 's') this.latest = d;
-    else this.scene.replay(this.mon, d);
+    else {
+      // an act: anything in a snapshot sent before it is out of date about what the fighter is doing
+      if (d.k === 'w' || d.k === 'f' || d.k === 'c') this.actedAt = d.tk ?? 0;
+      this.scene.replay(this.mon, d);
+    }
   }
 
   // The owner left the battle: its fighter drops.
@@ -152,6 +201,12 @@ export class RemoteController {
     }
     m.hp = d.hp;
     m.stamina = d.sta;
+    // what its owner is doing with the controls (a held move, where it aims), and state only the owner knows for sure
+    if (d.in) m.net = d.in;
+    if (d.cz !== undefined) m.chill = d.cz ? { n: d.cz, t: 1 } : null;
+    if (d.stn !== undefined) m.stun = d.stn;
+    if (d.lk !== undefined) m.locked = d.lk ? { team: m.team === 'p' ? 'n' : 'p', t: 1 } : null;
+    if (d.tm !== undefined) m.torment = d.tm ? { t: 1 } : null;
     m.exhausted = !!d.ex;
     m.shield = d.sh;
     m.buried = d.bur;
@@ -163,6 +218,8 @@ export class RemoteController {
     for (const b of Object.values(m.buffs)) b.t = 0;
     for (const [stat, mul, t] of d.bf) m.buffs[stat] = { mul, t };
 
+    // a snapshot that left before the fighter's latest act arrived must not pose it back into what it was doing before
+    if (d.tk !== undefined && d.tk < (this.actedAt ?? 0)) return;
     // moves put the puppet into these states themselves (see Battle.replay); the snapshot only takes it out again
     const busy = d.st === 'dash' || d.st === 'bird';
     // the same one-shot animation started over (a second swing, a second hit taken) shows as its frame going back

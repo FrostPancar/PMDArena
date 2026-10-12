@@ -18,10 +18,14 @@ const HOLD = new Set(['Sit', 'LookUp', 'Faint']);
 const SLEEPY = new Set(['Sleep', 'EventSleep', 'Laying']);
 
 export const RUN_MULT = 1.7;
-const RUN_DRAIN = 26; // stamina per second
+// Energy is a bar of five notches (kept as 0..100, a notch being 20, so a held move can still drain it smoothly).
+// A move costs one notch or two (a light poke half), a jump two, a burst of running half; a parry that lands gives one back.
+export const NOTCH = 20, NOTCHES = 5;
+const RUN_TIME = 2, RUN_COST = NOTCH / 2; // a burst of running: how long it lasts and what it costs
+export const BASE_HP = 150; // every mon's health
 const STAMINA_REGEN = 24;
 const REGEN_DELAY = 0.7;
-export const JUMP_COST = 50; // a jump takes half the bar
+export const JUMP_COST = 2 * NOTCH;
 const JUMP_TIME = 0.55;
 const AIR_ACCEL = 240; // how hard movement keys steer a jump
 const AIR_MAX = 125;
@@ -32,9 +36,10 @@ export class Mon {
     this.species = SPECIES[o.species] ?? Object.values(SPECIES)[0];
     this.move = o.move ?? null;
     this.home = { x, y };
-    this.maxHp = o.hp ?? 100;
+    this.maxHp = o.hp ?? BASE_HP;
     this.hp = this.maxHp;
-    this.maxStamina = 100;
+    this.maxStamina = NOTCH * NOTCHES;
+    this.runT = 0; // seconds of running left from the notch last spent on it
     this.stamina = this.maxStamina;
     this.regenDelay = 0;
     this.exhausted = false;
@@ -58,8 +63,37 @@ export class Mon {
     this.ingrain = null; // { t, hps } while rooted and healing
     this.regen = null; // { t, hps } healing over time
     this.sub = false; // drawn and hit as the substitute doll until the next hit
+    this.under = false; // underground (Dig): nothing can hit it
+    this.grip = 0; // seconds left held in a bite, as the biter or the bitten
+    this.braced = false; // holding a stance: rooted until it is let go or broken
+    this.reel = 0; // seconds since it was last hurt during which a follow-up strike still lands
+    this.stun = 0; // seconds left unable to act (a parried lock-on dash, a missed chain dash)
+    this.hop = 0; // px the sprite is drawn above its shadow (Fly, Bounce)
+    this.flying = false; // up in the air with Fly: only moves that swat flyers can reach it
+    this.beaming = null; // the held beam it is firing: slow to walk, cannot turn its body
+    this.chill = null; // { n, t } stacks from ice moves; the third freezes
+    this.locked = null; // { team, t } marked by Lock-On: that side's shots home in on it
+    this.roost = 0; // seconds left grounded after Roost: no jumping or flying, ground moves hit harder
+    this.acro = null; // { mv, n, t } a chain dash that connected: the next one is free
+    this.vel = { x: 0, y: 0 }; // px a second, measured frame to frame
+    this.detect = 0; // seconds left in which the next hit is dodged (Detect)
+    this.bide = null; // { t, stored, mv } soaking up damage to pay back
+    this.bond = 0; // seconds left of Destiny Bond
+    this.bondTo = null; // { m, t } the foe Destiny Bond has tied it to
+    this.flakes = []; // snowflakes overhead, one per stack of chill
+    this.endure = 0; // seconds left in which health cannot drop below 1
+    this.webbed = 0; // seconds left unable to run (Sticky Web)
+    this.torment = null; // { t } cannot use the same move twice running
+    this.tether = null; // { to, r, t } cannot go further than r from that mon (Mean Look)
+    this.dance = null; // { mv, t, n, hit } a Dragon Dance in progress
+    this.fuse = null; // { mv, t, track } lit: the move goes off when it runs out (Explosion)
+    this.lastHit = null; // { by, n, t } the last blow taken
+    this.lastMove = null; // the last move it fired
+    this.rep = null; // { mv, n, t } uses in a row of a move that costs more each time
     this.ramp = null; // { mv, n, t } consecutive uses of a ramping move
     this.cycles = {}; // move name -> how many times a cycling move has been used
+    this.locks = {}; // element -> seconds its moves stay unusable (Overheat)
+    this.decoy = !!o.decoy; // a Double Team copy: the first hit pops it
     this.pending = null; // { mv, aim } melee move waiting for the lunge to connect
     this.status = null; // { kind, t } while burned, poisoned, paralysed or frozen
     this.freezeImmune = 0;
@@ -75,6 +109,18 @@ export class Mon {
     this.toIdle();
   }
 
+  // Dice: the fight's seeded generator where there is one (see scene.js), so that luck is the same on every client.
+  roll() { return this.scene.rand ? this.scene.rand() : Math.random(); }
+
+  // Would a hit get past what makes this mon untouchable (not the answers that are used up by it: parry, Detect, the substitute)?
+  canBeHit(hit) {
+    const tag = hit?.tag, through = tag === 'curse', grab = tag === 'grab';
+    if (!this.alive || (this.invuln > 0 && !(hit?.thru && this.reel > 0))) return false;
+    if (this.under && !(this.flying && hit?.swat) && !hit?.deep) return false;
+    if (this.airborne && tag !== 'sweep' && !through && !hit?.deep) return false;
+    return !(this.shield > 0 && !grab && !through && !hit?.pierce);
+  }
+
   get alive() { return this.state !== 'faint'; }
   get free() { return this.state === 'idle' || this.state === 'walk' || this.state === 'loop'; }
   get grounded() { return this.state === 'idle' || this.state === 'walk'; }
@@ -83,7 +129,7 @@ export class Mon {
 
   get ailment() { return STATUS[this.status?.kind] ?? {}; }
   // held in place: buried, frozen or asleep
-  get stuck() { return this.buried > 0 || !!this.ailment.hold; }
+  get stuck() { return this.buried > 0 || this.grip > 0 || this.stun > 0 || this.braced || !!this.bide || !!this.dance || !!this.ailment.hold; }
 
   mul(stat) { return (this.buffs[stat].t > 0 ? this.buffs[stat].mul : 1) * (STATUS[this.status?.kind]?.[stat] ?? 1); }
 
@@ -109,7 +155,7 @@ export class Mon {
 
   // Raise (mul > 1) or lower (mul < 1) a stat for a while; 'random' picks one.
   addBuff(stat, mul, time) {
-    if (stat === 'random') stat = ['atk', 'spd', 'def'][Math.floor(Math.random() * 3)];
+    if (stat === 'random') stat = ['atk', 'spd', 'def'][Math.floor(this.roll() * 3)];
     this.buffs[stat] = { mul, t: time };
     return stat;
   }
@@ -122,6 +168,10 @@ export class Mon {
     if (this.ingrain) out.push('rooted');
     if (this.regen) out.push('regen');
     if (this.sub) out.push('substitute');
+    if (this.chill) out.push(`chilled x${this.chill.n}`);
+    if (this.locked) out.push('locked on');
+    if (this.roost > 0) out.push('grounded');
+    for (const [k, t] of Object.entries(this.locks)) out.push(`no ${k} ${Math.ceil(t)}s`);
     if (this.status) out.push(`${STATUS[this.status.kind].label} ${Math.ceil(this.status.t)}s`);
     return out.join('  ') || '-';
   }
@@ -142,7 +192,9 @@ export class Mon {
 
   cancel() {
     this.windup = this.aim = this.air = this.pending = null;
-    this.hidden = false;
+    this.hidden = this.under = this.braced = this.flying = false;
+    this.beaming = this.dance = null;
+    this.hop = 0;
     this.forceShot = false;
     this.mute = false;
   }
@@ -193,10 +245,13 @@ export class Mon {
       this.state = 'idle';
     }
     if (!this.grounded) return;
-    speed *= this.mul('spd');
-    this.running = run && !this.exhausted && this.stamina > 0;
-    if (this.running) { speed *= RUN_MULT; this.spend(RUN_DRAIN * dt); }
-    this.dir = dirFromVec(vx, vy);
+    speed *= this.mul('spd') * (this.beaming ? 0.3 : 1);
+    // running: half a notch buys a burst that lasts whether or not the button stays down; held, the next notch goes as it runs out
+    const able = !this.beaming && !(this.webbed > 0);
+    if (run && able && this.runT <= 0 && !this.exhausted && this.stamina >= RUN_COST) { this.spend(RUN_COST); this.runT = RUN_TIME; }
+    this.running = able && this.runT > 0;
+    if (this.running) speed *= RUN_MULT;
+    if (!this.beaming) this.dir = dirFromVec(vx, vy); // a beam decides which way its user faces
     const l = Math.hypot(vx, vy);
     this.slide((vx / l) * speed * dt, (vy / l) * speed * dt);
     if (this.state !== 'walk') {
@@ -208,7 +263,7 @@ export class Mon {
 
   // Leap in the given direction (or straight up).
   jump(vx, vy, speed) {
-    if (!this.grounded || this.stuck || this.ailment.root || this.ingrain || this.stamina < JUMP_COST || this.scene.heavy?.(this)) return false;
+    if (!this.grounded || this.stuck || this.ailment.root || this.ingrain || this.roost > 0 || this.beaming || this.stamina < JUMP_COST || this.scene.heavy?.(this)) return false;
     this.spend(JUMP_COST);
     const l = Math.hypot(vx, vy);
     this.air = { t: 0, vx: l ? (vx / l) * speed : 0, vy: l ? (vy / l) * speed : 0, ix: 0, iy: 0 };
@@ -222,7 +277,15 @@ export class Mon {
   }
 
   slide(dx, dy) {
-    const ok = this.scene.walkable;
+    // a Reflect wall of the other side is as solid as the map
+    const ok = (x, y) => {
+      if (!this.scene.walkable(x, y) || this.scene.walled?.(this, x, y)) return false;
+      // tethered: it may move about inside the circle, and back toward it, but not further out
+      const q = this.tether;
+      if (!q) return true;
+      const d = Math.hypot(x - q.to.x, y - q.to.y);
+      return d <= q.r || d <= Math.hypot(this.x - q.to.x, this.y - q.to.y);
+    };
     if (ok(this.x + dx, this.y + dy)) { this.x += dx; this.y += dy; }
     else if (dx && ok(this.x + dx, this.y)) this.x += dx;
     else if (dy && ok(this.x, this.y + dy)) this.y += dy;
@@ -253,16 +316,35 @@ export class Mon {
 
   heal(n) { this.hp = Math.min(this.maxHp, this.hp + n); }
 
-  damage(n, fromX, fromY) {
-    if (!this.alive || this.invuln > 0 || this.airborne || this.shield > 0) return false;
-    if (this.parry > 0) {
-      // blocked: the window closes, the blocker is briefly untouchable
-      this.parry = 0;
+  // hit: { tag, jab, swat, thru } of the move behind it (see TAGS in moves.js); a plain hit is a strike
+  damage(n, fromX, fromY, hit) {
+    const tag = hit?.tag, through = tag === 'curse', grab = tag === 'grab';
+    // a follow-up strike of the same move lands on a mon still reeling from the one before
+    if (!this.alive || (this.invuln > 0 && !(hit?.thru && this.reel > 0))) return false;
+    if (this.under && !(this.flying && hit?.swat) && !hit?.deep) return false; // only a swatting move reaches a flyer
+    if (this.airborne && tag !== 'sweep' && !through && !hit?.deep) return false;
+    if (this.shield > 0 && !grab && !through && !hit?.pierce) return false;
+    if (this.detect > 0 && !grab && !through) {
+      // seen coming: the blow misses and the user is suddenly behind whoever threw it
+      this.detect = 0;
       this.invuln = 0.4;
-      this.scene.parried(this);
+      this.scene.detected?.(this, hit?.by);
       return false;
     }
-    if (this.buffs.eva.t > 0 && Math.random() < 0.5) { this.invuln = 0.25; return false; }
+    if (this.decoy) { this.popped = true; this.invuln = 9; return true; }
+    if (this.parry > 0 && !grab && !through) {
+      if (tag !== 'heavy') {
+        // blocked: the window closes, the blocker is briefly untouchable
+        this.parry = 0;
+        this.invuln = 0.4;
+        this.scene.parried(this);
+        return false;
+      }
+      // a heavy blow comes through the block at half strength
+      this.parry = 0;
+      n *= 0.5;
+    }
+    if (this.buffs.eva.t > 0 && this.roll() < 0.5) { this.invuln = 0.25; return false; }
     if (this.sub) {
       // the doll takes the hit and breaks
       this.sub = false;
@@ -270,15 +352,23 @@ export class Mon {
       this.scene.subBroke(this);
       return false;
     }
-    this.hp = Math.max(0, this.hp - n / this.mul('def'));
+    const dealt = hit?.raw ? n : n / this.mul('def'); // fixed damage ignores defence
+    this.hp = Math.max(this.endure > 0 ? Math.min(1, this.hp) : 0, this.hp - dealt);
+    this.lastHit = { by: hit?.by, n: dealt, t: this.scene.simMs ?? this.scene.time.now };
+    if (this.hp <= 0 && this.bondTo?.m.alive) this.scene.bonded?.(this, this.bondTo.m, dealt); // it does not go alone
     if (this.ailment.wakes) this.clearStatus();
     this.invuln = 0.45;
-    this.cancel();
+    this.reel = 0.4;
     this.sprite.setTintFill(0xffffff);
     this.scene.time.delayedCall(90, () => this.sprite.active && this.applyTint());
+    // biding: the blow is banked and shrugged off
+    if (this.bide && this.hp > 0) { this.bide.stored += dealt; return true; }
+    // a jab stings but does not stop a heavy move that is already charging
+    if (hit?.jab && this.hp > 0 && this.state === 'windup' && this.windup?.mv.tag === 'heavy') return true;
+    this.cancel();
     if (fromX !== undefined) {
-      const dx = this.x - fromX, dy = this.y - fromY, l = Math.hypot(dx, dy) || 1;
-      this.kx = (dx / l) * 110; this.ky = (dy / l) * 110;
+      const dx = this.x - fromX, dy = this.y - fromY, l = Math.hypot(dx, dy) || 1, k = this.ingrain ? 0 : 110; // a rooted mon is not shoved
+      this.kx = (dx / l) * k; this.ky = (dy / l) * k;
       this.face(fromX, fromY);
     }
     const has = this.species.anims;
@@ -294,7 +384,7 @@ export class Mon {
   }
 
   revive(x, y) {
-    Object.assign(this, { x, y, hp: this.maxHp, stamina: this.maxStamina, exhausted: false, kx: 0, ky: 0, invuln: 1, buried: 0, shield: 0, leech: null, ingrain: null, regen: null, sub: false, ramp: null, status: null, freezeImmune: 0 });
+    Object.assign(this, { x, y, hp: this.maxHp, stamina: this.maxStamina, exhausted: false, runT: 0, kx: 0, ky: 0, invuln: 1, buried: 0, shield: 0, leech: null, ingrain: null, regen: null, sub: false, lx: x, ly: y, detect: 0, bide: null, bond: 0, bondTo: null, endure: 0, webbed: 0, torment: null, tether: null, dance: null, fuse: null, rep: null, grip: 0, stun: 0, roost: 0, chill: null, locked: null, acro: null, locks: {}, ramp: null, status: null, freezeImmune: 0 });
     for (const b of Object.values(this.buffs)) b.t = 0;
     this.cancel();
     this.sprite.setAlpha(1);
@@ -309,22 +399,22 @@ export class Mon {
     // encored: keeps throwing out its move
     if (this.ailment.encore && target.alive && d < 150 && this.scene.useMove(this, target)) return;
     if (target.alive && d < 130) {
-      if (this.scene.wantsMove(this, d) && Math.random() < dt * 0.8) {
+      if (this.scene.wantsMove(this, d) && this.roll() < dt * 0.8) {
         this.walk(0, 0);
         this.scene.useMove(this, target);
       } else if (d < 20) {
         this.walk(0, 0);
         this.face(target.x, target.y);
-        if (this.cooldown <= 0 && !this.ailment.noAttack) { this.act('Attack'); this.cooldown = 1.3 + Math.random(); }
+        if (this.cooldown <= 0 && !this.ailment.noAttack) { this.act('Attack'); this.cooldown = 1.3 + this.roll(); }
       } else this.walk(target.x - this.x, target.y - this.y, 40, dt);
       return;
     }
     const w = this.wander;
     w.t -= dt;
     if (w.t <= 0) {
-      w.t = 1.5 + Math.random() * 2.5;
-      w.tx = this.home.x + (Math.random() - 0.5) * 70;
-      w.ty = this.home.y + (Math.random() - 0.5) * 50;
+      w.t = 1.5 + this.roll() * 2.5;
+      w.tx = this.home.x + (this.roll() - 0.5) * 70;
+      w.ty = this.home.y + (this.roll() - 0.5) * 50;
     }
     const wx = w.tx - this.x, wy = w.ty - this.y;
     if (Math.hypot(wx, wy) > 3) {
@@ -335,7 +425,15 @@ export class Mon {
   }
 
   update(dt) {
+    this.vel.x = (this.x - (this.lx ?? this.x)) / dt; this.vel.y = (this.y - (this.ly ?? this.y)) / dt;
+    this.lx = this.x; this.ly = this.y;
     this.invuln = Math.max(0, this.invuln - dt);
+    this.stun = Math.max(0, this.stun - dt);
+    this.reel = Math.max(0, this.reel - dt);
+    this.roost = Math.max(0, this.roost - dt);
+    for (const k of ['detect', 'bond', 'endure', 'webbed']) this[k] = Math.max(0, this[k] - dt);
+    if (this.tether && !this.tether.to.alive) this.tether = null;
+    for (const k of ['chill', 'locked', 'acro', 'torment', 'tether', 'rep', 'bondTo']) if (this[k] && ((this[k].t -= dt) <= 0 || !this.alive)) this[k] = null;
     this.buried = this.alive ? Math.max(0, this.buried - dt) : 0;
     this.shield = this.alive ? Math.max(0, this.shield - dt) : 0;
     this.parry = Math.max(0, this.parry - dt);
@@ -349,6 +447,8 @@ export class Mon {
       if ((l.t -= dt) <= 0 || !this.alive) this.leech = null;
     }
     if (this.ramp) this.ramp.t -= dt;
+    this.runT = Math.max(0, this.runT - dt);
+    for (const k in this.locks) if ((this.locks[k] -= dt) <= 0) delete this.locks[k];
     if (this.regen) {
       if (this.alive) this.heal(this.regen.hps * dt);
       if ((this.regen.t -= dt) <= 0 || !this.alive) this.regen = null;
@@ -369,9 +469,9 @@ export class Mon {
       if ((this.status.t -= dt) <= 0 || !this.alive) this.clearStatus();
     }
     this.regenDelay -= dt;
-    if (this.regenDelay <= 0 && this.state !== 'jump' && this.state !== 'windup') {
+    if (this.regenDelay <= 0 && this.state !== 'jump' && this.state !== 'windup' && !this.running) { // no catching your breath on the run
       this.stamina = Math.min(this.maxStamina, this.stamina + STAMINA_REGEN * dt);
-      if (this.stamina >= 20) this.exhausted = false;
+      if (this.stamina >= NOTCH) this.exhausted = false;
     }
     if (this.stuck) this.kx = this.ky = 0;
     if (this.kx || this.ky) {
@@ -417,7 +517,7 @@ export class Mon {
     const f = (a.rows === 8 ? this.dir : 0) * a.cols + Math.min(this.frame, a.cols - 1);
     const x = Math.round(this.x), y = Math.round(this.y), foot = this.species.foot;
     // without a Hop sheet the jump arc is drawn by lifting the sprite
-    const lift = this.state === 'jump' && this.animName !== 'Hop' ? Math.round(88 * (this.air.t / JUMP_TIME) * (1 - this.air.t / JUMP_TIME)) : 0;
+    const lift = (this.state === 'jump' && this.animName !== 'Hop' ? Math.round(88 * (this.air.t / JUMP_TIME) * (1 - this.air.t / JUMP_TIME)) : 0) + Math.round(this.hop);
     // buried: sunk 8px with everything below the ground line cut off
     const sunk = this.buried > 0 ? 8 : 0;
     this.sprite.setTexture(`a-${a.key}`, f).setPosition(x, y - foot - lift + sunk).setDepth(10 + this.y).setVisible(!this.hidden && !this.sub);
@@ -427,7 +527,13 @@ export class Mon {
     this.doll?.setVisible(doll);
     if (sunk) this.sprite.setCrop(0, 0, a.fw, a.fh / 2 + foot - sunk);
     else if (this.sprite.isCropped) this.sprite.setCrop();
-    this.shadow.setTexture(`s-${a.key}`, f).setPosition(x, y - foot).setVisible(!sunk && !this.hidden);
+    this.shadow.setTexture(`s-${a.key}`, f).setPosition(x, y - foot).setVisible(!sunk && (!this.hidden || this.flying)); // a flyer is only its shadow
+    // chill: a snowflake overhead for each stack
+    const nf = this.alive && !this.hidden && this.chill ? this.chill.n : 0;
+    for (let i = 0; i < Math.max(nf, this.flakes.length); i++) {
+      if (i < nf) (this.flakes[i] ??= this.scene.add.image(x, y, 'flake').setDepth(9002)).setPosition(x + Math.round((i - (nf - 1) / 2) * 9), y - 46).setVisible(true);
+      else this.flakes[i].setVisible(false);
+    }
     const show = this.alive && this.hp < this.maxHp;
     this.barBg.setVisible(show).setPosition(x, y - 24);
     this.bar.setVisible(show).setPosition(x - 8, y - 24);
@@ -446,7 +552,7 @@ export class Mon {
     const showSt = this.alive && this.team === 'p' && this.stamina < this.maxStamina;
     this.stBg.setVisible(showSt).setPosition(x, y - 20);
     this.stBar.setVisible(showSt).setPosition(x - 8, y - 20);
-    this.stBar.width = Math.max(1, Math.round((16 * this.stamina) / this.maxStamina));
+    this.stBar.width = Math.max(1, Math.round((16 * Math.floor(this.stamina / NOTCH + 0.001)) / NOTCHES)); // whole notches only
     this.stBar.setFillStyle(this.exhausted ? 0xef6b5b : 0xf2c94c);
   }
 
@@ -463,6 +569,6 @@ export class Mon {
   }
 
   destroy() {
-    for (const o of [this.sprite, this.shadow, this.bar, this.barBg, this.stBar, this.stBg, this.ice, this.doll, ...this.icons]) o?.destroy();
+    for (const o of [this.sprite, this.shadow, this.bar, this.barBg, this.stBar, this.stBg, this.ice, this.doll, ...this.icons, ...this.flakes]) o?.destroy();
   }
 }

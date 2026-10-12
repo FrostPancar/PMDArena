@@ -34,6 +34,12 @@
   #sub { color: var(--dim); }
   #stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; background: #0b0e15; }
   #stage canvas { image-rendering: pixelated; }
+  #notes { padding: 8px 16px; border-top: 1px solid var(--line); display: grid; gap: 6px; }
+  #notes b { font-weight: 600; } #saved { color: var(--dim); }
+  #note { font: inherit; color: var(--ink); background: #0a0d13; border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; width: 100%; resize: vertical; }
+  #note:focus { outline: none; border-color: var(--acc); }
+  .item .nm.noted::after { content: ' ●'; color: var(--warn); }
+  .item .new { margin-left: 6px; padding: 0 4px; border-radius: 3px; background: #2dd4bf; color: #062a26; font-size: 9px; font-weight: 700; letter-spacing: 0.04em; vertical-align: 1px; }
   #foot { padding: 8px 16px; border-top: 1px solid var(--line); color: var(--dim); display: flex; gap: 18px; flex-wrap: wrap; min-height: 34px; }
   #foot b { color: var(--ink); font-weight: 600; }
   kbd { font: inherit; font-size: 10px; color: var(--dim); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; background: #10141d; }
@@ -65,10 +71,15 @@
         <button id="t-stamina">Stamina</button>
         <button id="t-damage">Damage numbers</button>
         <button id="t-hitbox">Hitboxes</button>
+        <button id="t-clash" title="For beam moves: the target fires the same beam back">Beam clash</button>
         <button id="t-pause">Pause</button>
       </div>
     </div>
     <div id="stage"></div>
+    <div id="notes">
+      <div class="row"><b>Notes on this move</b><span id="saved"></span><span style="flex:1"></span><button id="copy-notes">Copy all notes</button></div>
+      <textarea id="note" rows="3" placeholder="animation or balance notes for this move…"></textarea>
+    </div>
     <div id="foot"><span id="stat"></span><span id="help"><kbd>↑</kbd> <kbd>↓</kbd> previous / next move</span></div>
   </main>
 </div>

@@ -13,13 +13,13 @@ const TYPES = {
   squirtle: 'water', mudkip: 'water', ralts: 'psychic', eevee: 'normal',
   axew: 'dragon', zorua: 'dark', starly: 'flying', corphish: 'water', cubone: 'ground', nidoran: 'poison', aron: 'steel', venipede: 'bug', rotom: 'electric', riolu: 'fighting',
   combee: 'bug', clefairy: 'fairy', rhyhorn: 'rock', scyther: 'bug', joltik: 'electric', skarmory: 'steel',
-  cacnea: 'grass', alolanvulpix: 'ice', snom: 'ice', porygon: 'normal',
+  cacnea: 'grass', alolanvulpix: 'ice', heracross: 'bug', porygon: 'normal',
 };
 // Evolutions that are not their species' type: Eevee's, one of which each Eevee takes.
 const FORM_TYPES = { vaporeon: 'water', jolteon: 'electric', flareon: 'fire', espeon: 'psychic', umbreon: 'dark', leafeon: 'grass', glaceon: 'ice', sylveon: 'fairy' };
 // Names that are not just the folder name capitalised
 const NAMES = { alolanvulpix: 'Alolan Vulpix', alolanninetales: 'Alolan Ninetales', porygon2: 'Porygon2', porygonz: 'Porygon-Z' };
-const ORDER = ['bulbasaur', 'charmander', 'squirtle', 'chikorita', 'treecko', 'torchic', 'mudkip', 'ralts', 'eevee', 'axew', 'zorua', 'starly', 'corphish', 'cubone', 'nidoran', 'aron', 'venipede', 'rotom', 'riolu', 'combee', 'clefairy', 'rhyhorn', 'scyther', 'joltik', 'skarmory', 'cacnea', 'alolanvulpix', 'snom', 'porygon'];
+const ORDER = ['bulbasaur', 'charmander', 'squirtle', 'chikorita', 'treecko', 'torchic', 'mudkip', 'ralts', 'eevee', 'axew', 'zorua', 'starly', 'corphish', 'cubone', 'nidoran', 'aron', 'venipede', 'rotom', 'riolu', 'combee', 'clefairy', 'rhyhorn', 'scyther', 'joltik', 'skarmory', 'cacnea', 'alolanvulpix', 'heracross', 'porygon'];
 
 // id -> { id, name, type, shadowSize, foot, anims: { name -> { sheet, key, fw, fh, durs[], rush, hit, ret, cols, rows } } }
 export const SPECIES = {};

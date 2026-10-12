@@ -11,14 +11,16 @@ import { WebSocketServer } from 'ws';
 //   party.open / party.close / party.leave             party { code, open, leader, members: [{ id, ...profile }] }
 //   party.join { code }                                error { msg }
 //   hub { d }            (to the rest of the party)    hub { from, d }
-//   queue { mode: '1v1' | '2v2', cpu }                 queued { mode } / queue.cancelled
+//   queue { mode: '1v1' | '2v2' | '3v3', cpu }         queued { mode } / queue.cancelled
 //   queue.cancel                                       match { battle }
-//   start { mode: 'duel' | 'cpu', cpus }               go
+//   start { mode: 'duel' | 'crew' | 'cpu', cpus }      go
 //   battle.ready                                       b { from, d }
 //   b { d }              (to the rest of the match)    left { id }
 //   battle.over
+//   ping { n, at }                                     pong { n, at, now }
 // A battle is { id, mode, seed, fighters: [{ slot, team, kind: 'human' | 'cpu', owner, species, moves, form, name... }] }.
 // `owner` is the client that simulates the fighter: a human's own client, or for a CPU the client that brought it.
+// A '3v3' is a crew battle: one player a side, like a 1v1; the clients agree their crews among themselves afterwards.
 
 const CODE_LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const MAX_PARTY = 2;
@@ -26,7 +28,7 @@ const MAX_PARTY = 2;
 export function createRelay() {
   const clients = new Map();
   const codes = new Map(); // room code -> party
-  const queues = { '1v1': [], '2v2': [] }; // waiting { party, team }
+  const queues = { '1v1': [], '2v2': [], '3v3': [] }; // waiting { party, team }
   let nextId = 1;
 
   const send = (c, msg) => { if (c.ws.readyState === 1) c.ws.send(JSON.stringify(msg)); };
@@ -165,7 +167,7 @@ export function createRelay() {
       if (!q || party.leader !== c.id || c.match) return;
       const humans = members(party).map(human);
       let team = humans;
-      if (mode === '1v1' && humans.length !== 1) return send(c, { t: 'error', msg: 'A 1v1 against a stranger is for one player.' });
+      if (mode !== '2v2' && humans.length !== 1) return send(c, { t: 'error', msg: `A ${mode} against a stranger is for one player.` });
       if (mode === '2v2' && humans.length === 1) team = [humans[0], cpu(msg.cpu, c.id)];
       if (!team.every(usable)) return send(c, { t: 'error', msg: 'Everyone needs a Pokémon and moves first.' });
       dequeue(party);
@@ -185,7 +187,7 @@ export function createRelay() {
       if (party.leader !== c.id || humans.length !== 2 || c.match) return;
       dequeue(party, true);
       const cpus = (Array.isArray(msg.cpus) ? msg.cpus : []).slice(0, 2).map((s) => cpu(s, c.id));
-      if (msg.mode === 'duel' && humans.every(usable)) startMatch('1v1', [[humans[0]], [humans[1]]]);
+      if ((msg.mode === 'duel' || msg.mode === 'crew') && humans.every(usable)) startMatch(msg.mode === 'crew' ? '3v3' : '1v1', [[humans[0]], [humans[1]]]);
       else if (msg.mode === 'cpu' && cpus.length === 2 && [...humans, ...cpus].every(usable)) startMatch('2v2', [humans, cpus]);
       else send(c, { t: 'error', msg: 'Everyone needs a Pokémon and moves first.' });
     },
@@ -197,9 +199,14 @@ export function createRelay() {
       checkReady(match);
     },
 
+    // ts is the relay's clock when it passed the message on: with the offset a client measures by pinging (below), every
+    // client can place a message on one shared timeline
     b(c, msg) {
-      if (c.match) for (const o of c.match.clients) if (o !== c) send(o, { t: 'b', from: c.id, d: msg.d });
+      if (c.match) for (const o of c.match.clients) if (o !== c) send(o, { t: 'b', from: c.id, d: msg.d, ts: Date.now() });
     },
+
+    // echoed straight back with the relay's time: the client learns its round trip and how far its clock is from the relay's
+    ping(c, msg) { send(c, { t: 'pong', n: msg.n, at: msg.at, now: Date.now() }); },
 
     // sent when a fight ends and when a player gives up; the others' copies of the leaver's fighters drop
     'battle.over'(c) { leaveMatch(c, true); },

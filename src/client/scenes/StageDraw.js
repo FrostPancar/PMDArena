@@ -9,6 +9,7 @@ import { session, saveSession } from '../session.js';
 import { net } from '../net.js';
 import { ARENAS, mine, lookOf, seeded } from '../modes.js';
 import { BAR_H, INK, Hints, text, panel } from '../ui.js';
+import { onLadder, isOpen, openStages, freshStages, markShown, levelOfStage, atLevel, MAX_LEVEL } from '../ladder.js';
 
 const PICK_SECONDS = 15;
 const SHARE_MS = 120; // how often a player repeats where they stand, so a client that arrives late still learns it
@@ -22,6 +23,10 @@ const TAG = { me: INK.gold, ally: INK.sky, foe: INK.rose };
 // stage is drawn at random from the ones that were picked (a spotlight hops between them and settles) and the
 // battle starts there. A player who never moves has locked in a random stage, so doing nothing is a random stage.
 //
+// A fight against the computer alone is on the CPU ladder (ladder.js): every stage shows its difficulty, 1 to 5, the
+// stages not yet opened are padlocked and cannot be picked, and a stage opened by the last win is shown opening
+// before the picking starts. The battle leaves here set to the level of the stage it landed on.
+//
 // Over the relay it is one message, repeated while the screen is up: b { d: { k: 'wm', n: stage id, l: locked in } }.
 // Every client ends up with the same set of locked picks, and the seed of the battle picks from them the same way.
 export class StageDraw extends Phaser.Scene {
@@ -30,11 +35,14 @@ export class StageDraw extends Phaser.Scene {
   init(data) {
     this.battle = data.battle;
     this.online = this.battle.fighters.some((f) => !mine(f));
-    this.phase = 'pick'; // pick -> wait (locked in, the others not yet) -> draw (the spotlight) -> land -> the battle
+    this.ladder = onLadder(this.battle);
+    this.fresh = this.ladder ? freshStages() : [];
+    this.opening = [...this.fresh]; // stages to show opening first; still drawn locked until they have
+    this.phase = this.opening.length ? 'unlock' : 'pick'; // (unlock ->) pick -> wait (locked in, the others not yet) -> draw (the spotlight) -> land -> the battle
     this.left = PICK_SECONDS;
     this.sinceShare = 0;
     this.spot = null; // the stage in the spotlight while drawing
-    this.gone = []; // clients that left before the battle, for the Battle scene to drop
+    this.gone = [...(data.gone ?? [])]; // clients that left before the battle (some already on the crew screen), for the Battle scene to drop
     this.leaving = false;
     this.shownLabel = null;
     this.note = '';
@@ -42,11 +50,11 @@ export class StageDraw extends Phaser.Scene {
     // node: the stage this player is standing on (their pick); shown: where their mon is drawn
     this.players = this.battle.fighters
       .filter((f) => f.kind === 'human')
-      .map((f) => ({ f, me: mine(f), node: null, shown: null, locked: false, gone: false, mon: null }));
+      .map((f) => ({ f, me: mine(f), node: null, shown: null, locked: false, gone: this.gone.includes(f.owner), mon: null }));
     this.me = this.players.find((p) => p.me);
     // you start on a random stage, not the one you fought on last
-    const fresh = ARENAS.filter((id) => id !== session.lastMap);
-    this.me.node = this.me.shown = fresh[Math.floor(Math.random() * fresh.length)];
+    const all = this.ladder ? openStages() : ARENAS, fresh = all.filter((id) => id !== session.lastMap);
+    this.me.node = this.me.shown = (fresh.length ? fresh : all)[Math.floor(Math.random() * (fresh.length || all.length))];
   }
 
   // Evolved looks are only loaded when someone here wears one.
@@ -60,6 +68,10 @@ export class StageDraw extends Phaser.Scene {
       return { id, name: MAPS[id].name, x, y, img: this.add.image(x, y, 'node').setDepth(5) };
     });
     this.byId = Object.fromEntries(this.nodes.map((n) => [n.id, n]));
+    if (this.ladder) {
+      this.ladderArt();
+      for (const n of this.nodes) n.pips = this.add.image(n.x, n.y + 8, `pips-${levelOfStage(n.id)}`).setDepth(6);
+    }
     this.tweens.add({ targets: this.nodes.map((n) => n.img), alpha: 0.55, yoyo: true, repeat: -1, duration: 600 });
     this.label = this.add.image(0, 0, 'node').setDepth(9100);
 
@@ -85,6 +97,8 @@ export class StageDraw extends Phaser.Scene {
     this.plate = panel(this, (VIEW_W - 172) >> 1, 3, 172, 15, 'dim');
     this.plateText = text(this, VIEW_W / 2, 5, '', INK.gold).setOrigin(0.5, 0);
 
+    if (this.opening.length) this.time.delayedCall(500, () => this.showOpening(0));
+
     if (this.online) {
       const offs = [
         net.on('b', (msg) => this.hear(msg)),
@@ -99,6 +113,57 @@ export class StageDraw extends Phaser.Scene {
   // Mon reports its action frames to the scene; nothing fights here.
   actionFrame() {}
   actionDone() {}
+
+  // ---- the CPU ladder ----
+  // May this stage be picked? Always, unless the fight is on the ladder and the stage is still shut.
+  pickable(id) { return !this.ladder || (isOpen(id) && !this.opening.includes(id)); }
+
+  // The difficulty pips (one strip per level) and the padlock a shut stage wears.
+  ladderArt() {
+    const make = (key, w, h, paint) => {
+      if (this.textures.exists(key)) return;
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      paint(c.getContext('2d'));
+      this.textures.addCanvas(key, c);
+    };
+    for (let lv = 1; lv <= MAX_LEVEL; lv++) {
+      make(`pips-${lv}`, MAX_LEVEL * 4 + 1, 5, (g) => {
+        g.fillStyle = '#10141d'; g.fillRect(0, 0, MAX_LEVEL * 4 + 1, 5);
+        for (let i = 0; i < MAX_LEVEL; i++) { g.fillStyle = i < lv ? ['#8fe07a', '#d8e05a', '#ffd24a', '#ff9a4a', '#ff5a4a'][lv - 1] : '#3a4254'; g.fillRect(1 + i * 4, 1, 3, 3); }
+      });
+    }
+    const LOCK = ['..kkkkk..', '.kwwwwwk.', '.kwkkkwk.', 'kkkkkkkkk', 'kgggggggk', 'kggkkkggk', 'kgggkgggk', 'kgggggggk', 'kkkkkkkkk'];
+    make('lock', 9, 9, (g) => LOCK.forEach((row, y) => [...row].forEach((ch, x) => {
+      if (ch === '.') return;
+      g.fillStyle = { k: '#1a1f2e', w: '#c8d0dc', g: '#8b93a3' }[ch]; g.fillRect(x, y, 1, 1);
+    })));
+  }
+
+  // A stage the last win opened: the map goes to it, its padlock rattles and bursts, and it is a stage like the others.
+  showOpening(i) {
+    const id = this.opening[i];
+    if (!id) {
+      markShown(this.fresh);
+      this.opening = [];
+      this.spot = null;
+      this.phase = 'pick';
+      return this.showHints();
+    }
+    const n = this.byId[id];
+    this.spot = id;
+    this.time.delayedCall(800, () => this.tweens.add({ targets: n.img, x: n.x + 2, duration: 45, yoyo: true, repeat: 5, onComplete: () => { n.img.x = n.x; } }));
+    this.time.delayedCall(1450, () => {
+      this.opening = this.opening.map((o) => (o === id ? null : o)); // no longer drawn locked
+      const ring = this.add.image(n.x, n.y, 'nodeSel').setDepth(8), flash = this.add.image(n.x, n.y, 'lock').setDepth(9).setTintFill(0xffffff);
+      this.tweens.add({ targets: ring, scale: 6, alpha: 0, duration: 600, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
+      this.tweens.add({ targets: flash, y: n.y - 14, scale: 2, alpha: 0, duration: 500, ease: 'Cubic.easeOut', onComplete: () => flash.destroy() });
+      const word = this.add.image(n.x, n.y - 12, labelTexture(this, 'New stage!')).setDepth(9101);
+      this.tweens.add({ targets: word, y: n.y - 24, duration: 500, ease: 'Cubic.easeOut', hold: 900, onComplete: () => word.destroy() });
+      this.cameras.main.flash(180, 255, 255, 255);
+    });
+    this.time.delayedCall(3000, () => this.showOpening(i + 1));
+  }
 
   // ---- the players on the map ----
   tint(p) { return p.me ? TAG.me : p.f.team === this.me.f.team ? TAG.ally : TAG.foe; }
@@ -163,7 +228,7 @@ export class StageDraw extends Phaser.Scene {
     let best = null, score = Infinity;
     for (const n of this.nodes) {
       const vx = n.x - cur.x, vy = n.y - cur.y, along = vx * dx + vy * dy, d = Math.hypot(vx, vy);
-      if (n === cur || along < d * 0.45) continue;
+      if (n === cur || along < d * 0.45 || !this.pickable(n.id)) continue;
       const s = d / (along / d);
       if (s < score) { score = s; best = n; }
     }
@@ -181,7 +246,7 @@ export class StageDraw extends Phaser.Scene {
     if (this.phase !== 'pick' || wipe.busy) return;
     ptr.updateWorldPoint(this.cameras.main);
     const [d, n] = this.nodes.map((o) => [Math.hypot(o.x - ptr.worldX, o.y - ptr.worldY), o]).sort((a, b) => a[0] - b[0])[0];
-    if (d > 16) return;
+    if (d > 16 || !this.pickable(n.id)) return;
     if (n.id === this.me.node) this.lock();
     else this.select(n.id);
   }
@@ -195,7 +260,7 @@ export class StageDraw extends Phaser.Scene {
   }
 
   showHints() {
-    this.hints.set(this.phase === 'pick'
+    this.hints.set(this.phase === 'unlock' ? [{ label: 'A new stage has opened' }] : this.phase === 'pick'
       ? [
         { icon: 'dpad', key: 'WASD', label: 'Pick a stage' },
         { icon: 'btnA', key: 'Enter', label: 'Lock in', action: 'confirm' },
@@ -250,7 +315,9 @@ export class StageDraw extends Phaser.Scene {
     saveSession();
     this.time.delayedCall(1500, () => {
       this.leaving = true;
-      this.leave('battle', { battle: { ...this.battle, map: win }, gone: this.gone });
+      // on the ladder the stage decides how hard the computer is
+      const battle = this.ladder ? atLevel(this.battle, levelOfStage(win)) : this.battle;
+      this.leave('battle', { battle: { ...battle, map: win }, gone: this.gone });
     });
   }
 
@@ -312,21 +379,27 @@ export class StageDraw extends Phaser.Scene {
   // The stages somebody stands on, or the one in the spotlight, are drawn selected.
   updateNodes() {
     const lit = this.spot ? [this.spot] : this.players.filter((p) => !p.gone && p.shown).map((p) => p.shown);
-    for (const n of this.nodes) n.img.setTexture(lit.includes(n.id) ? 'nodeSel' : 'node');
+    for (const n of this.nodes) {
+      const shut = !this.pickable(n.id);
+      n.img.setTexture(shut ? 'lock' : lit.includes(n.id) ? 'nodeSel' : 'node').setTint(shut ? 0x9aa3b5 : 0xffffff);
+      n.pips?.setVisible(!shut);
+    }
     const id = this.spot ?? this.me.node;
     if (id === this.shownLabel) return;
     this.shownLabel = id;
     const n = this.byId[id];
     this.label.setTexture(labelTexture(this, n.name));
     const lw = this.label.width / 2;
-    this.label.setPosition(Phaser.Math.Clamp(n.x, lw + 2, MAP_W - 2 - lw), n.y > 290 ? n.y - 30 : n.y + 13);
+    // (on the ladder the difficulty pips sit just under the stage, so the name goes under those)
+    this.label.setPosition(Phaser.Math.Clamp(n.x, lw + 2, MAP_W - 2 - lw), n.y > 290 ? n.y - 30 : n.y + (this.ladder ? 18 : 13));
   }
 
   updatePlate() {
     const present = this.players.filter((p) => !p.gone), locked = present.filter((p) => p.locked).length;
-    const note = this.phase === 'pick' ? `Pick a stage  ${Math.ceil(this.left)}`
+    const lv = this.ladder ? `  Lv ${levelOfStage(this.spot ?? this.me.node)}` : '';
+    const note = this.phase === 'unlock' ? 'A new stage!' : this.phase === 'pick' ? `Pick a stage${lv}  ${Math.ceil(this.left)}`
       : this.phase === 'wait' ? (present.length > 1 ? `Waiting for the others ${locked}/${present.length}` : 'Locked in')
-        : this.phase === 'draw' ? 'Drawing the stage...' : MAPS[this.spot].name;
+        : this.phase === 'draw' ? 'Drawing the stage...' : `${MAPS[this.spot].name}${lv}`;
     if (note !== this.note) this.plateText.setText(this.note = note);
   }
 

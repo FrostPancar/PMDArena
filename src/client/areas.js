@@ -36,6 +36,7 @@ export const AREAS = {
     ],
     spots: [
       { id: 'ring', at: [174, 180], r: 30, label: 'Pick moves' },
+      { id: 'pond', at: [76, 161], r: 38, label: 'Move callouts' }, // the pool: turns the move names called out in battle on and off
     ],
   },
   basement: {

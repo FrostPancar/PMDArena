@@ -14,6 +14,8 @@ export const session = {
   partner: null, // species id of the CPU partner waiting on the other bed, if one was asked along
   briefed: {}, // one-time prompts already shown: species id for the move menu, 'controls' for the battle card
   lastMap: null,
+  ladder: { open: [], shown: [] }, // the CPU ladder (ladder.js): stages opened, and those whose opening the map has shown
+  crew: [], // species ids last taken to a crew battle, in the order they were sent out
   mons: {}, // species id -> { exp, battles, wins }: how far each mon has come
   profile: { name: 'Player', face: null, flag: 0 }, // face: a species or form id; null shows whoever is being played
   records: { battles: 0, wins: 0, losses: 0, streak: 0, bestStreak: 0, kos: 0, seconds: 0, modes: {} }, // modes: '1v1 vs CPU' -> { battles, wins }
@@ -33,6 +35,7 @@ export function loadSession() {
   session.loadouts ??= {};
   session.briefed ??= {};
   session.mons ??= {};
+  session.crew = (Array.isArray(session.crew) ? session.crew : []).filter((id) => SPECIES[id] && !SPECIES[id].form);
   if (!SPECIES[session.partner]) session.partner = null;
   if (!SPECIES[session.profile.face]) session.profile.face = null;
 }
@@ -86,12 +89,12 @@ export const publicProfile = () => ({
 });
 
 // ---- after a fight ----
-// Books a finished battle: EXP for the mon that fought, and the records. `mode` is the label the records file it under
+// Books a finished battle: EXP for the mon that fought (`species`: the one that led a crew), and the records. `mode` is the label the records file it under
 // ('1v1 vs CPU'...). Returns what changed, for the result screen:
 //   { exp, from, to, unlocked: [move ids], evolved: form id or null, ready: true if a branching mon now awaits its choice }
 //   (from / to are levelFor() results)
-export function bookBattle({ mode, won, gaveUp, dealt, kept, seconds, kos }) {
-  const id = session.species, mon = (session.mons[id] ??= { exp: 0, battles: 0, wins: 0 });
+export function bookBattle({ mode, won, gaveUp, dealt, kept, seconds, kos, species }) {
+  const id = species ?? session.species, mon = (session.mons[id] ??= { exp: 0, battles: 0, wins: 0 });
   const from = levelFor(mon.exp), branch = branchOf(id), look = formAt(id, from.level, branch);
   const exp = battleExp({ won, gaveUp, dealt, kept, seconds });
   mon.exp += exp;

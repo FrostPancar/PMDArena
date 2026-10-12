@@ -7,13 +7,23 @@ import { CHOICES } from '../evolutions.js';
 import { net } from './net.js';
 
 // What a fight is, for every way of starting one. A battle is plain data:
-//   { mode: '1v1' | '2v2', seed, map?, fighters: [{ slot, team: 0 | 1, kind: 'human' | 'cpu', owner, species, moves, form, name }] }
+//   { mode: '1v1' | '2v2' | '3v3', seed, map?, fighters: [{ slot, team: 0 | 1, kind: 'human' | 'cpu', owner, species, moves, form, name }] }
 // (form is the evolved look the fighter wears, if any; name is a player's profile name)
+// A 3v3 is a crew battle: one fighter a side, who also carries `crew`, three { species, moves, form } in the order they
+// are sent out (the fighter's own species, moves and form are the first of them). Each player picks theirs on the
+// crew screen (scenes/CrewPick.js) before the stage draw.
 // Fights against other players are put together by the relay (server/relay.js) and sent to everyone in them;
 // fights against the computer alone are put together here and never leave this client. Either way the stage draw
 // (scenes/StageDraw.js) comes next: the players move about the world map and the stage is drawn from the ones they
 // picked, which it writes to `map`. The Battle scene reads the same thing everywhere, and everything else about the
 // fight (where everyone starts) follows from the seed.
+
+export const CREW_SIZE = 3;
+// The screen a battle opens on: the crew screen for a 3v3, else straight to the stage draw.
+export const before = (battle) => (battle.mode === '3v3' ? 'crew' : 'draw');
+// How many fights a side must win to take the match. A 1v1 or 2v2 is two fights, with a decider if they are shared;
+// a crew battle is one long fight, as it already runs until three mons are down.
+export const fightsToWin = (battle) => (battle.practice || battle.mode === '3v3' ? 1 : 2);
 
 // Owner of every fighter in a battle made here.
 export const ME = 'me';
@@ -56,8 +66,30 @@ export function randomCpu(avoid = []) {
 // The CPU partner from the other bed, with the moves and the look the player has earned for that species.
 export const partnerSpec = () => (session.partner ? { species: session.partner, moves: loadoutOf(session.partner), form: formOf(session.partner) } : null);
 
-// A fight against the computer only: you (and your CPU partner in a 2v2) against one or two random CPUs.
+// The three a species list stands for as a crew, each with the moves and the look the player has earned for it.
+export const crewOf = (ids) => ids.map((id) => ({ species: id, moves: loadoutOf(id), form: formOf(id) }));
+// A fighter with a crew: it is the first of them until that one faints.
+export const withCrew = (f, crew) => ({ ...f, ...crew[0], crew });
+
+// A crew of random CPUs, no two alike and none of `avoid`.
+export function randomCrew(avoid = []) {
+  const crew = [];
+  while (crew.length < CREW_SIZE) crew.push(randomCpu([...avoid, ...crew.map((c) => c.species)]));
+  return crew;
+}
+
+// A fight against the computer only: you (and your CPU partner in a 2v2) against one or two random CPUs, or in a 3v3
+// your crew against a crew of them (yours is filled in on the crew screen).
 export function cpuBattle(mode) {
+  if (mode === '3v3') {
+    return {
+      mode, seed: (Math.random() * 0x7fffffff) | 0,
+      fighters: [
+        { slot: 0, owner: ME, team: 0, kind: 'human', species: session.species, moves: loadoutOf(), form: formOf(), name: session.profile.name },
+        { slot: 1, owner: ME, team: 1, ...withCrew({ kind: 'cpu' }, randomCrew()) },
+      ],
+    };
+  }
   const us = [{ kind: 'human', species: session.species, moves: loadoutOf(), form: formOf(), name: session.profile.name }];
   if (mode === '2v2') us.push({ kind: 'cpu', ...partnerSpec() });
   const them = [];

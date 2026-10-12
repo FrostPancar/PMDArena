@@ -9,7 +9,7 @@ import { Actions } from '../input.js';
 import { go, wipe } from '../transition.js';
 import { session, saveSession, loadoutOf, formOf, awaitsChoice, publicProfile, LOADOUT_SIZE } from '../session.js';
 import { net } from '../net.js';
-import { cpuBattle, randomCpu, partnerSpec } from '../modes.js';
+import { cpuBattle, randomCpu, partnerSpec, before } from '../modes.js';
 import { MoveMenu } from '../movemenu.js';
 import { ProfileMenu } from '../profilemenu.js';
 import { MapMenu } from '../practicemenu.js';
@@ -192,6 +192,13 @@ export class Hub extends Phaser.Scene {
     else if (id === 'dream') this.sleep();
     else if (id === 'machine') this.openProfile();
     else if (id === 'console') this.openPractice();
+    else if (id === 'pond') {
+      // the dojo pool keeps the setting for the move names called out in battle
+      session.briefed.quiet = !session.briefed.quiet;
+      saveSession();
+      this.registry.set('callouts', !session.briefed.quiet);
+      banner(this, session.briefed.quiet ? 'Move callouts off' : 'Move callouts on');
+    }
   }
 
   async tell(...lines) {
@@ -309,22 +316,23 @@ export class Hub extends Phaser.Scene {
       return d.close();
     }
     const options = friend
-      ? [[`1v1 vs ${nameOf(friend.species)}`, 'duel'], ['2v2 vs CPU team', 'friends vs cpu'], ['2v2 vs random team', 'queue 2v2']]
-      : [['1v1 vs CPU', 'cpu 1v1'], ['1v1 vs random player', 'queue 1v1', off], ...(cpu ? [['2v2 vs CPU team', 'cpu 2v2'], ['2v2 vs random team', 'queue 2v2', off]] : [])];
+      ? [[`1v1 vs ${nameOf(friend.species)}`, 'duel'], [`3v3 crew vs ${nameOf(friend.species)}`, 'crew'], ['2v2 vs CPU team', 'friends vs cpu'], ['2v2 vs random team', 'queue 2v2']]
+      : [['1v1 vs CPU', 'cpu 1v1'], ['3v3 crew vs CPU', 'cpu 3v3'], ['1v1 vs random player', 'queue 1v1', off], ['3v3 crew vs random player', 'queue 3v3', off],
+        ...(cpu ? [['2v2 vs CPU team', 'cpu 2v2'], ['2v2 vs random team', 'queue 2v2', off]] : [])];
     const line = friend || cpu
       ? 'The pillar hums with a strange light. Where should it send you both?'
       : 'The pillar hums with a strange light. Where should it send you? (With a partner from the bluff it offers 2v2 as well.)';
     for (;;) {
       const pick = await this.ask(d, line, [...options, ['Not now', null]]);
       if (!pick) return d.close();
-      if (pick.startsWith('cpu')) { d.close(); return go(this, 'draw', { battle: cpuBattle(pick.slice(4)) }); }
+      if (pick.startsWith('cpu')) { d.close(); const battle = cpuBattle(pick.slice(4)); return go(this, before(battle), { battle }); }
       if (!net.online) { await d.say(OFFLINE); continue; }
       // from here the relay answers with a match, which main.js turns into the stage draw
-      if (pick === 'duel') net.send('start', { mode: 'duel' });
+      if (pick === 'duel' || pick === 'crew') net.send('start', { mode: pick });
       else if (pick === 'friends vs cpu') net.send('start', { mode: 'cpu', cpus: [randomCpu(), randomCpu()] });
       else {
         net.send('queue', { mode: pick.slice(6), cpu });
-        d.say(pick === 'queue 1v1' ? 'Looking for another player...' : 'Looking for another team...');
+        d.say(pick === 'queue 2v2' ? 'Looking for another team...' : 'Looking for another player...');
         await choose(this, this.actions, { x: VIEW_W - 152, y: VIEW_H - 15 - 44 - 6 - 24, w: 144, hints: this.hints, items: [{ label: 'Stop looking' }] });
         net.send('queue.cancel');
       }

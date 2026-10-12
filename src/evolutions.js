@@ -9,7 +9,7 @@ export const EVOLUTIONS = {
   nidoran: ['nidorina', 'nidoqueen'], aron: ['lairon', 'aggron'], venipede: ['whirlipede', 'scolipede'], rotom: [],
   riolu: ['lucario'], combee: ['vespiquen'], clefairy: ['clefable'], rhyhorn: ['rhydon', 'rhyperior'],
   scyther: ['scizor'], joltik: ['galvantula'], skarmory: [],
-  cacnea: ['cacturne'], alolanvulpix: ['alolanninetales'], snom: ['frosmoth'], porygon: ['porygon2', 'porygonz'],
+  cacnea: ['cacturne'], alolanvulpix: ['alolanninetales'], heracross: [], porygon: ['porygon2', 'porygonz'],
 };
 
 // Species whose forms are alternatives, not steps: the player picks one when the mon is ready, and it stays that form

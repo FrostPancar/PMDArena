@@ -15,7 +15,7 @@ import { touch } from '../touch.js';
 import { DEPTH, INK, banner, text, panel } from '../ui.js';
 
 const MAX_SPAWNS = 6; // of each kind at once
-const DUMMY_HP = 150, DUMMY_TINT = 0xb9c0cf;
+const DUMMY_HP = 225, DUMMY_TINT = 0xb9c0cf;
 // down the right edge; on a touch screen that is where the fight buttons are, so it goes under the status plate instead
 const BTN = { x: touch.on ? 3 : VIEW_W - 84, y: touch.on ? 46 : 21, w: 81, h: 15, gap: 2 };
 const FOE_TAG = 0xff7a6a;
@@ -149,6 +149,9 @@ export class Practice extends Battle {
   // ---- no outcome ----
   checkOutcome() {}
 
+  // no rounds here, and nothing to call
+  begin() { this.started = true; }
+
   // Everyone gets back up: the player at the spawn point, the rest where they stood.
   fainted(m) {
     this.time.delayedCall(m === this.player ? 1000 : 1500, () => {
@@ -166,9 +169,9 @@ export class Practice extends Battle {
 
   // ---- seeing what a hit does ----
   // Hit circles stay up long enough to read (the engine's 0.18 s is a blink).
-  hitCircle(owner, x, y, r, dmg, mv) {
+  hitCircle(owner, x, y, r, dmg, mv, skip) {
     const n = this.hits.length;
-    const any = super.hitCircle(owner, x, y, r, dmg, mv);
+    const any = super.hitCircle(owner, x, y, r, dmg, mv, skip);
     for (let i = n; i < this.hits.length; i++) this.hits[i].ttl = 0.5;
     return any;
   }

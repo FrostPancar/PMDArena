@@ -6,7 +6,7 @@ import { SPECIES } from './sprites.js';
 import { MOVES, MOVESETS, KIND_LABEL } from './moves.js';
 
 const $ = (id) => document.getElementById(id);
-const show = { stamina: false, damage: true, hitbox: false, pause: false };
+const show = { stamina: false, damage: true, hitbox: false, clash: false, pause: false };
 const IDS = Object.keys(MOVES).sort((a, b) => MOVES[a].name.localeCompare(MOVES[b].name));
 const usersOf = (id) => Object.keys(MOVESETS).filter((s) => SPECIES[s] && MOVESETS[s].includes(id));
 
@@ -49,7 +49,12 @@ class Viewer extends Play {
     this.setShown(this.registry.get('shown') ?? IDS[0], this.registry.get('who'));
   }
 
-  // no keyboard or mouse play here: the loop drives the user
+  // no keyboard or mouse play here: the loop drives the user, and holds a held move for a moment
+  holding(m, track, t) {
+    // with the clash toggle on, both beams are held long enough for one to win, and the user mashes
+    if (show.clash && MOVES[this.shown].kind === 'beam') { if (m === this.player && Math.floor(t * 5) !== Math.floor((t - 1 / 60) * 5)) this.clashTap(m); return t < 3.5; }
+    return track ? super.holding(m, track, t) : t < 1.7;
+  }
   inputDir() { return [0, 0]; }
   sprinting() { return false; }
 
@@ -70,10 +75,8 @@ class Viewer extends Play {
   // Clear the floor and put both back in place, full of health and stamina.
   restart() {
     const { x, y } = this.centre, mv = MOVES[this.shown], p = this.player, d = this.dummy;
-    for (const z of this.zones) z.img.destroy();
-    for (const s of this.shots) s.img.destroy();
-    for (const h of this.holds) h.img.destroy();
-    this.zones = []; this.traps = []; this.shots = []; this.holds = []; this.dashes = [];
+    this.clearField();
+    this.autoDance = true; // the loop keeps the beat for Dragon Dance
     p.revive(x - this.gap / 2, y);
     d.revive(x + this.gap / 2, y);
     for (const m of [p, d]) { m.invuln = 0; m.toIdle(); m.setCharged(false); }
@@ -98,10 +101,17 @@ class Viewer extends Play {
     if ((this.timer -= dt) > 0) return;
     if (this.phase === 'wait') {
       p.stamina = p.maxStamina;
+      // a move that punishes a charge needs the target to be charging one
+      if (mv.sucker) { this.dummy.move = 'bubble'; this.dummy.stamina = this.dummy.maxStamina; if (this.useMove(this.dummy, p)) this.dummy.windup.charge = 9; }
+      // the clash toggle: the target answers a beam with the same beam
+      if (show.clash && mv.kind === 'beam') { this.dummy.move = this.shown; this.dummy.stamina = this.dummy.maxStamina; this.useMove(this.dummy, p); }
+      if (mv.asleep) p.setStatus('sleep'); // only usable asleep
+      // a move that catches shots needs some thrown at it
+      if (mv.catch) for (const ms of [350, 650]) this.time.delayedCall(ms, () => this.dummy.alive && this.fireMove(this.dummy, MOVES.ember, this.aimOf(this.dummy, p)));
       this.useMove(p, this.alone ? null : this.dummy);
       this.phase = 'play';
-      const art = Math.max(mv.frames.length / (mv.fps ?? 30), mv.linger ?? 0, (mv.healDelay ?? 0) / 1000, (mv.hitDelay ?? 0) / 1000);
-      this.timer = (mv.grow ? 0.9 : mv.charge) + (mv.kind === 'hold' ? 0.9 : 0) + Math.min(6.5, art) + 1.6;
+      const art = Math.max(mv.frames.length / (mv.fps ?? 30), mv.linger ?? 0, (mv.healDelay ?? 0) / 1000, (mv.hitDelay ?? 0) / 1000, mv.decoys?.time ?? 0) + (mv.appear ?? 0) / 1000 + (mv.multi ? (mv.multi.n * mv.multi.gap) / 1000 : 0);
+      this.timer = (mv.grow ? 0.9 : mv.ritual ? 1.6 : mv.stance ? 1.8 + mv.charge : mv.field ? mv.field.time * 0.5 + mv.charge : mv.kind === 'beam' ? (show.clash ? 3.8 : 1.2) + mv.charge : mv.catch ? 1.2 : mv.wall ? 3 : mv.charge) + (mv.kind === 'hold' ? 0.9 : 0) + Math.min(6.5, art) + 1.6;
     } else this.restart();
   }
 
@@ -180,19 +190,51 @@ window.addEventListener('resize', () => game.scale.setZoom(zoomFor()));
 if (import.meta.env.DEV) Object.assign(window, { game, MOVES, show });
 const viewer = () => (game.scene.isActive('viewer') ? game.scene.getScene('viewer') : null);
 
+// ---- notes: one free-text note per move ----
+// With the dev server they are kept in move-notes.json in the project; on a hosted copy there is no server to
+// write to, so they stay in this browser and "Copy all notes" is how they get out.
+let notes = {}, hosted = false, saveTimer = 0;
+try { notes = JSON.parse(localStorage.getItem('move-notes') ?? '{}'); } catch { /* storage blocked */ }
+fetch('/api/move-notes').then((r) => (r.ok && r.headers.get('content-type')?.includes('json') ? r.json() : Promise.reject())).then((saved) => {
+  notes = saved; // the project file is the truth; this browser's copy only matters where there is no server
+  try { localStorage.setItem('move-notes', JSON.stringify(notes)); } catch { /* storage blocked */ }
+  fill();
+  $('note').value = notes[shown] ?? '';
+}).catch(() => { hosted = true; });
+function saveNotes() {
+  try { localStorage.setItem('move-notes', JSON.stringify(notes)); } catch { /* storage blocked */ }
+  if (hosted) { $('saved').textContent = 'saved in this browser'; return; }
+  fetch('/api/move-notes', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(notes) })
+    .then((r) => { $('saved').textContent = r.ok ? 'saved to move-notes.json' : 'not saved'; })
+    .catch(() => { $('saved').textContent = 'not saved'; });
+}
+$('note').oninput = () => {
+  const text = $('note').value;
+  if (text.trim()) notes[shown] = text; else delete notes[shown];
+  $('list').querySelector('.sel .nm')?.classList.toggle('noted', !!notes[shown]);
+  $('saved').textContent = '…';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNotes, 500);
+};
+$('note').onkeydown = (e) => e.stopPropagation(); // arrow keys move the caret here, not the list
+$('copy-notes').onclick = () => {
+  const text = IDS.filter((id) => notes[id]).map((id) => `${MOVES[id].name} (${id}): ${notes[id].trim()}`).join('\n');
+  navigator.clipboard.writeText(text || 'No notes yet.').then(() => { $('saved').textContent = 'copied'; });
+};
+
 // ---- side list ----
 let kind = 'all', shown = IDS[0];
-const KINDS = ['all', ...Object.keys(KIND_LABEL).filter((k) => IDS.some((id) => MOVES[id].kind === k))];
+const KINDS = ['all', 'new', 'noted', ...Object.keys(KIND_LABEL).filter((k) => IDS.some((id) => MOVES[id].kind === k))];
 for (const k of KINDS) {
   const b = document.createElement('button');
-  b.textContent = k === 'all' ? 'All' : KIND_LABEL[k];
+  b.textContent = k === 'all' ? 'All' : k === 'new' ? 'New' : k === 'noted' ? 'With notes' : KIND_LABEL[k];
   b.className = k === kind ? 'on' : '';
   b.onclick = () => { kind = k; for (const o of $('kinds').children) o.className = o === b ? 'on' : ''; fill(); };
   $('kinds').append(b);
 }
 const matches = () => {
   const q = $('q').value.trim().toLowerCase();
-  return IDS.filter((id) => (kind === 'all' || MOVES[id].kind === kind) && (!q || MOVES[id].name.toLowerCase().includes(q) || id.toLowerCase().includes(q)));
+  return IDS.filter((id) => (kind === 'all' || (kind === 'new' ? !!MOVES[id].fresh : kind === 'noted' ? !!notes[id] : MOVES[id].kind === kind)) && (!q || MOVES[id].name.toLowerCase().includes(q) || id.toLowerCase().includes(q)));
 };
 function fill() {
   const ids = matches();
@@ -201,13 +243,15 @@ function fill() {
     const el = document.createElement('div');
     el.className = `item${id === shown ? ' sel' : ''}`;
     el.dataset.id = id;
-    el.innerHTML = `<span>${MOVES[id].name}</span><span class="k">${KIND_LABEL[MOVES[id].kind]}${MOVES[id].cls === 'status' ? ' · status' : ''}</span>`;
+    el.innerHTML = `<span class="nm${notes[id] ? ' noted' : ''}">${MOVES[id].name}${MOVES[id].fresh ? '<b class="new">NEW</b>' : ''}</span><span class="k">${KIND_LABEL[MOVES[id].kind]}${MOVES[id].cls === 'status' ? ' · status' : ''}</span>`;
     el.onclick = () => pick(id);
     return el;
   }));
 }
 function pick(id, who) {
   shown = id;
+  $('note').value = notes[id] ?? '';
+  $('saved').textContent = '';
   for (const el of $('list').children) el.classList.toggle('sel', el.dataset.id === id);
   $('list').querySelector('.sel')?.scrollIntoView({ block: 'nearest' });
   const v = viewer();
@@ -224,7 +268,7 @@ window.addEventListener('keydown', (e) => {
 $('who').onchange = () => pick(shown, $('who').value);
 
 // ---- top bar ----
-for (const [key, id] of [['stamina', 't-stamina'], ['damage', 't-damage'], ['hitbox', 't-hitbox'], ['pause', 't-pause']]) {
+for (const [key, id] of [['stamina', 't-stamina'], ['damage', 't-damage'], ['hitbox', 't-hitbox'], ['clash', 't-clash'], ['pause', 't-pause']]) {
   const b = $(id);
   b.className = show[key] ? 'on' : '';
   b.onclick = () => { show[key] = !show[key]; b.className = show[key] ? 'on' : ''; };
@@ -232,8 +276,8 @@ for (const [key, id] of [['stamina', 't-stamina'], ['damage', 't-damage'], ['hit
 const num = (label, v) => (v === undefined || v === null ? '' : `${label} ${v}`);
 game.events.on('shown', (id, who, users) => {
   const mv = MOVES[id];
-  $('title').textContent = mv.name;
-  $('sub').textContent = [KIND_LABEL[mv.kind], mv.cls, num('power', mv.dmg), num('cost', mv.cost), `charge ${mv.grow ? 'held' : mv.charge + 's'}`,
+  $('title').textContent = mv.name + (mv.fresh ? ' · NEW' : '');
+  $('sub').textContent = [KIND_LABEL[mv.kind], mv.tag, mv.cls, num('power', mv.dmg), num('cost', mv.cost), `charge ${mv.grow ? 'held' : mv.charge + 's'}`,
     num('range', mv.range ?? mv.length ?? mv.dash), num('radius', mv.radius)].filter(Boolean).join(' · ');
   $('who').replaceChildren(...(users.length ? users : [who]).map((s) => new Option(SPECIES[s].name, s, false, s === who)));
 });

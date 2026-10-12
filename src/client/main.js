@@ -4,16 +4,18 @@ import { ClientBoot } from './scenes/Boot.js';
 import { Title } from './scenes/Title.js';
 import { Dream } from './scenes/Dream.js';
 import { Hub } from './scenes/Hub.js';
+import { CrewPick } from './scenes/CrewPick.js';
 import { StageDraw } from './scenes/StageDraw.js';
 import { Battle } from './scenes/Battle.js';
 import { Practice } from './scenes/Practice.js';
 import { Wipe, go, wipe } from './transition.js';
 import { net } from './net.js';
+import { before } from './modes.js';
 import { touch, fit, initTouch } from './touch.js';
 
 // The player client: title on Sharpedo Bluff -> the dream (choose a Pokémon) -> the room inside the bluff (find a
 // partner) -> Marowak Dojo (choose moves) -> the pillar in its basement -> the world map (players pick stages and
-// one is drawn from the picks) -> the battle.
+// one is drawn from the picks) -> the battle. A 3v3 crew battle has the crew screen before the world map.
 // This is the game (index.html). The developers' test client is playground.html / src/playground.js.
 const stage = document.getElementById('stage');
 // Whole-number zoom keeps the pixels square on a monitor. A phone has pixels to spare and no room: there the game
@@ -32,7 +34,7 @@ const game = new Phaser.Game({
   roundPixels: true,
   backgroundColor: '#000000',
   scale: { mode: Phaser.Scale.NONE, zoom: zoomFor() },
-  scene: [ClientBoot, Title, Dream, Hub, StageDraw, Battle, Practice, Wipe], // Wipe last: it draws over the others
+  scene: [ClientBoot, Title, Dream, Hub, CrewPick, StageDraw, Battle, Practice, Wipe], // Wipe last: it draws over the others
 });
 const resize = () => {
   const zoom = zoomFor();
@@ -54,8 +56,8 @@ let match = null;
 net.on('match', (msg) => { match = msg.battle; });
 game.events.on('step', () => {
   if (!match || wipe.busy) return;
-  const scene = ['hub', 'dream', 'title', 'draw', 'battle'].map((key) => game.scene.getScene(key)).find((s) => s.scene.isActive());
+  const scene = ['hub', 'dream', 'title', 'crew', 'draw', 'battle'].map((key) => game.scene.getScene(key)).find((s) => s.scene.isActive());
   if (!scene) return;
-  go(scene, 'draw', { battle: match });
+  go(scene, before(match), { battle: match });
   match = null;
 });

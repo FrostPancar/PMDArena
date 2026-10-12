@@ -46,7 +46,7 @@ function inPoly(p, x, y) {
   return inside;
 }
 
-const inBlock = (b, x, y) =>
+export const inBlock = (b, x, y) =>
   b.w !== undefined
     ? x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h
     : ((x - b.x) / b.rx) ** 2 + ((y - b.y) / b.ry) ** 2 <= 1;
@@ -144,6 +144,7 @@ export function buildFxTextures(scene) {
   mk('leaf', ['..dd...', '.dllg..', 'dlllgd.', 'dllggd.', '.dggd..', '..dd...'], { d: '#2f6b2a', l: '#b6e86a', g: '#6fc24a' });
   mk('ember', ['..rr...', '.roor..', 'royyor.', 'royyor.', '.roor..', '..rr...'], { r: '#c8321e', o: '#f58a2a', y: '#ffe36a' });
   mk('bubble', ['..bb...', '.bllb..', 'blwllb.', 'bllllb.', '.bllb..', '..bb...'], { b: '#2a6fc4', l: '#8fd0ff', w: '#ffffff' });
+  mk('flake', ['..w.w..', '.w.w.w.', '..www..', 'wwwbwww', '..www..', '.w.w.w.', '..w.w..'], { w: '#e8f8ff', b: '#8fd0ff' });
   mk('orb', ['..pp...', '.pllp..', 'plwllp.', 'pllllp.', '.pllp..', '..pp...'], { p: '#c0389a', l: '#ff9be0', w: '#ffffff' });
   mk('star', ['...y...', '..yly..', 'yylllyy', '.ylwly.', '.yylyy.', 'yy...yy'], { y: '#d9a21a', l: '#ffe66a', w: '#ffffff' });
   mk('fang', ['..bb...', '.bllb..', 'blwllb.', 'bllllb.', '.bllb..', '..bb...'], { b: '#3b3fa8', l: '#8f8cff', w: '#ffffff' });
