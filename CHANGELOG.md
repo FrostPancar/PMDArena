@@ -3,6 +3,20 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.2
+
+**Game feel** (all visual only; switches in `FEEL`, `src/scene.js`)
+- A shot that is cut or beaten freezes in a ring, splits in two and fades.
+- Every hit flashes its target and throws a burst of lines; the screen shakes by how hard it was.
+- Very heavy hits get a flash, a negative frame and a vignette.
+- Beam clashes rumble while they last.
+- The camera trails dashes and glides after teleports.
+
+**Art**
+- Icy Wind uses Blizzard's hit effect; Iron Tail uses Dragon Rush's in grey; Knock Off uses Dragon Claw's.
+- Poison Powder is a cleaner purple; Spikes has no purple left.
+- Beams have a soft glow (not Mud Shot).
+
 ## alpha 0.5.1
 
 **New moves (21):** Teleport, Heal Pulse, Dream Eater, Electroweb, Counter, Mud Shot, Blaze Kick, Flare Blitz,

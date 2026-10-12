@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { VIEW_W, VIEW_H } from '../scene.js';
 import { SPECIES } from '../sprites.js';
-import { MOVES } from '../moves.js';
+import { MOVES, grayFrames } from '../moves.js';
 import { session, loadoutOf, setLoadout, levelOf, branchOf, formOf, ownsTM, allTMs, LOADOUT_SIZE } from './session.js';
 import { unlockPlan, tmsFor } from './progress.js';
 import { describe, typeOf, METERS, litNotches, TYPE_TINT, DELIVERY_LABEL } from './moveinfo.js';
@@ -263,7 +263,9 @@ export class MoveMenu {
 
   // Loops the highlighted move's effect in the preview box.
   update(dt) {
-    const mv = MOVES[this.moves[this.index]], frames = mv.frames ?? [];
+    const mv = MOVES[this.moves[this.index]];
+    grayFrames(this.scene, mv);
+    const frames = mv.frames ?? [];
     if (!frames.length) return this.preview.setVisible(false);
     const fps = mv.fps ?? 30, span = frames.length / fps + 0.5;
     this.clock = (this.clock + dt) % span;

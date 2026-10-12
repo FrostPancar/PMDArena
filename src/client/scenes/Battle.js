@@ -537,7 +537,7 @@ export class Battle extends Play {
     if (d.f === 'dead' || d.f === 'cut') {
       q.limbo = 0;
       q.dead = true;
-      if (d.f === 'cut') { q.cut = true; this.halve(q, q.x, q.y); }
+      if (d.f === 'cut') q.cut = true; // (it falls in two as the scene clears it away)
       return;
     }
     const by = this.fighters[d.o]?.mon;

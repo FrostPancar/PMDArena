@@ -4,7 +4,7 @@ import { MAPS, WORLD_URL, makeWalkable, inBlock, buildTestRealm, buildFxTextures
 import { SPECIES } from './sprites.js';
 import { Mon, dirVec, dirFromVec, DIR_NAMES, RUN_MULT } from './mon.js';
 import { STATUS_SHEET_URL, DECOY_SHEET_URL, buildStatusIcons, buildDecoy } from './statusfx.js';
-import { MOVES, PARRY, CANCEL, EMPOWER, POWERUP, LEECH, SPRINT, STATUS, TAGS, DANCE, HEAL, KIND_LABEL, movesOf, preloadMoves } from './moves.js';
+import { MOVES, PARRY, CANCEL, EMPOWER, POWERUP, LEECH, SPRINT, STATUS, TAGS, DANCE, HEAL, KIND_LABEL, movesOf, preloadMoves, grayFrames } from './moves.js';
 
 export const VIEW_W = 384, VIEW_H = 216;
 export const WALK_SPEED = 62;
@@ -27,6 +27,10 @@ const seeded = (seed) => () => {
 };
 const BEAM_SPEED = 420, BEAM_STEP = 5; // how fast a beam travels outward (px/s), and the spacing of the points along it
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V']; // the pixel font has no digits
+// Game feel: everything here is for the eye only (flashes, shakes, the camera's manner) and changes nothing in the fight
+// itself, so it can be switched off whole (`on`) or piece by piece without touching how anything plays.
+export const FEEL = { on: true, impact: true, shake: true, heavy: true, clashShake: true, camera: true, shatter: true };
+const HEAVY_HIT = 28; // damage from which a hit gets the full-screen treatment (so does any move tagged heavy)
 const DETECT_STUN = 0.7; // seconds a foe that hit a Detect is stunned
 const WEB_SNARE = 2; // seconds a web holds what steps into it
 const LUNGE_REACH = 14; // how much further out a lunging melee move lands
@@ -839,6 +843,7 @@ export class Play extends Phaser.Scene {
   }
 
   fireMove(m, mv, aim) {
+    grayFrames(this, mv);
     const { dx, dy } = aim;
     m.lastAim = aim;
     m.lastMove = mv;
@@ -1705,6 +1710,7 @@ export class Play extends Phaser.Scene {
     }
 
     // 3. clashes: both beams run straight to the meeting point, which slides toward whoever is pushing less
+    if (this.clashes.length && FEEL.on && FEEL.clashShake) this.cameras.main.shake(90, 0.0045); // it rumbles for as long as two beams are locked
     this.clashes = this.clashes.filter((c) => {
       const { a, b } = c, A = a.m, B = b.m;
       c.t += dt;
@@ -1778,6 +1784,15 @@ export class Play extends Phaser.Scene {
     };
     const noise = (k) => { const v = Math.sin(k * 127.1 + Math.floor(t * 18) * 311.7) * 43758.5453; return v - Math.floor(v); };
 
+    // a soft glow around the whole length (a rope of mud does not shine)
+    if (L.style !== 'mud') {
+      const flicker = 0.85 + 0.15 * Math.sin(t * 22);
+      // (the circles overlap several deep along the line, so each is very faint)
+      for (const [rad, alpha] of [[w * 1.9 + 3, 0.018], [w * 1.25 + 2, 0.035]]) {
+        g.fillStyle(c1, alpha * flicker);
+        for (let d = 0; d <= len; d += 4) { const q = at(d), k = L.style === 'flame' ? 1 + (d / len) * (mv.cone ?? 0.05) * 14 : 1; g.fillCircle(Math.round(q.x), Math.round(q.y), rad * k); }
+      }
+    }
     if (L.style === 'flame') {
       // puffs that grow along the cone and cool from the core colour to the outline colour
       const cone = mv.cone ?? 0.05;
@@ -2049,8 +2064,7 @@ export class Play extends Phaser.Scene {
     if (owner.remote) return; // the slasher's client decides what it cut and says so
     for (const s of this.shots) {
       if (s.owner.team === owner.team || (s.mv && !s.mv.light) || Math.hypot(s.x - x, (s.y - y) * 1.3) > r + s.r) continue;
-      s.dead = s.cut = true;
-      this.halve(s, x, y);
+      s.dead = s.cut = true; // (it falls in two when it is cleared away: see updateShots)
       this.sayShot(s, 'cut');
     }
     // and cuts any thread that crosses it
@@ -2163,6 +2177,62 @@ export class Play extends Phaser.Scene {
     });
   }
 
+  // A thin ring that snaps outward and is gone: where a shot was cut or beaten.
+  ringPop(x, y, r = 8) {
+    const ring = this.add.circle(Math.round(x), Math.round(y), Math.max(5, r)).setStrokeStyle(1.5, 0xffffff, 1).setDepth(7001);
+    this.tweens.add({ targets: ring, scale: 2.6, alpha: 0, duration: 140, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
+  }
+
+  // ---- game feel (see FEEL) ----
+  // A mon has just been hurt for `dealt`. The moment is marked: the mon flashes white, lines burst from the spot, the
+  // screen shakes by how hard the hit was, and a really heavy one gets the whole screen. hit: what Mon.damage was told.
+  struck(t, dealt, hit) {
+    if (!FEEL.on || !(dealt >= 0.5)) return;
+    const heavy = hit?.tag === 'heavy' || dealt >= HEAVY_HIT, near = t === this.player || hit?.by === this.player;
+    if (FEEL.impact) {
+      t.flash = Math.max(t.flash ?? 0, 0.12);
+      const g = this.add.graphics({ x: Math.round(t.x), y: Math.round(t.y) - 10 }).setDepth(7002), n = heavy ? 10 : 7, r = 7 + dealt * 0.3, a0 = Math.random() * Math.PI;
+      for (let i = 0; i < n; i++) {
+        const a = a0 + (i / n) * Math.PI * 2 + (Math.random() - 0.5) * 0.3, r0 = r * 0.45, r1 = r * (0.85 + Math.random() * 0.4);
+        g.lineStyle(i % 2 ? 1 : 2, i % 3 ? 0xffffff : 0xfff3a0, 1).lineBetween(Math.cos(a) * r0, Math.sin(a) * r0 * 0.8, Math.cos(a) * r1, Math.sin(a) * r1 * 0.8);
+      }
+      this.tweens.add({ targets: g, scale: { from: 0.7, to: 1.35 }, alpha: { from: 1, to: 0 }, duration: heavy ? 190 : 130, ease: 'Cubic.easeOut', onComplete: () => g.destroy() });
+    }
+    // (a camera's shake is a share of its size: 0.003 is about a pixel here)
+    if (FEEL.shake) this.cameras.main.shake(70 + dealt * 4, Math.min(0.012, 0.003 + dealt * 0.00025) * (near ? 1 : 0.5), heavy);
+    if (heavy && FEEL.heavy) this.heavyImpact();
+  }
+
+  // The full-screen beat of a very heavy hit: a white flash, the picture turned negative for an instant, and a dark
+  // vignette that opens back out. (The last two are camera effects of the WebGL renderer; without it there is the flash.)
+  heavyImpact() {
+    const cam = this.cameras.main;
+    if (this.heavyBusy) return;
+    this.heavyBusy = true;
+    this.time.delayedCall(420, () => { this.heavyBusy = false; });
+    cam.flash(90, 255, 255, 255);
+    try {
+      const neg = cam.postFX.addColorMatrix();
+      neg.negative();
+      this.time.delayedCall(60, () => cam.postFX.remove(neg));
+      const vig = cam.postFX.addVignette(0.5, 0.5, 0.55, 0.45);
+      this.tweens.add({ targets: vig, radius: 1.1, strength: 0, duration: 380, ease: 'Quad.easeOut', onComplete: () => cam.postFX.remove(vig) });
+    } catch { /* no camera effects on this renderer */ }
+  }
+
+  // The camera follows the player closely while it walks, but a dash outruns it a little and a teleport leaves it
+  // behind: it then glides after and catches up, so quick movement reads as quick.
+  updateCamera(dt) {
+    const cam = this.cameras.main, p = this.player;
+    if (!FEEL.on || !FEEL.camera || cam._follow !== p.sprite) return;
+    const last = this.camLast ?? { x: p.x, y: p.y }, jump = Math.hypot(p.x - last.x, p.y - last.y);
+    this.camLast = { x: p.x, y: p.y };
+    if (jump > 14) this.camCatch = 0.5; // further in one step than anything walks: it was moved there
+    this.camCatch = Math.max(0, (this.camCatch ?? 0) - dt);
+    const l = this.camCatch > 0 ? 0.075 : p.state === 'dash' || p.state === 'bird' ? 0.11 : 0.2;
+    cam.setLerp(l, l);
+  }
+
   spark(x, y) {
     const s = this.add.image(x, y, 'spark').setDepth(7000);
     this.tweens.add({ targets: s, scale: 2, alpha: 0, angle: 45, duration: 180, onComplete: () => s.destroy() });
@@ -2250,6 +2320,7 @@ export class Play extends Phaser.Scene {
       c.img.destroy();
       return false;
     });
+    this.updateCamera(dt);
     this.drawMarks();
     this.drawDebug(dt);
     const mv = MOVES[p.move];
@@ -2556,7 +2627,14 @@ export class Play extends Phaser.Scene {
         return false;
       }
       if (s.dead || (s.back && !s.owner.alive)) {
-        if (s.dead && !s.cut) this.spark(s.x, s.y - 8);
+        if (s.dead && FEEL.on && FEEL.shatter) {
+          // cut or beaten out of the air: it hangs there white for an instant inside a ring that snaps outward, then its
+          // two halves fly apart and fade
+          if (s.shatter === undefined) { s.shatter = 0.07; s.img.setTintFill(0xffffff); this.ringPop(s.x, s.y - 8, s.r); }
+          if ((s.shatter -= dt) > 0) return true;
+          if (s.mv?.tint) s.img.setTint(s.mv.tint); else s.img.clearTint();
+          this.halve(s, s.x, s.y);
+        } else if (s.dead) { if (s.cut) this.halve(s, s.x, s.y); else this.spark(s.x, s.y - 8); }
         s.img.destroy();
         return false;
       }

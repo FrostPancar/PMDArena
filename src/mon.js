@@ -357,6 +357,7 @@ export class Mon {
     const dealt = hit?.raw ? n : n / this.mul('def'); // fixed damage ignores defence
     this.hp = Math.max(this.endure > 0 ? Math.min(1, this.hp) : 0, this.hp - dealt);
     this.lastHit = { by: hit?.by, n: dealt, t: this.scene.simMs ?? this.scene.time.now };
+    this.scene.struck?.(this, dealt, hit); // for the eye only: the flash, the shake
     if (this.hp <= 0 && this.bondTo?.m.alive) this.scene.bonded?.(this, this.bondTo.m, dealt); // it does not go alone
     if (this.ailment.wakes) this.clearStatus();
     this.invuln = 0.45;

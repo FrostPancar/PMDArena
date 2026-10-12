@@ -585,17 +585,17 @@ export const MOVES = {
   flareBlitz: { name: 'Flare Blitz', kind: 'dash', status: { kind: 'burn', chance: 0.3 }, fx: '0024_fireball_glow', seqs: ['000'], dash: 110, dur: 0.4, radius: 16, dmg: 30, cost: 44, charge: 0.3, blaze: true, recoilHit: 0.33 },
   zapCannon: { name: 'Zap Cannon', kind: 'projectile', status: { kind: 'para', chance: 1 }, fx: '0215_electric_charge_projectile', seqs: ['010'], speed: 80, range: 260, radius: 14, dmg: 26, cost: 44, charge: 0.6, rotate: true, fps: 12, scale: 1.5, chargeSeqs: ['000'], impactSeqs: ['016'] },
   auroraVeil: { name: 'Aurora Veil', kind: 'self', fx: '0055_ice_shards_ring', seqs: ['000'], scale: 0.5, buff: { stat: 'def', mul: 1.2, time: 10 }, cost: 20, charge: 0.4 },
-  icyWind: { name: 'Icy Wind', kind: 'mid', fx: '0258_gust_spiral', seqs: ['000'], tint: 0xbfeaff, range: 95, radius: 26, dmg: 14, cost: 24, charge: 0.25, origin: [0.5, 0.85], fps: 55, impactSeqs: ['001'], debuff: { stat: 'spd', mul: 0.6, time: 6 } },
-  spikes: { name: 'Spikes', kind: 'mid', fx: '0056_poison_spikes', seqs: ['002'], tint: 0xd8dde6, range: 100, radius: 16, dmg: 15, cost: 22, charge: 0.3, origin: [0.5, 0.92], fps: 18, trap: 25 },
+  icyWind: { name: 'Icy Wind', kind: 'mid', fx: '0190_ice_projectile', seqs: ['016'], range: 95, radius: 26, dmg: 14, cost: 24, charge: 0.25, fps: 14, scale: 1.3, debuff: { stat: 'spd', mul: 0.6, time: 6 } },
+  spikes: { name: 'Spikes', kind: 'mid', fx: '0056_poison_spikes', seqs: ['002'], gray: true, range: 100, radius: 16, dmg: 15, cost: 22, charge: 0.3, origin: [0.5, 0.92], fps: 18, trap: 25 },
   electroBall: { name: 'Electro Ball', kind: 'projectile', status: { kind: 'para', chance: 0.15 }, fx: '0142_blue_atom_orbit', seqs: ['000'], slice: [3, 12], tint: 0xffe566, speed: 240, range: 240, radius: 11, dmg: 19, cost: 26, charge: 0.25, fps: 20, scale: 0.7, spdScale: true },
   venoshock: { name: 'Venoshock', kind: 'projectile', fx: '0145_green_poison', seqs: ['000'], tint: 0xc77dff, speed: 200, range: 230, radius: 10, dmg: 16, cost: 26, charge: 0.25, rotate: true, fps: 14, impactSeqs: ['001'], versus: { status: ['poison', 'toxic'], mul: 2 } },
-  knockOff: { name: 'Knock Off', kind: 'melee', fx: '0179_shadow_claw', seqs: ['000'], strip: true, reach: 18, radius: 20, dmg: 18, cost: 22, charge: 0.1 },
+  knockOff: { name: 'Knock Off', kind: 'melee', fx: '0050_fire_claw_slash', seqs: ['000'], fps: 15, strip: true, reach: 18, radius: 20, dmg: 18, cost: 22, charge: 0.1 },
   boneRush: { name: 'Bone Rush', kind: 'melee', fx: '0011_bone_spin', seqs: ['000'], scale: 1.1, fps: 20, reach: 20, radius: 20, dmg: 9, cost: 24, charge: 0.1, multi: { n: 3, spread: 0, gap: 150, thru: true } },
   doubleEdge: { name: 'Double-Edge', kind: 'dash', fx: '0149_white_slash_lines', seqs: ['000'], dash: 95, dur: 0.38, radius: 16, dmg: 28, cost: 36, charge: 0.25, recoilHit: 0.33 },
-  poisonPowder: { name: 'Poison Powder', kind: 'mid', status: { kind: 'poison', chance: 1 }, fx: '0093_powders', seqs: ['000'], tint: 0xc77dff, range: 80, radius: 24, dmg: 6, cost: 22, charge: 0.3, origin: [0.5, 0.8], fps: 20 },
+  poisonPowder: { name: 'Poison Powder', kind: 'mid', status: { kind: 'poison', chance: 1 }, fx: '0093_powders', seqs: ['000'], gray: true, tint: 0xa63dff, range: 80, radius: 24, dmg: 6, cost: 22, charge: 0.3, origin: [0.5, 0.8], fps: 20 },
   solarBeam: { name: 'Solar Beam', kind: 'beam', fx: '0113_white_laser_vertical', seqs: ['000'], length: 170, dmg: 30, cost: 55, charge: 1.1, fps: 45, anchor: 'top', tint: 0xd8ff7a, chargeSeqs: ['001'] },
   steelWing: { name: 'Steel Wing', kind: 'melee', fx: '0012_pin_missiles', seqs: ['000'], reach: 18, radius: 22, dmg: 19, cost: 20, charge: 0.08, fps: 20, impactFx: '0207_steel_slash', impactSeqs: ['001'], bonus: { chance: 0.3, buff: { stat: 'def', mul: 1.3, time: 6 }, scale: 0.6 }, bonusFx: '0216_yellow_powerup', bonusSeqs: ['000'] },
-  ironTail: { name: 'Iron Tail', kind: 'melee', fx: '0180_punch_shockwave', seqs: ['000'], reach: 20, radius: 22, dmg: 27, cost: 36, charge: 0.14, debuff: { stat: 'def', mul: 0.75, time: 6 } },
+  ironTail: { name: 'Iron Tail', kind: 'melee', fx: '0219_dragon_ground_rush', seqs: ['000'], gray: true, reach: 20, radius: 22, dmg: 27, cost: 36, charge: 0.14, debuff: { stat: 'def', mul: 0.75, time: 6 } },
   braveBird: { name: 'Brave Bird', kind: 'hold', fx: '0251_brave_bird_silhouette', seqs: ['000'], speed: 250, radius: 14, dmg: 18, cost: 15, upkeep: 60, recoil: 0.35, charge: 0.1, fps: 10 },
 };
 
@@ -988,6 +988,27 @@ const files = (fx, seq) =>
     .filter((p) => p.startsWith(`../move_VFX/${fx}/${seq}/`))
     .map((p) => ({ tick: +p.slice(-7, -4), key: `vfx-${fx}-${seq}-${p.slice(-7, -4)}`, url: urls[p] }))
     .sort((a, b) => a.tick - b.tick);
+
+// A move marked `gray` shows its art with the colour taken out (and then takes its tint, if it has one, cleanly): Iron
+// Tail is Dragon Rush's art in steel, Spikes is Toxic Spikes' without the poison. The grey copies are made the first
+// time the move is shown, from frames that have loaded by then.
+export function grayFrames(scene, mv) {
+  if (!mv.gray || mv.grayed || !mv.frames?.length || !mv.frames.every((key) => scene.textures.exists(key))) return;
+  mv.frames = mv.frames.map((key) => {
+    const to = `${key}-gray`;
+    if (scene.textures.exists(to)) return to;
+    const src = scene.textures.get(key).getSourceImage(), c = document.createElement('canvas');
+    c.width = src.width; c.height = src.height;
+    const g = c.getContext('2d');
+    g.drawImage(src, 0, 0);
+    const img = g.getImageData(0, 0, c.width, c.height), px = img.data;
+    for (let i = 0; i < px.length; i += 4) px[i] = px[i + 1] = px[i + 2] = Math.min(255, Math.round((px[i] * 0.3 + px[i + 1] * 0.59 + px[i + 2] * 0.11) * 1.1 + 12));
+    g.putImageData(img, 0, 0);
+    scene.textures.addCanvas(to, c);
+    return to;
+  });
+  mv.grayed = true;
+}
 
 export function preloadMoves(scene) {
   // file numbers are ticks; a skipped number holds the previous frame

@@ -200,6 +200,7 @@ export class RemoteController {
     if (d.hp < m.hp - 0.5 && d.st !== 'faint') {
       m.sprite.setTintFill(0xffffff);
       this.scene.time.delayedCall(90, () => m.sprite.active && m.applyTint());
+      this.scene.struck?.(m, m.hp - d.hp, null); // the same mark a hit leaves on a fighter run here
     }
     m.hp = d.hp;
     m.stamina = d.sta;
