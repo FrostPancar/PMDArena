@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { VIEW_W, VIEW_H } from '../../scene.js';
-import { SPECIES, SPECIES_ORDER, ensureSpecies, loadSpecies } from '../../sprites.js';
+import { SPECIES, SPECIES_ORDER, ensureSpecies, loadSpecies, loadIdle, finalizeSpecies } from '../../sprites.js';
 import { Mon } from '../../mon.js';
 import { DREAM_GLOW } from '../art.js';
 import { Actions } from '../input.js';
@@ -27,8 +27,10 @@ export class Dream extends Phaser.Scene {
     this.from = data?.from === 'base' ? 'base' : 'title';
   }
 
-  // the mon the dream opens on; the others are sent for as they are looked at
+  // the standing picture of every mon, for the grid; all the sheets of the one the dream opens on (the others are
+  // sent for as they are looked at)
   preload() {
+    loadIdle(this, SPECIES_ORDER);
     const current = this.pickFor === 'partner' ? session.partner : session.species;
     loadSpecies(this, [SPECIES_ORDER[Math.max(0, SPECIES_ORDER.indexOf(current))]]);
   }
@@ -42,6 +44,7 @@ export class Dream extends Phaser.Scene {
 
     const current = this.pickFor === 'partner' ? session.partner : session.species;
     this.index = Math.max(0, SPECIES_ORDER.indexOf(current));
+    for (const id of SPECIES_ORDER) finalizeSpecies(this, SPECIES[id]); // what is in so far: at least each one's standing sheet
     ensureSpecies(this, SPECIES_ORDER[this.index]);
     this.mon = new Mon(this, ...STAND, { team: 'p', species: SPECIES_ORDER[this.index] });
     this.float = 0;

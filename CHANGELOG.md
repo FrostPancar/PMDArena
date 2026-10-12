@@ -3,6 +3,10 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.4
+
+- Fixed the Pokémon choosing screen showing empty boxes: every mon's standing sprite is loaded for its grid.
+
 ## alpha 0.5.3
 
 **Loading** (for phones: the game ran out of memory while loading on iOS Safari)

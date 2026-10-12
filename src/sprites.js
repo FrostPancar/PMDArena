@@ -83,6 +83,17 @@ export function loadSpecies(scene, ids) {
     }
 }
 
+// Queue just the standing sheet of these species: enough to show each one still (the grid of the choosing screen).
+// Follow with finalizeSpecies once loaded; the rest of a species' sheets come later through ensureSpecies.
+export function loadIdle(scene, ids) {
+  for (const id of ids) {
+    const a = SPECIES[id].anims.Idle;
+    if (scene.textures.exists(`a-${a.key}`) || scene.textures.exists(`s-${a.key}`)) continue;
+    scene.load.spritesheet(`a-${a.key}`, a.animUrl, { frameWidth: a.fw, frameHeight: a.fh });
+    scene.load.image(`sraw-${a.key}`, a.shadowUrl);
+  }
+}
+
 export function preloadSprites(scene) {
   loadSpecies(scene, SPECIES_ORDER);
 }
@@ -93,7 +104,8 @@ const requested = new Map(); // species id -> the scene that sent for it
 export function ensureSpecies(scene, id) {
   const all = sheets(SPECIES[id]);
   if (all.every((a) => scene.textures.exists(`s-${a.key}`))) return true;
-  if (all.every((a) => scene.textures.exists(`sraw-${a.key}`) && scene.textures.exists(`a-${a.key}`))) {
+  // (a sheet may be finished already: the standing one, loaded early for the choosing screen)
+  if (all.every((a) => scene.textures.exists(`s-${a.key}`) || (scene.textures.exists(`sraw-${a.key}`) && scene.textures.exists(`a-${a.key}`)))) {
     finalizeSpecies(scene, SPECIES[id]);
     return true;
   }
@@ -116,7 +128,7 @@ export function finalizeSprites(scene) {
 
 export function finalizeSpecies(scene, s) {
   for (const a of sheets(s)) {
-    if (scene.textures.exists(`s-${a.key}`)) continue;
+    if (scene.textures.exists(`s-${a.key}`) || !scene.textures.exists(`sraw-${a.key}`)) continue; // done, or not loaded yet
     const src = scene.textures.get(`sraw-${a.key}`).getSourceImage();
     a.rows = Math.max(1, Math.round(src.height / a.fh));
     const c = document.createElement('canvas');
