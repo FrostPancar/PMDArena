@@ -199,7 +199,7 @@ export function describe(id) {
   if (mv.twice) n.push('Goes off twice where it ends.');
   if (mv.single) n.push('Cannot be used again until it has finished.');
   if (mv.lobScale) n.push('Hits harder the further it is thrown.');
-  if (mv.sub) n.push('A doll takes the next hit for you.');
+  if (mv.sub) n.push('A doll takes your hits until it has lost the HP you spent on it. Status moves and ill effects fail against it, and your charges are not broken.');
   if (mv.empower) n.push('Your next attack hits twice as hard.');
   if (mv.cure) n.push('Cures your status condition.');
   if (mv.selfStatus) n.push(`Leaves you ${STATUS[mv.selfStatus].label}.`);

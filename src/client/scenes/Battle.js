@@ -11,7 +11,7 @@ import { mine, lookOf, arenaOf, arenaName, startingSpots, fightsToWin } from '..
 import { LEDGES } from '../ledges.js';
 import { CpuController, RemoteController, snapshot } from '../controllers.js';
 import { BattleHud, ScoreStrip, callout, controlsCard, resultCard } from '../hud.js';
-import { touch } from '../touch.js';
+import { holdAim, touch } from '../touch.js';
 import { MAPS } from '../../maps.js';
 import { onLadder, wonOn } from '../ladder.js';
 import { Menu, banner, panel, text, INK, DEPTH, soundRows, soundPick } from '../ui.js';
@@ -645,6 +645,12 @@ export class Battle extends Play {
     if (!a && mv?.kind === 'blink' && (sx || sy)) return { dx: sx, dy: sy, dist: mv.range ?? 100 };
     if (a) return { dx: a.dx, dy: a.dy, dist: 40 + a.reach * 100 };
     if (m.state === 'bird' && (sx || sy)) return { dx: sx, dy: sy, dist: 99 };
+    // a button held (not tapped) and not dragged yet: aimed by hand, starting just ahead of the player, the way it
+    // faces or the stick is pushed. That is where a drag starts from, so the guide does not jump when one begins.
+    if (m === this.player && holdAim()) {
+      const l = Math.hypot(sx, sy), [fx, fy] = l ? [sx / l, sy / l] : dirVec(m.dir), n = Math.hypot(fx, fy) || 1;
+      return { dx: fx / n, dy: fy / n, dist: 40 };
+    }
     let foe = null, near = Infinity;
     for (const n of this.npcs) {
       const d = Math.hypot(n.x - m.x, n.y - m.y);
@@ -701,6 +707,9 @@ export class Battle extends Play {
     if (!mv && !this.aimG) return;
     const g = (this.aimG ??= this.add.graphics().setDepth(7)).clear();
     if (!mv) return;
+    // a press on the pad that may still turn out to be a tap shows no guide yet: a tap goes at the nearest foe, and the
+    // guide of a hold starts ahead of the player, so it is never first seen at the spot the tap would have picked
+    if (touch.on && touch.aiming >= 0 && !touch.aim && !holdAim()) return;
     const p = this.player, a = this.aimOf(p, track), col = (this.reticle ??= this.reticleColor()), dark = 0x06101c;
     const on = p.stamina >= mv.cost || p.state === 'windup' || p.state === 'bird' || !!p.beaming ? 1 : 0.4; // faint: no energy for it
     // every mark is drawn dark first and then in colour over it, so it reads on any ground

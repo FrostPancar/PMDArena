@@ -27,7 +27,15 @@ export const touch = {
   held: [false, false, false, false], // the move buttons that are down
   aiming: -1, // the move whose button is being held to aim it (it goes off on release), or -1
   aim: null, // { dx, dy, reach 0..1 } once a move button has been dragged away from where it was pressed
+  aimedAt: 0, // when the button being aimed with went down
+  hold: false, // the last move button let go had been held, not tapped (see holdAim)
 };
+
+// A move button tapped throws its move at the nearest foe. Held for longer than this, it is being aimed by hand: the
+// guide starts out ahead of the player, where a drag begins, and never at the spot a tap would have picked.
+const HOLD_MS = 170;
+// Is the move button now down (or the one just let go) a hold, to be aimed by hand, rather than a tap?
+export const holdAim = () => (touch.aiming >= 0 ? performance.now() - touch.aimedAt >= HOLD_MS : touch.hold);
 
 // Is this pointer press one that should act? A finger cannot hover first, so in a list that describes what is
 // highlighted the first tap on a row only highlights it and the second acts. `already`: the row was highlighted.
@@ -212,6 +220,8 @@ function build() {
     down: (e) => {
       touch.held[i] = true;
       touch.aim = null;
+      touch.hold = false;
+      touch.aimedAt = performance.now();
       from = [e.clientX, e.clientY];
       // a held move, or a press that is only a tap (a beam clash, a dance), goes at once; the rest are aimed first
       if (current()?.scene.padState?.()?.instant[i]) fight('move', i);
@@ -225,6 +235,7 @@ function build() {
     up: (e) => {
       touch.held[i] = false;
       if (touch.aiming !== i) return;
+      touch.hold = holdAim(); // (read while the button still counts as down)
       touch.aiming = -1;
       if (e.type === 'pointerup') fight('move', i); // let go: it is thrown (a finger that was taken away throws nothing)
     },

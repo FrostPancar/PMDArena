@@ -70,7 +70,8 @@ export class Mon {
     this.flash = 0; // seconds left blinking white
     this.ingrain = null; // { t, hps } while rooted and healing
     this.regen = null; // { t, hps } healing over time
-    this.sub = false; // drawn and hit as the substitute doll until the next hit
+    this.sub = 0; // the health left in its substitute doll: while there is any it is drawn as the doll, which takes its hits
+    this.dollFlash = 0; // the doll blinks white for a moment when it takes a blow and holds
     this.under = false; // underground (Dig): nothing can hit it
     this.grip = 0; // seconds left held in a bite, as the biter or the bitten
     this.braced = false; // holding a stance: rooted until it is let go or broken
@@ -360,8 +361,12 @@ export class Mon {
     }
     if (this.buffs.eva.t > 0 && this.roll() < 0.5) { this.invuln = 0.25; return false; }
     if (this.sub) {
-      // the doll takes the hit and breaks
-      this.sub = false;
+      // the doll stands in for it. A move that does no damage does nothing at all; a blow comes out of the doll's own
+      // health (as much as was spent making it), and the mon behind it is not hurt, moved or stopped in what it is doing
+      if (!(n > 0)) return false;
+      this.sub -= hit?.raw ? n : n / this.mul('def');
+      if (this.sub > 0) { this.invuln = hit?.soft ? 0.1 : 0.2; this.dollFlash = 0.09; this.scene.subHit?.(this); return false; }
+      this.sub = 0;
       this.invuln = 0.4;
       this.scene.subBroke(this);
       return false;
@@ -460,6 +465,7 @@ export class Mon {
     this.invuln = Math.max(0, this.invuln - dt);
     this.stun = Math.max(0, this.stun - dt);
     this.shove = Math.max(0, this.shove - dt);
+    this.dollFlash = Math.max(0, this.dollFlash - dt);
     this.reel = Math.max(0, this.reel - dt);
     this.roost = Math.max(0, this.roost - dt);
     for (const k of ['detect', 'bond', 'endure', 'webbed']) this[k] = Math.max(0, this[k] - dt);
@@ -568,6 +574,7 @@ export class Mon {
     const doll = this.sub && this.alive && !this.hidden;
     if (doll) (this.doll ??= this.scene.add.image(x, y, 'decoy').setOrigin(0.5, 1)).setFrame(this.dir * 2 + (Math.floor(this.scene.time.now / (this.state === 'walk' ? 140 : 400)) & 1)).setPosition(x, y + 3 - lift).setDepth(10 + this.y);
     this.doll?.setVisible(doll);
+    if (doll) { if (this.dollFlash > 0) this.doll.setTintFill(0xffffff); else this.doll.clearTint(); }
     if (sunk) this.sprite.setCrop(0, 0, a.fw, a.fh / 2 + foot - sunk);
     else if (this.sprite.isCropped) this.sprite.setCrop();
     this.shadow.setTexture(`s-${a.key}`, f).setPosition(x, y - foot).setVisible(!sunk && (!this.hidden || this.flying)); // a flyer is only its shadow

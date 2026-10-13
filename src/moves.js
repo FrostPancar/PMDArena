@@ -340,7 +340,8 @@ export const KIND_LABEL = {
 // blobs out of the user; knock multiplies knockback; coins throws the move's art out of each hit; bounce makes a shot squash and hop;
 // ride (hold) keeps the user in view; decoys makes copies of the user; lockOut bars the user from an element for a while;
 // a cycle entry may carry its own charge; grow.power scales damage with the held size; chargeAnim picks the wind-up animation.
-// sub turns the user into the substitute doll until the next hit, which the doll absorbs.
+// sub turns the user into a substitute doll with the health spent on it (hpCost): the doll takes the hits until that
+// is gone, a foe's status moves and other ill effects do nothing to the mon behind it, and its charges are not broken.
 // bury roots the foes it hits in the ground for that many seconds.
 // flat beams are ground art drawn left-to-right from the centre (sequence 002 of a directional set faces east).
 export const MOVES = {

@@ -23,8 +23,8 @@ const FORM_TYPES = { alolanmarowak: 'fire', vaporeon: 'water', jolteon: 'electri
 const NAMES = { alolanvulpix: 'Alolan Vulpix', alolanninetales: 'Alolan Ninetales', alolanmarowak: 'Alolan Marowak', porygon2: 'Porygon2', porygonz: 'Porygon-Z' };
 const ORDER = ['bulbasaur', 'charmander', 'squirtle', 'chikorita', 'treecko', 'torchic', 'mudkip', 'ralts', 'eevee', 'axew', 'zorua', 'starly', 'corphish', 'cubone', 'nidoran', 'aron', 'venipede', 'rotom', 'riolu', 'combee', 'clefairy', 'rhyhorn', 'scyther', 'joltik', 'skarmory', 'cacnea', 'alolanvulpix', 'heracross', 'porygon', 'phantump', 'munchlax', 'staryu', 'honedge', 'torkoal', 'hawlucha'];
 // The animation a mon swings with for a close-range move, where it is not the usual Attack: the first of these its
-// sprite pack has (a blade slices; Aegislash's pack has no Slice, so it swings).
-const MELEE_ANIM = { honedge: ['Slice', 'Swing'], doublade: ['Slice', 'Swing'], aegislash: ['Slice', 'Swing'] };
+// sprite pack has (a blade slices; Aegislash's pack has no Slice, so it swings; Hawlucha kicks).
+const MELEE_ANIM = { hawlucha: ['Kick'], honedge: ['Slice', 'Swing'], doublade: ['Slice', 'Swing'], aegislash: ['Slice', 'Swing'] };
 
 // id -> { id, name, type, shadowSize, foot, anims: { name -> { sheet, key, fw, fh, durs[], rush, hit, ret, cols, rows } } }
 export const SPECIES = {};

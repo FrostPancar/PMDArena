@@ -3,6 +3,14 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.15
+
+- Substitute: the doll has the HP spent on it and takes hits until that is gone (it used to break on the first).
+  Moves that do no damage, and a foe's statuses and other ill effects, fail against it; charges are not broken.
+- Hawlucha kicks for its close-range moves.
+- Touch pad: a move button held (not tapped) is aimed by hand from the start. Its guide begins just ahead of the
+  player and no longer flashes at the spot a tap would have picked. A tap still goes at the nearest foe.
+
 ## alpha 0.5.14
 
 - Sound on phones: presses on the touch pad now start the audio (they never reached it before), an iPhone with its

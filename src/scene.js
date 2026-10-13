@@ -643,14 +643,19 @@ export class Play extends Phaser.Scene {
     art(l.owner, LEECH.healFrames, 10);
   }
 
-  // A substitute doll just absorbed a hit: it goes up in smoke.
+  // A substitute doll took a blow and is still standing.
+  subHit(m) { this.game.events.emit('sfx', 'hit', { heavy: false, soft: true }); }
+
+  // A substitute doll has taken all it can: it goes up in smoke.
   subBroke(m) {
     const frames = MOVES.substitute.frames;
     this.fx.push({ img: this.add.image(m.x, m.y - 8, frames[0]).setDepth(60 + m.y), frames, t: 0, fps: 24 });
   }
 
   // Give a mon a status condition; its icon is drawn by the mon.
-  inflict(t, kind) {
+  // self: the mon brought it on itself (Rest's sleep, the daze after Petal Dance); nothing a foe sends gets past a substitute.
+  inflict(t, kind, self = false) {
+    if (t.sub && !self) return;
     t.setStatus(kind);
   }
 
@@ -1129,7 +1134,7 @@ export class Play extends Phaser.Scene {
           if (m.alive) this.fx.push({ img: this.add.image(m.x, m.y - 10, POWERUP.frames[0]).setScale(POWERUP.scale), frames: POWERUP.frames, t: 0, fps: 30, follow: m, lift: 10 });
         });
       }
-      if (mv.sub) m.sub = true;
+      if (mv.sub) m.sub = m.maxHp * mv.hpCost; // the doll has the health that went into it
       if (mv.regen && !field) m.regen = { t: mv.regen.time, hps: mv.regen.hps };
       if (mv.endFrames.length && !mv.stance) {
         // plays when the buff runs out
@@ -1143,7 +1148,7 @@ export class Play extends Phaser.Scene {
       if (mv.guard && !m.remote) this.guards.push({ m, mv, t: 0, track: aim.track });
       if (mv.cure) m.clearStatus();
       if (mv.empower) m.setCharged(true);
-      if (mv.selfStatus) this.inflict(m, mv.selfStatus);
+      if (mv.selfStatus) this.inflict(m, mv.selfStatus, true);
       if (mv.heal) {
         this.after(mv.healDelay ?? 300, () => {
           if (!m.alive) return;
@@ -1524,7 +1529,7 @@ export class Play extends Phaser.Scene {
   // Is this close-range blow landing on a foe that is itself mid-swing with a close-range move, aimed back this way?
   // (A heavy move goes through a lighter one, and nothing stops an armoured mon.)
   swingsMeet(owner, t, mv) {
-    if (mv?.kind !== 'melee' || !t.alive || t.armored || t.invuln > 0 || t.airborne) return false;
+    if (mv?.kind !== 'melee' || !t.alive || t.armored || t.sub || t.invuln > 0 || t.airborne) return false;
     const theirs = t.pending ?? (t.state === 'windup' ? t.windup : null);
     if (theirs?.mv.kind !== 'melee') return false;
     if (mv.tag === 'heavy' ? theirs.mv.tag !== 'heavy' : !t.pending && theirs.mv.tag === 'heavy') return false; // (a heavy move still charging is not stopped by a jab)
@@ -1632,6 +1637,7 @@ export class Play extends Phaser.Scene {
 
   // An ice move leaves a stack of chill; the third one freezes.
   chillOn(t) {
+    if (t.sub) return; // the doll takes the cold
     if (t.status?.kind === 'freeze') return; // already frozen solid: nothing to add
     const n = (t.chill?.n ?? 0) + 1;
     if (n < 3) { t.chill = { n, t: 6 }; return; } // shown as snowflakes over its head
@@ -2057,7 +2063,7 @@ export class Play extends Phaser.Scene {
 
   // Lifted off the ground and held there helpless for a moment: open to whatever comes next. Not twice in a row.
   levitate(t, time) {
-    if (!t.alive || t.remote || t.levi > 0 || t.leviImmune > 0 || t.ingrain || t.under) return;
+    if (!t.alive || t.remote || t.sub || t.levi > 0 || t.leviImmune > 0 || t.ingrain || t.under) return;
     t.cancel();
     if (t.state !== 'faint') t.toIdle();
     Object.assign(t, { levi: time, kx: 0, ky: 0 });
@@ -2572,7 +2578,7 @@ export class Play extends Phaser.Scene {
         for (const t of this.targets) {
           if (!t.alive || t.airborne || t.under || Math.hypot(t.x - z.x, (t.y - z.y) * 1.3) > mv.radius) continue;
           now.add(t);
-          if (t.team === z.owner.team || z.sprung) continue;
+          if (t.team === z.owner.team || z.sprung || t.sub) continue; // (a doll is not snared)
           z.sprung = true;
           z.t = Math.max(z.t, mv.linger - WEB_SNARE); // it lasts as long as its catch does
           if (!t.remote) { t.snare = WEB_SNARE; t.kx = t.ky = 0; }
@@ -2612,7 +2618,7 @@ export class Play extends Phaser.Scene {
         z.hits++;
       }
       if (z.t < mv.linger && (!z.follow || z.follow.alive)) return true;
-      if (mv.after && z.owner.alive) this.inflict(z.owner, mv.after);
+      if (mv.after && z.owner.alive) this.inflict(z.owner, mv.after, true);
       z.webG?.destroy();
       img.destroy();
       return false;
