@@ -3,6 +3,18 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.20
+
+**Survivor**
+- Each wave beaten gives back 30% of your health (was 20%).
+- A wave of three hits for half damage, a wave of two for three quarters.
+- Every tenth wave is a single legendary: 500 HP, level 4, its own four moves.
+- The chest is left on the stage. Walk over it to open it: it vanishes and the TM slides up out of it. No wave comes
+  until it is picked up.
+
+**Menus**
+- The pillar's first choice reads Singleplayer instead of Story.
+
 ## alpha 0.5.19
 
 **Traps**
