@@ -3,6 +3,11 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.10
+
+- The title theme is fetched and decoded while the game loads, so it starts on the first press instead of a moment after.
+- Title screen: the logo is drawn at the screen's full resolution and sits a little lower; "Dojo Battles" is smaller.
+
 ## alpha 0.5.9
 
 **Sound**

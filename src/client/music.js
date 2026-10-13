@@ -40,10 +40,30 @@ function context() {
   return ctx;
 }
 
+// Tracks fetched and decoded ahead of being asked for (see preload): id -> a promise of the decoded track.
+const ahead = new Map();
+const decodeWith = (ac, data) => new Promise((ok, fail) => { const p = ac.decodeAudioData(data, ok, fail); p?.catch?.(fail); }); // (old Safari takes callbacks only)
+
 const decode = async (id) => {
-  const data = await (await fetch(urlOf(id))).arrayBuffer();
-  return new Promise((ok, fail) => { const p = ctx.decodeAudioData(data, ok, fail); p?.catch?.(fail); }); // (old Safari takes callbacks only)
+  if (ahead.has(id)) {
+    const early = await ahead.get(id);
+    ahead.delete(id); // (kept only until it is first played: one track in memory at a time)
+    if (early) return early;
+  }
+  return decodeWith(ctx, await (await fetch(urlOf(id))).arrayBuffer());
 };
+
+// Fetch and decode a track before anyone has pressed anything, so it starts the instant it may. A browser will not
+// run a real audio context until then, but an offline one decodes all the same.
+function preload(id) {
+  id = resolve(id);
+  const OAC = window.OfflineAudioContext ?? window.webkitOfflineAudioContext;
+  if (!id || !OAC || ahead.has(id)) return;
+  ahead.set(id, (async () => {
+    try { return await decodeWith(new OAC(2, 1, 32000), await (await fetch(urlOf(id))).arrayBuffer()); } catch { return null; }
+  })());
+}
+preload('screen_title'); // the first thing anyone hears
 
 function fadeOut(p) {
   if (!p) return;
