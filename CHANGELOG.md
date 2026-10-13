@@ -3,6 +3,13 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.11
+
+- Sound effects: every move has a sound now (62 sounds over the 252 moves), using the newly named files.
+- Rebound: a faint is the fight-ending hit; Protect and the screens use the barrier sound; throws use the slam;
+  Ember and Flame Burst the fireball; more hit sounds in the mix.
+- Choosing a mon in the dream has its own sound.
+
 ## alpha 0.5.10
 
 - The title theme is fetched and decoded while the game loads, so it starts on the first press instead of a moment after.

@@ -179,6 +179,11 @@
   "group": "",
   "notes": ""
  },
+ "song347.mp3": {
+  "name": "fight ending hit sound",
+  "group": "",
+  "notes": ""
+ },
  "song401.mp3": {
   "name": "",
   "group": "whoosh",
@@ -249,9 +254,34 @@
   "group": "",
   "notes": ""
  },
+ "song485.mp3": {
+  "name": "signal beam",
+  "group": "",
+  "notes": ""
+ },
+ "song492.mp3": {
+  "name": "Blast Burn",
+  "group": "",
+  "notes": ""
+ },
+ "song494.mp3": {
+  "name": "sharp sheen",
+  "group": "",
+  "notes": ""
+ },
+ "song495.mp3": {
+  "name": "iron defense",
+  "group": "",
+  "notes": ""
+ },
  "song498.mp3": {
   "name": "double burst",
   "group": "explosion",
+  "notes": ""
+ },
+ "song505.mp3": {
+  "name": "blunt fire/blaze kick",
+  "group": "",
   "notes": ""
  },
  "song508.mp3": {
@@ -261,6 +291,36 @@
  },
  "song509.mp3": {
   "name": "shine",
+  "group": "",
+  "notes": ""
+ },
+ "song511.mp3": {
+  "name": "reflect / barrier?",
+  "group": "",
+  "notes": ""
+ },
+ "song518.mp3": {
+  "name": "rain sound",
+  "group": "",
+  "notes": ""
+ },
+ "song606.mp3": {
+  "name": "singsongy",
+  "group": "",
+  "notes": ""
+ },
+ "song610.mp3": {
+  "name": "impact",
+  "group": "",
+  "notes": ""
+ },
+ "song611.mp3": {
+  "name": "belly drum",
+  "group": "",
+  "notes": ""
+ },
+ "song612.mp3": {
+  "name": "triattack",
   "group": "",
   "notes": ""
  },
@@ -274,18 +334,43 @@
   "group": "",
   "notes": ""
  },
+ "song621.mp3": {
+  "name": "power down",
+  "group": "",
+  "notes": ""
+ },
  "song622.mp3": {
   "name": "denied",
   "group": "",
   "notes": ""
  },
+ "song626.mp3": {
+  "name": "ice shot",
+  "group": "",
+  "notes": ""
+ },
+ "song628.mp3": {
+  "name": "triple",
+  "group": "",
+  "notes": ""
+ },
  "song629.mp3": {
-  "name": "claps",
+  "name": "claps continue",
+  "group": "",
+  "notes": ""
+ },
+ "song639.mp3": {
+  "name": "seed throw",
   "group": "",
   "notes": ""
  },
  "song641.mp3": {
   "name": "boulders break",
+  "group": "",
+  "notes": ""
+ },
+ "song646.mp3": {
+  "name": "status effect negative",
   "group": "",
   "notes": ""
  },
@@ -309,6 +394,11 @@
   "group": "",
   "notes": ""
  },
+ "song654.mp3": {
+  "name": "mon pick",
+  "group": "cry",
+  "notes": ""
+ },
  "song655.mp3": {
   "name": "impact",
   "group": "",
@@ -325,7 +415,12 @@
   "notes": ""
  },
  "song671.mp3": {
-  "name": "flare2",
+  "name": "fireball",
+  "group": "",
+  "notes": ""
+ },
+ "song674.mp3": {
+  "name": "burned",
   "group": "",
   "notes": ""
  },
@@ -341,6 +436,16 @@
  },
  "song682.mp3": {
   "name": "rock break",
+  "group": "",
+  "notes": ""
+ },
+ "song683.mp3": {
+  "name": "cut cut",
+  "group": "",
+  "notes": ""
+ },
+ "song687.mp3": {
+  "name": "smack down / seismic",
   "group": "",
   "notes": ""
  },
@@ -364,6 +469,26 @@
   "group": "element",
   "notes": ""
  },
+ "song698.mp3": {
+  "name": "vine grab",
+  "group": "",
+  "notes": ""
+ },
+ "song700.mp3": {
+  "name": "charge up/dragon dance/swords dance",
+  "group": "",
+  "notes": ""
+ },
+ "song707.mp3": {
+  "name": "counter and focus energy",
+  "group": "",
+  "notes": ""
+ },
+ "song710.mp3": {
+  "name": "vine grab wall",
+  "group": "",
+  "notes": ""
+ },
  "song711.mp3": {
   "name": "status down",
   "group": "",
@@ -379,8 +504,38 @@
   "group": "",
   "notes": ""
  },
+ "song722.mp3": {
+  "name": "notes",
+  "group": "",
+  "notes": ""
+ },
+ "song729.mp3": {
+  "name": "blunt impact",
+  "group": "",
+  "notes": ""
+ },
+ "song736.mp3": {
+  "name": "low sound move negative",
+  "group": "",
+  "notes": ""
+ },
+ "song766.mp3": {
+  "name": "shineshine",
+  "group": "",
+  "notes": ""
+ },
+ "song770.mp3": {
+  "name": "wind longer",
+  "group": "",
+  "notes": ""
+ },
  "song772.mp3": {
   "name": "scary face",
+  "group": "",
+  "notes": ""
+ },
+ "song775.mp3": {
+  "name": "blunt impact light",
   "group": "",
   "notes": ""
  },
@@ -389,8 +544,28 @@
   "group": "explosion",
   "notes": ""
  },
+ "song790.mp3": {
+  "name": "wing attack/ air cutter",
+  "group": "",
+  "notes": ""
+ },
+ "song802.mp3": {
+  "name": "fire2",
+  "group": "",
+  "notes": ""
+ },
  "song808.mp3": {
   "name": "confusion",
+  "group": "",
+  "notes": ""
+ },
+ "song819.mp3": {
+  "name": "impact",
+  "group": "",
+  "notes": ""
+ },
+ "song827.mp3": {
+  "name": "leaf charge",
   "group": "",
   "notes": ""
  },
@@ -399,13 +574,33 @@
   "group": "",
   "notes": ""
  },
+ "song848.mp3": {
+  "name": "charge up fire",
+  "group": "",
+  "notes": ""
+ },
+ "song867.mp3": {
+  "name": "bug buzz / sound spread",
+  "group": "",
+  "notes": ""
+ },
  "song868.mp3": {
   "name": "",
   "group": "whoosh",
   "notes": ""
  },
+ "song877.mp3": {
+  "name": "beam",
+  "group": "beam",
+  "notes": ""
+ },
  "song882.mp3": {
   "name": "power up",
+  "group": "",
+  "notes": ""
+ },
+ "song898.mp3": {
+  "name": "crabhammer",
   "group": "",
   "notes": ""
  },
@@ -429,8 +624,13 @@
   "group": "",
   "notes": ""
  },
+ "song920.mp3": {
+  "name": "dash sound",
+  "group": "",
+  "notes": ""
+ },
  "song935.mp3": {
-  "name": "metal",
+  "name": "metal_sound",
   "group": "",
   "notes": ""
  }

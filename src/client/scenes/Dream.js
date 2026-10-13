@@ -11,6 +11,7 @@ import { cap } from '../moveinfo.js';
 import { tapActs } from '../touch.js';
 import { DEPTH, INK, Hints, text, icon, typeIcon, panel } from '../ui.js';
 import { music } from '../music.js';
+import { sfx } from '../sfx.js';
 
 const COLS = 6, CELL_W = 24, CELL_H = 24;
 const GRID_X = 228, GRID_Y = 6, GRID_W = COLS * CELL_W + 8;
@@ -147,6 +148,7 @@ export class Dream extends Phaser.Scene {
   pick() {
     if (this.picked) return;
     this.picked = true;
+    sfx.play('pick_mon');
     // the question mark chooses now, and says nothing: who it was shows when the player wakes (the Hub announces it)
     const mystery = this.index === RANDOM;
     const id = mystery ? SPECIES_ORDER[Math.floor(Math.random() * SPECIES_ORDER.length)] : SPECIES_ORDER[this.index];
