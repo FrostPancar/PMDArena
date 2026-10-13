@@ -14,14 +14,14 @@ const TYPES = {
   axew: 'dragon', zorua: 'dark', starly: 'flying', corphish: 'water', cubone: 'ground', nidoran: 'poison', aron: 'steel', venipede: 'bug', rotom: 'electric', riolu: 'fighting',
   combee: 'bug', clefairy: 'fairy', rhyhorn: 'rock', scyther: 'bug', joltik: 'electric', skarmory: 'steel',
   cacnea: 'grass', alolanvulpix: 'ice', heracross: 'bug', porygon: 'normal',
-  mimikyu: 'ghost', munchlax: 'normal', staryu: 'water', honedge: 'steel', torkoal: 'fire',
+  phantump: 'ghost', munchlax: 'normal', staryu: 'water', honedge: 'steel', torkoal: 'fire', hawlucha: 'fighting',
 };
 // Evolutions that are not their species' type: Eevee's, one of which each Eevee takes.
 // ...and Cubone's Alolan Marowak, the other of the two forms a Cubone chooses between.
 const FORM_TYPES = { alolanmarowak: 'fire', vaporeon: 'water', jolteon: 'electric', flareon: 'fire', espeon: 'psychic', umbreon: 'dark', leafeon: 'grass', glaceon: 'ice', sylveon: 'fairy' };
 // Names that are not just the folder name capitalised
 const NAMES = { alolanvulpix: 'Alolan Vulpix', alolanninetales: 'Alolan Ninetales', alolanmarowak: 'Alolan Marowak', porygon2: 'Porygon2', porygonz: 'Porygon-Z' };
-const ORDER = ['bulbasaur', 'charmander', 'squirtle', 'chikorita', 'treecko', 'torchic', 'mudkip', 'ralts', 'eevee', 'axew', 'zorua', 'starly', 'corphish', 'cubone', 'nidoran', 'aron', 'venipede', 'rotom', 'riolu', 'combee', 'clefairy', 'rhyhorn', 'scyther', 'joltik', 'skarmory', 'cacnea', 'alolanvulpix', 'heracross', 'porygon', 'mimikyu', 'munchlax', 'staryu', 'honedge', 'torkoal'];
+const ORDER = ['bulbasaur', 'charmander', 'squirtle', 'chikorita', 'treecko', 'torchic', 'mudkip', 'ralts', 'eevee', 'axew', 'zorua', 'starly', 'corphish', 'cubone', 'nidoran', 'aron', 'venipede', 'rotom', 'riolu', 'combee', 'clefairy', 'rhyhorn', 'scyther', 'joltik', 'skarmory', 'cacnea', 'alolanvulpix', 'heracross', 'porygon', 'phantump', 'munchlax', 'staryu', 'honedge', 'torkoal', 'hawlucha'];
 // The animation a mon swings with for a close-range move, where it is not the usual Attack: the first of these its
 // sprite pack has (a blade slices; Aegislash's pack has no Slice, so it swings).
 const MELEE_ANIM = { honedge: ['Slice', 'Swing'], doublade: ['Slice', 'Swing'], aegislash: ['Slice', 'Swing'] };

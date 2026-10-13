@@ -3,6 +3,11 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.13
+
+- Phantump (Ghost, evolves into Trevenant) takes Mimikyu's place.
+- New mon: Hawlucha (Fighting).
+
 ## alpha 0.5.12
 
 **New mons**

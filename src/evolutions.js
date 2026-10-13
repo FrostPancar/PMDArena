@@ -10,7 +10,7 @@ export const EVOLUTIONS = {
   riolu: ['lucario'], combee: ['vespiquen'], clefairy: ['clefable'], rhyhorn: ['rhydon', 'rhyperior'],
   scyther: ['scizor'], joltik: ['galvantula'], skarmory: [],
   cacnea: ['cacturne'], alolanvulpix: ['alolanninetales'], heracross: [], porygon: ['porygon2', 'porygonz'],
-  mimikyu: [], munchlax: ['snorlax'], staryu: ['starmie'], honedge: ['doublade', 'aegislash'], torkoal: [],
+  phantump: ['trevenant'], hawlucha: [], munchlax: ['snorlax'], staryu: ['starmie'], honedge: ['doublade', 'aegislash'], torkoal: [],
 };
 
 // Species whose forms are alternatives, not steps: the player picks one when the mon is ready, and it stays that form
