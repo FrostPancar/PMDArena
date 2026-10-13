@@ -284,6 +284,7 @@ export class Play extends Phaser.Scene {
     this.fields = []; // circles (or lanes) on the ground that buff or heal whoever of the caster's side stands in them
     this.beams = []; // held beams being fired
     this.clashes = []; // pairs of beams locked together
+    this.mash = null; // the button shown over the player during one
     this.arcs = []; // mons being flung, pulled or dropped from one spot to another
     this.flurries = []; // Close Combat in progress
     this.guards = []; // Protect being held
@@ -1032,8 +1033,10 @@ export class Play extends Phaser.Scene {
       // one flash down a line from the user to the spot it is aimed at: the art is stretched along it, and when the
       // light breaks out everything on the line is hit once
       const spot = this.landSpot(m, mv, aim), x0 = m.x, y0 = m.y, tx = (spot.hx ?? spot.x) - x0, ty = (spot.hy ?? spot.y) - y0;
-      const len = Math.max(40, Math.hypot(tx, ty)), ux = tx / (Math.hypot(tx, ty) || 1), uy = ty / (Math.hypot(tx, ty) || 1);
-      const img = this.add.image(Math.round(x0), Math.round(y0) - 8, mv.frames[0]).setOrigin(0.5, 0.887).setRotation(Math.atan2(ty, tx) + Math.PI / 2).setScale(mv.ray.width, (len + 16) / 255).setDepth(60 + Math.max(y0, y0 + ty));
+      // (a ray of a set length is a burst out of the user: its art keeps its shape instead of being stretched to the spot)
+      const len = mv.ray.len ?? Math.max(40, Math.hypot(tx, ty)), ux = tx / (Math.hypot(tx, ty) || 1), uy = ty / (Math.hypot(tx, ty) || 1);
+      const img = this.add.image(Math.round(x0), Math.round(y0) - 8, mv.frames[0]).setOrigin(0.5, mv.ray.oy ?? 0.887).setRotation(Math.atan2(ty, tx) + Math.PI / 2).setScale(mv.ray.width, mv.ray.len ? mv.ray.width : (len + 16) / 255).setDepth(60 + Math.max(y0, y0 + uy * len));
+      if (mv.tint) img.setTint(mv.tint);
       this.fx.push({ img, frames: mv.frames, t: 0, fps: mv.fps ?? 30 });
       this.after(mv.ray.delay * 1000, () => {
         const skip = new Set();
@@ -1049,8 +1052,14 @@ export class Play extends Phaser.Scene {
         // gone: nothing can find it until it comes back up
         const spot = this.blinkSpot(m, mv, aim), foe = mv.vanish.behind ? this.nearestFoe(m, spot.x, spot.y, 40) : null;
         // (a shadow slides over the ground from where it sank to where it will rise; anything else just bursts)
-        if (mv.vanish.trail) this.fx.push({ img: this.add.image(Math.round((m.x + spot.x) / 2), Math.round((m.y + spot.y) / 2), mv.frames[0]).setScale(mv.scale ?? 1).setDepth(6), frames: mv.frames, t: 0, fps: mv.frames.length / mv.vanish.time });
-        else burst();
+        if (mv.vanish.trail) {
+          // the art for the facing nearest the way it goes, pinned by its start to the user and turned and sized so its end is the spot
+          const tx = spot.x - m.x, ty = spot.y - m.y, d8 = dirFromVec(tx, ty), [fx, fy] = mv.vanish.trail.from[d8], [ex, ey] = mv.vanish.trail.to[d8];
+          const fr = mv.dirFrames[d8], tex = this.textures.get(fr[0]).getSourceImage();
+          const img = this.add.image(Math.round(m.x), Math.round(m.y), fr[0]).setOrigin(fx / tex.width, fy / tex.height).setDepth(6)
+            .setRotation(Phaser.Math.Angle.Wrap(Math.atan2(ty, tx) - Math.atan2(ey - fy, ex - fx))).setScale(Math.max(0.4, Math.hypot(tx, ty) / Math.hypot(ex - fx, ey - fy)));
+          this.fx.push({ img, frames: fr, t: 0, fps: fr.length / mv.vanish.time });
+        } else burst();
         Object.assign(m, { state: 'bird', hidden: true, under: true });
         if (foe) this.pendings.push({ x: foe.x, y: foe.y, r: 12, t: mv.vanish.time, mine: m === this.player, age: 0, follow: foe });
         this.vanishes.push({ m, mv, t: 0, x0: m.x, y0: m.y, spot, foe, dmg, track: aim.track, burst });
@@ -1223,6 +1232,11 @@ export class Play extends Phaser.Scene {
           bounce: mv.bounce, s0: img.scaleX, r0: r, dmg0: dmg * power, id: this.shotId(m),
           swell: mv.swell, ricochet: mv.ricochet ?? 0, boomerang: mv.boomerang, done: mv.pierce || mv.boomerang ? new Set() : null,
         });
+        if (mv.coreFrames?.length && frames === mv.frames) {
+          // something crackling inside the shot, for as long as it flies
+          const s = this.shots[this.shots.length - 1], core = this.add.image(s.x, s.y - 8, mv.coreFrames[0]).setScale((mv.coreScale ?? 1) * (big ? 1.5 : 1));
+          this.fx.push({ img: core, frames: mv.coreFrames, t: 0, fps: 20, follow: s, lift: 8, loopWhile: () => s.img.active && s.img.visible && !s.dead });
+        }
       };
       // a fan goes out as several shots side by side
       if (mv.fan) for (let i = 0; i < mv.fan; i++) launch(mv.frames, mv.radius, mv.speed, 1, (i - (mv.fan - 1) / 2) * 0.17);
@@ -1308,13 +1322,18 @@ export class Play extends Phaser.Scene {
         // the art shows once, then an unseen hurtbox waits on the spot; a mon keeps at most three
         this.fx.push({ img, frames: mv.frames, t: 0, fps: mv.fps ?? 30 });
         const mine = this.traps.filter((q) => q.owner === m);
+        // thrown onto one of its own, a layered trap adds to that one instead: wider, harder, and good as new
+        const under = mv.layers && mine.find((q) => q.mv.name === mv.name && Math.hypot(q.x - hx, (q.y - hy) * 1.3) <= q.r);
+        if (under) {
+          under.n = Math.min(mv.layers.max, under.n + 1);
+          Object.assign(under, { r: mv.radius + mv.layers.radius * (under.n - 1), dmg: dmg * (1 + mv.layers.dmg * (under.n - 1)), t: mv.trap });
+          this.strew(under);
+          return;
+        }
         if (mine.length >= 3) { mine[0].imgs?.forEach((i) => i.destroy()); this.traps.splice(this.traps.indexOf(mine[0]), 1); }
-        // (some traps are not unseen: Spikes lie strewn over the spot for as long as the trap lasts)
-        const imgs = mv.trapArt && Array.from({ length: mv.trapArt }, (_, k) => {
-          const a = (k / mv.trapArt) * Math.PI * 2 + 0.6, d = k ? mv.radius * 0.62 : 0;
-          return this.add.image(Math.round(hx + Math.cos(a) * d), Math.round(hy + (Math.sin(a) * d) / 1.3), mv.frames[0]).setOrigin(0.5, 0.8).setDepth(9 + hy);
-        });
-        this.traps.push({ x: hx, y: hy, mv, owner: m, dmg, t: mv.trap, wait: 0.4, imgs });
+        const q = { x: hx, y: hy, mv, owner: m, dmg, t: mv.trap, wait: 0.4, r: mv.radius, n: 1 };
+        this.strew(q);
+        this.traps.push(q);
         return;
       }
       if (mv.linger) {
@@ -1559,7 +1578,7 @@ export class Play extends Phaser.Scene {
       const blocking = t.parry > 0, hp0 = t.hp;
       // a critical hit: rolled where the blow is decided (the client that runs the mon it lands on). Not for the ticks
       // of a beam or a stream, nor for damage that is the same against anyone.
-      const crit = !!mv && !t.remote && !hit.soft && !hit.raw && dmg > 0 && !(t.noCrit > 0) && t.roll() < (mv.keen ? CRIT.keen : CRIT.chance) + (owner.critUp?.add ?? 0);
+      const crit = !!mv && !mv.trap && !t.remote && !hit.soft && !hit.raw && dmg > 0 && !(t.noCrit > 0) && t.roll() < (mv.keen ? CRIT.keen : CRIT.chance) + (owner.critUp?.add ?? 0);
       if (!t.damage(dmg * (counter ? mv.jab : 1) * (versus ? mv.versus.mul : 1) * extra * punish * (crit ? CRIT.mul : 1), owner.x, owner.y, crit ? { ...hit, crit: true } : hit)) {
         // a lock-on dash that is parried leaves its user wide open
         if (blocking && t.parry === 0 && mv?.parryStun) { owner.stun = mv.parryStun; if (owner.state === 'dash' || owner.state === 'bird') owner.toIdle(); }
@@ -1573,8 +1592,8 @@ export class Play extends Phaser.Scene {
         continue;
       }
       const dealt = hp0 - t.hp;
-      if (crit && dealt > 0) {
-        this.popup(t, 'CRITICAL!', 10);
+      if ((crit || mv?.critFx) && dealt > 0) { // (Spikes always bite with the spark and the sound, though a trap never crits)
+        if (crit) this.popup(t, 'CRITICAL!', 10);
         this.game.events.emit('sfx', 'crit');
         if (CRIT_FX.frames?.length) this.fx.push({ img: this.add.image(Math.round(t.x), Math.round(t.y) - 12, CRIT_FX.frames[0]).setScale(CRIT_FX.scale).setDepth(7003), frames: CRIT_FX.frames, t: 0, fps: 14 });
       }
@@ -1820,6 +1839,21 @@ export class Play extends Phaser.Scene {
     return [main, this.beamLine(sp.x, sp.y, sp.a - 0.4, main.len - sp.d), this.beamLine(sp.x, sp.y, sp.a + 0.4, main.len - sp.d)];
   }
 
+  // While the player is locked in a clash, a button over its head is hammered up and down: mash.
+  drawMash() {
+    const p = this.player, on = !!p.beaming?.clash && p.alive;
+    if (!on && !this.mash) return;
+    const k = (this.mash ??= { g: this.add.graphics().setDepth(9500), tag: this.add.image(0, 0, labelTexture(this, 'MASH!')).setDepth(9500) });
+    k.g.setVisible(on).clear(); k.tag.setVisible(on);
+    if (!on) return;
+    const x = Math.round(p.x), y = Math.round(p.y) - 46, down = Math.floor(this.time.now / 90) % 2;
+    k.tag.setPosition(x, y - 12 + down);
+    k.g.fillStyle(0x10141d, 1).fillRoundedRect(x - 9, y - 1, 18, 9, 3); // the socket
+    k.g.fillStyle(0x9c2f2a, 1).fillRoundedRect(x - 7, y + (down ? 2 : -2), 14, 6, 2); // the cap's side
+    k.g.fillStyle(0xff5a4a, 1).fillRoundedRect(x - 7, y + (down ? 1 : -4), 14, 5, 2);
+    k.g.fillStyle(0xffffff, 0.8).fillRect(x - 4, y + (down ? 2 : -3), 4, 1);
+  }
+
   // The end of a beam. quit: its user let go (or ran dry) rather than being knocked out of it; breaking a clash that way costs a small hit.
   endBeam(b, quit) {
     const c = b.clash;
@@ -1859,7 +1893,8 @@ export class Play extends Phaser.Scene {
       const { m, mv } = b;
       b.t += dt;
       // a tap still gives a short burst; a remote fighter's button cannot be seen, so its beam is a burst too
-      const held = b.t < 0.35 || this.holding(m, b.track, b.t);
+      // (locked in a clash it holds by itself: the buttons are for mashing)
+      const held = b.t < 0.35 || !!b.clash || this.holding(m, b.track, b.t);
       if (m.beaming !== b || !m.alive || !held || m.stamina <= 0 || m.state === 'windup' || m.stuck) {
         this.endBeam(b, m.alive && m.beaming === b);
         return false;
@@ -1894,6 +1929,9 @@ export class Play extends Phaser.Scene {
         const c = { a, b, u: Phaser.Math.Clamp(Math.hypot(at.x - a.m.x, at.y - a.m.y) / gap, 0.15, 0.85), pa: 0, pb: 0, t: 0 };
         a.clash = b.clash = c;
         this.clashes.push(c);
+        // the beams lock with the beat of a heavy hit
+        this.game.events.emit('sfx', 'clash');
+        if (FEEL.on && FEEL.heavy) this.heavyImpact();
       }
     }
 
@@ -1931,6 +1969,8 @@ export class Play extends Phaser.Scene {
       this.spark(c.x, c.y - 8);
       return false;
     });
+
+    this.drawMash();
 
     // 4. draw each beam, clear the shots it crosses, and land its ticks
     for (const b of this.beams) {
@@ -2744,18 +2784,30 @@ export class Play extends Phaser.Scene {
     }
   }
 
+  // Some traps are not unseen: Spikes lie strewn over the spot for as long as the trap lasts, more of them with each layer.
+  strew(q) {
+    const n = q.mv.trapArt && q.mv.trapArt + (q.mv.layers?.art ?? 0) * (q.n - 1);
+    if (!n) return;
+    q.imgs?.forEach((i) => i.destroy());
+    q.imgs = Array.from({ length: n }, (_, k) => {
+      // one in the middle, then rings of five working outward
+      const ring = Math.ceil(k / 5), a = (k / 5) * Math.PI * 2 + 0.6 + ring * 0.6, d = k ? (q.r * 0.62 * ring) / Math.ceil((n - 1) / 5) : 0;
+      return this.add.image(Math.round(q.x + Math.cos(a) * d), Math.round(q.y + (Math.sin(a) * d) / 1.3), q.mv.frames[0]).setOrigin(0.5, 0.8).setDepth(9 + q.y);
+    });
+  }
+
   // Hidden hurtboxes left by moves like Stealth Rock: a foe on the ground that steps on one is hit and the art pops up.
   updateTraps(dt) {
     this.traps = this.traps.filter((q) => {
       q.wait -= dt;
-      const near = (t) => t.team !== q.owner.team && t.alive && Math.hypot(t.x - q.x, (t.y - q.y) * 1.3) <= q.mv.radius + 7;
+      const near = (t) => t.team !== q.owner.team && t.alive && Math.hypot(t.x - q.x, (t.y - q.y) * 1.3) <= q.r + 7;
       // an ambushing trap also catches whatever comes in by dash, blink or underground (not a plain jump), and harder
       const rush = q.mv.ambush ? this.targets.find((t) => near(t) && (t.state === 'dash' || (t.under && !t.flying))) : null;
       if (q.wait <= 0 && (rush || this.targets.some((t) => near(t) && !t.airborne && !t.under))) {
         q.wait = 0.9;
         const img = this.add.image(Math.round(q.x), Math.round(q.y) - 8, q.mv.frames[0]).setDepth(40 + q.y);
         this.fx.push({ img, frames: q.mv.frames, t: 0, fps: q.mv.fps ?? 30 });
-        this.hitCircle(q.owner, q.x, q.y, q.mv.radius, q.dmg * (rush ? q.mv.ambush : 1), rush ? { ...q.mv, deep: true } : q.mv);
+        this.hitCircle(q.owner, q.x, q.y, q.r, q.dmg * (rush ? q.mv.ambush : 1), rush ? { ...q.mv, deep: true } : q.mv);
       }
       if ((q.t -= dt) > 0) { q.imgs?.forEach((i) => i.setAlpha(Math.min(1, q.t))); return true; }
       q.imgs?.forEach((i) => i.destroy());
@@ -3124,7 +3176,7 @@ export class Play extends Phaser.Scene {
     g.lineStyle(1, 0xffe566, 1);
     for (const h of this.hits) g.strokeEllipse(h.x, h.y, h.r * 2, (h.r * 2) / 1.3);
     g.lineStyle(1, 0xff8a3d, 0.9);
-    for (const q of this.traps) g.strokeEllipse(q.x, q.y, q.mv.radius * 2, (q.mv.radius * 2) / 1.3);
+    for (const q of this.traps) g.strokeEllipse(q.x, q.y, q.r * 2, (q.r * 2) / 1.3);
     g.fillStyle(0xffffff, 1);
     for (const m of [this.player, ...this.npcs]) g.fillRect(Math.round(m.x) - 4, Math.round(m.y), 9, 1);
   }

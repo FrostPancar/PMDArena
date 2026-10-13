@@ -277,7 +277,7 @@ export class Mon {
 
   // Leap in the given direction (or straight up).
   jump(vx, vy, speed) {
-    if (this.ingrain) { this.ingrain = null; return false; } // rooted: the jump pulls the roots up, and that is all it does
+    this.ingrain = null; // rooted: the jump pulls the roots up
     if (!this.grounded || this.stuck || this.ailment.root || this.ingrain || this.snare > 0 || this.roost > 0 || this.beaming || this.stamina < JUMP_COST || this.scene.heavy?.(this)) return false;
     this.spend(JUMP_COST);
     const l = Math.hypot(vx, vy);

@@ -3,6 +3,26 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.19
+
+**Traps**
+- Spikes, Stealth Rock and Toxic Spikes never land a critical hit. Spikes always bites with the crit spark and sound.
+- Stealth Rock and Toxic Spikes cost three notches, Spikes two.
+- Spikes thrown onto your own Spikes adds a layer instead: wider and harder, up to three, and good as new.
+
+**Moves**
+- Protect has no charge time.
+- Incinerate is a short burst of flame out of the user, toward the aim.
+- Jumping out of Ingrain pulls the roots up and jumps in the same press.
+- Beam clash: the beams hold themselves once locked, so the buttons are free to mash. The lock lands with the
+  heavy-hit screen beat, and a MASH button shows over your mon.
+
+**Looks**
+- Shadow Sneak's shadow runs from where the user sank to where it rises, at any angle.
+- Electro Ball carries a Thunder Shock spark inside it. Petal Blizzard's petals sit at body height.
+- Dazzling Gleam keeps its own colours and is smaller. Tri Attack and Aurora Veil charge with a burst of coloured rays.
+- Bosses are smaller (1.15x, from 1.35x).
+
 ## alpha 0.5.18
 
 **Modes**

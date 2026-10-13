@@ -122,7 +122,7 @@ export function describe(id) {
   if (mv.flurry) n.push('Each blow hits harder. You are rooted and take more damage.');
   if (mv.detect) n.push('For an instant the next hit misses: you appear behind whoever threw it, and they are stunned.');
   if (mv.bide) n.push(`For ${secs(mv.bide.time)}, a hit you take makes your next attack hit twice as hard.`);
-  if (mv.ray) n.push('One flash down a line to where you aim: everything on the line is hit.');
+  if (mv.ray) n.push(mv.ray.len ? 'A burst out of you toward where you aim: everything in it is hit.' : 'One flash down a line to where you aim: everything on the line is hit.');
   if (mv.punish) n.push(`Hits ${pct(mv.punish)} harder for every stat the foe has raised.`);
   if (mv.safeguard) n.push(`For ${secs(mv.safeguard)}, nothing a foe sends can give you a status, lower your stats or hamper you.`);
   if (mv.critUp) n.push(`For ${secs(mv.critUp.time)}, your hits are ${pct(mv.critUp.add)} likelier to be critical.`);
@@ -213,7 +213,8 @@ export function describe(id) {
   if (mv.selfStatus) n.push(`Leaves you ${STATUS[mv.selfStatus].label}.`);
   if (mv.leech) n.push(`Seeds the foe: drains ${mv.leech.dps} HP a second for ${secs(mv.leech.time)}.`);
   if (mv.bury) n.push(`Buries foes for ${secs(mv.bury)}.`);
-  if (mv.trap) n.push(`Leaves a hidden trap for ${secs(mv.trap)}.`);
+  if (mv.trap) n.push(`Leaves a ${mv.trapArt ? '' : 'hidden '}trap for ${secs(mv.trap)}. It never lands a critical hit.`);
+  if (mv.layers) n.push(`Thrown onto one you have already laid, it makes that one wider and harder instead, up to ${mv.layers.max} layers.`);
   if (mv.gravity) n.push('Nobody can jump inside the zone.');
   if (mv.linger && !mv.once) n.push(`Stays out for ${secs(mv.linger)}, hitting again and again.`);
   if (mv.strip) n.push("Wipes the foe's boosts and shield.");

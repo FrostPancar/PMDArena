@@ -6,7 +6,7 @@ import { ME, ARENAS } from './modes.js';
 
 // Boss Rush: one legendary after another. Each is a big mon with a lot of health that plays at a high skill, always
 // with the same four moves, on the stage that suits it. A fight is a single round; beating one sends you on to the next.
-export const BOSS = { hp: 500, skill: 4, scale: 1.35, exp: 0.7 };
+export const BOSS = { hp: 500, skill: 4, scale: 1.15, exp: 0.7 };
 export const BOSSES = [
   { id: 'moltres', map: 'blaze', moves: ['flamethrower', 'fireSpin', 'airSlash', 'overheat'] },
   { id: 'zapdos', map: 'plant', moves: ['thunderbolt', 'thunder', 'discharge', 'airSlash'] },

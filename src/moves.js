@@ -261,7 +261,7 @@ const urls = import.meta.glob(
     '../move_VFX/0224_focus_punch/000/*.png',
     '../move_VFX/0224_focus_punch/001/*.png',
     '../move_VFX/0225_fire_whirl_column/000/*.png',
-    '../move_VFX/0226_ringed_orb_pulse/000/*.png',
+    '../move_VFX/0226_ringed_orb_pulse/001/*.png',
     '../move_VFX/0227_hydro_radial_burst/000/*.png',
     '../move_VFX/0229_acupuncture/000/*.png',
     '../move_VFX/0230_night_slash/000/*.png',
@@ -766,7 +766,7 @@ give('focusBlast dragonPulse moonblast hyperVoice energyBall', { swell: [0.6, 1.
 //   field   (field) a circle left on the ground: the buff (or healing) only works while standing in it
 //   bank    paid now, cashed in later (Wish, and the boosted next attack of Charge and Focus Energy)
 give('ironDefense defendOrder cottonGuard', (mv) => ({ stance: { upkeep: 14 }, buff: { ...mv.buff, mul: 2.5 } }));
-give('auroraVeil', { ritual: { step: 0.5, max: 3, per: 0.2, upkeep: 22 }, chargeFx: '0226_ringed_orb_pulse', chargeSeqs: ['000'] }); // the longer it is held, the thicker the veil
+give('auroraVeil', { ritual: { step: 0.5, max: 3, per: 0.2, upkeep: 22 }, chargeFx: '0226_ringed_orb_pulse', chargeSeqs: ['001'], chargeScale: 0.5 }); // the longer it is held, the thicker the veil
 give('doubleTeam', { userAnim: undefined }); // no tell: the copies are simply there
 // Dragon Dance is held like Swords Dance, and raises Speed along with Attack
 give('dragonDance', { dance: undefined, ritual: { step: 0.5, max: 3, per: 0.15, upkeep: 22 }, buff: { stat: 'atk', also: 'spd', mul: 1.15, time: 10 } });
@@ -1004,6 +1004,20 @@ give('viceGrip', { tag: 'grab' });
 give('bite fireFang iceFang thunderFang bugBite drainingKiss drainPunch viceGrip', { latch: 0.45 });
 for (const mv of Object.values(MOVES)) if (mv.latch && mv.dmg) mv.dmg = Math.round(mv.dmg * 5) / 10;
 
+// ---- alpha 0.5.19 ----
+// Traps never land a critical hit. Spikes always look and sound like one, and a second Spikes thrown onto the first
+// makes that patch wider and sharper (three layers at most).
+give('stealthRock toxicSpikes', { cost: 60 });
+give('spikes', { cost: 40, critFx: true, layers: { max: 3, radius: 6, dmg: 0.5, art: 3 } });
+give('protect', { charge: 0 });
+// a burst of flame out of the user, toward the aim
+give('incinerate', { ray: { delay: 0.15, width: 1.1, len: 54, oy: 0.95 }, fixed: 40, range: 60, radius: 15, charge: 0.2, fps: 16, origin: undefined });
+give('petalBlizzard', { origin: [0.5, 0.82] });
+// the shadow runs from where its user sank to where it will rise: where each facing's art starts and ends
+give('shadowSneak', { vanish: { time: 0.4, behind: true, trail: { from: [[24, 8], [68, 5], [64, 10], [68, 58], [24, 64], [68, 58], [76, 10], [68, 5]], to: [[24, 59], [116, 54], [112, 11], [116, 9], [24, 13], [20, 9], [28, 11], [20, 54]] } } });
+give('dazzlingGleam', { gray: undefined, tint: undefined, scale: 0.9 }); // its own colours, and smaller
+give('electroBall', { coreFx: ['0252_electric_orb_spark', '000'], coreScale: 0.6 });
+
 // Critical hits (see CRIT in scene.js): any hit may land one; a keen move, one that slices, does far more often.
 give('cut slash nightSlash xScissor leafBlade shadowClaw dragonClaw metalClaw razorShell crossPoison steelWing psychoCut airSlash furyCutter razorLeaf razorWind aerialAce', { keen: true });
 // Close-range moves hit a tenth harder: they are the ones that have to get in.
@@ -1046,7 +1060,7 @@ give('roar', { fx: '0121_sound_crack', seqs: ['000'], dir8: 0, rotate: false, sc
 give('fly', { fx: '0045_ice_wings', seqs: ['004'], dir8: 0, tintFill: undefined });
 // trail: a rolling move kicks up the same rubble Dig does; bounceFx plays where it glances off a wall.
 give('rollout', { trail: true, bounceFx: ['0108_razor_leaf_wind', '015'] });
-give('triAttack', { chargeFx: '0226_ringed_orb_pulse', chargeSeqs: ['000'] });
+give('triAttack', { chargeFx: '0226_ringed_orb_pulse', chargeSeqs: ['001'], chargeScale: 0.5 });
 give('taunt torment', { impactFx: '0153_rainbow_confetti_burst', impactSeqs: ['000'], impactFps: 40 });
 // The sparkle that plays on a mon as it is healed.
 export const HEAL = { fx: ['0125_moonlight', '002'] };
@@ -1208,7 +1222,7 @@ const FRAME_URL = new Map(); // texture key -> where its picture is
 
 // Every texture key a move draws with.
 const keysOf = (mv) => [
-  mv.frames, mv.chargeFrames, mv.bonusFrames, mv.impactFrames, mv.altFrames, mv.addFrames, mv.landFrames, mv.endFrames, mv.selfFrames, mv.bounceFrames, mv.pillarFrames, mv.stackFrames,
+  mv.frames, mv.chargeFrames, mv.bonusFrames, mv.impactFrames, mv.altFrames, mv.addFrames, mv.landFrames, mv.endFrames, mv.selfFrames, mv.bounceFrames, mv.pillarFrames, mv.stackFrames, mv.coreFrames,
   ...(mv.dirFrames ?? []), ...(mv.impactDirFrames ?? []), ...(mv.cycle ?? []).map((v) => v.frames),
 ].flatMap((list) => list ?? []);
 // The other moves whose art a move borrows as it plays out.
@@ -1288,6 +1302,7 @@ export function preloadMoves(scene, lazy = false) {
     mv.selfFrames = mv.selfFx ? build(mv.selfFx[0], [mv.selfFx[1]]) : [];
     mv.bounceFrames = mv.bounceFx ? build(mv.bounceFx[0], [mv.bounceFx[1]]) : [];
     mv.stackFrames = mv.stackFx ? build(mv.stackFx[0], [mv.stackFx[1]]) : [];
+    mv.coreFrames = mv.coreFx ? build(mv.coreFx[0], [mv.coreFx[1]]) : [];
     if (mv.impactDir8 !== undefined) mv.impactDirFrames = Array.from({ length: 8 }, (_, k) => build(mv.fx, [String(mv.impactDir8 + k).padStart(3, '0')]));
     mv.pillarFrames = mv.icePillar ? build(mv.icePillar.fx, ['000']).slice(3) : []; // (its first picture is a stray spark)
   }
