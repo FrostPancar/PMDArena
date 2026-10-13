@@ -159,6 +159,7 @@ const HEARD = {
   jump: () => sfx.play('jump'),
   parry: () => sfx.play('parry'),
   clash: () => sfx.play('clash'),
+  crit: () => sfx.play('sharp', { volume: 1.3 }),
   shatter: () => sfx.play('shatter'),
   faint: () => sfx.play('faint'),
   heal: () => sfx.play('heal'),

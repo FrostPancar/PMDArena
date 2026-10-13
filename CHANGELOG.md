@@ -3,6 +3,22 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.12
+
+**New mons**
+- Mimikyu (Ghost), Munchlax (Normal, evolves into Snorlax), Staryu (Water, into Starmie), Honedge (Steel, into
+  Doublade and Aegislash) and Torkoal (Fire).
+- Cubone chooses between Marowak and Alolan Marowak (Fire) when it is ready, as Eevee chooses.
+- Honedge and Doublade slice for their close-range moves; Aegislash swings.
+
+**Fighting**
+- Critical hits: 6% of hits land for half again as much; slicing moves crit 25% of the time.
+- Close-range moves do 10% more damage.
+
+**Moves**
+- Kinesis to Ralts, Explosion to Porygon, Wood Hammer to Chikorita and Cacnea.
+- Only Acupressure, Glare and Cotton Guard are left without a learner.
+
 ## alpha 0.5.11
 
 - Sound effects: every move has a sound now (62 sounds over the 252 moves), using the newly named files.

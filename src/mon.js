@@ -308,6 +308,9 @@ export class Mon {
     this.setAnim('Wake', 'once', null, () => this.toIdle());
   }
 
+  // The animation this mon swings with for a close-range move (a blade slices: see MELEE_ANIM in sprites.js).
+  get swing() { return this.species.meleeAnim ?? 'Attack'; }
+
   // Trigger any animation by name as a state.
   act(name) {
     if (!this.species.anims[name] || !this.free || this.stuck) return false;
@@ -432,7 +435,7 @@ export class Mon {
       } else if (d < 20) {
         this.walk(0, 0);
         this.face(target.x, target.y);
-        if (this.cooldown <= 0 && !this.ailment.noAttack) { this.act('Attack'); this.cooldown = 1.3 + this.roll(); }
+        if (this.cooldown <= 0 && !this.ailment.noAttack) { this.act(this.swing); this.cooldown = 1.3 + this.roll(); }
       } else this.walk(target.x - this.x, target.y - this.y, 40, dt);
       return;
     }

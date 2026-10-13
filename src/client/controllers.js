@@ -73,7 +73,7 @@ export class CpuController {
       this.walk(0, 0);
       m.face(foe.x, foe.y);
       m.aim = null;
-      if (m.act('Attack')) this.cool = (1.1 + Math.random() * 0.9) * k.cool;
+      if (m.act(m.swing)) this.cool = (1.1 + Math.random() * 0.9) * k.cool;
       return;
     }
 

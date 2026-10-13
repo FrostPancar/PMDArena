@@ -34,6 +34,7 @@ const HEAVY_HIT = 28; // damage from which a hit gets the full-screen treatment 
 const RAIN_BOOST = 1.3; // water moves under the user's own side's rain
 const DETECT_STUN = 0.7; // seconds a foe that hit a Detect is stunned
 const WEB_SNARE = 2; // seconds a web holds what steps into it
+const CRIT = { chance: 0.06, keen: 0.25, mul: 1.5 }; // a critical hit: how often (a keen, slicing move far more), and how much harder it lands
 const MELEE_CLASH = { push: 150, stun: 0.35 }; // two close-range blows meeting: how hard both mons are thrown apart, and how long they reel
 const LUNGE_REACH = 14; // how much further out a lunging melee move lands
 const DART = 9; // a shove of v px/s carries a mon v / 9 px before it dies away (see Mon.update), so this times the distance is the shove
@@ -829,7 +830,7 @@ export class Play extends Phaser.Scene {
       if (lunge) { m.kx = aim.dx * mv.step * DART; m.ky = aim.dy * mv.step * DART; m.dartT = 0.16; } else m.slide(aim.dx * mv.step, aim.dy * mv.step);
     }
     if (!lunge) this.fireMove(m, mv, aim);
-    if (mv.kind !== 'self' || mv.userAnim) m.mute = m.act(mv.userAnim ?? (mv.kind === 'melee' ? 'Attack' : 'Shoot'));
+    if (mv.kind !== 'self' || mv.userAnim) m.mute = m.act(mv.userAnim ?? (mv.kind === 'melee' ? m.swing : 'Shoot'));
     // a slash cuts for the whole of its swing, not just the instant it lands
     if (mv.cut) this.cuts.push({ m, mv, aim, t: m.state === 'action' ? m.anim.durs.reduce((a, b) => a + b, 0) / 60 : 0.25 });
     if (lunge && m.mute) m.pending = { mv, aim };
@@ -1496,7 +1497,10 @@ export class Play extends Phaser.Scene {
       const extra = (mv?.swat && t.flying) || (mv?.ground && t.roost > 0) ? 1.5 : 1;
       if (this.swingsMeet(owner, t, mv)) { this.meleeClash(owner, t); continue; }
       const blocking = t.parry > 0, hp0 = t.hp;
-      if (!t.damage(dmg * (counter ? mv.jab : 1) * (versus ? mv.versus.mul : 1) * extra, owner.x, owner.y, hit)) {
+      // a critical hit: rolled where the blow is decided (the client that runs the mon it lands on). Not for the ticks
+      // of a beam or a stream, nor for damage that is the same against anyone.
+      const crit = !!mv && !t.remote && !hit.soft && !hit.raw && dmg > 0 && t.roll() < (mv.keen ? CRIT.keen : CRIT.chance);
+      if (!t.damage(dmg * (counter ? mv.jab : 1) * (versus ? mv.versus.mul : 1) * extra * (crit ? CRIT.mul : 1), owner.x, owner.y, crit ? { ...hit, crit: true } : hit)) {
         // a lock-on dash that is parried leaves its user wide open
         if (blocking && t.parry === 0 && mv?.parryStun) { owner.stun = mv.parryStun; if (owner.state === 'dash' || owner.state === 'bird') owner.toIdle(); }
         continue;
@@ -1509,6 +1513,7 @@ export class Play extends Phaser.Scene {
         continue;
       }
       const dealt = hp0 - t.hp;
+      if (crit && dealt > 0) { this.popup(t, 'CRITICAL!', 10); this.game.events.emit('sfx', 'crit'); }
       this.onHit(owner, t, mv, dealt, counter, dmg);
       if (shot?.levitate) this.levitate(t, shot.levitate); // a shot Kinesis was steering
       if (owner.remote) this.sayHit(owner, t, mv, dealt, counter, shot); // tell the attacker's client it landed
@@ -2032,7 +2037,7 @@ export class Play extends Phaser.Scene {
       v.left--;
       const aim = this.aimOf(m, v.track);
       m.dir = dirFromVec(aim.dx, aim.dy);
-      if (mv.kind === 'melee' && m.free) m.mute = m.act('Attack'); // a swing for each blow
+      if (mv.kind === 'melee' && m.free) m.mute = m.act(m.swing); // a swing for each blow
       this.fireMove(m, mv, { ...aim, track: v.track, one: true });
       return v.left > 0;
     });
@@ -2396,7 +2401,7 @@ export class Play extends Phaser.Scene {
   struck(t, dealt, hit) {
     if (dealt >= 0.5) this.game.events.emit('sfx', 'hit', { heavy: hit?.tag === 'heavy' || dealt >= HEAVY_HIT, soft: !!hit?.soft });
     if (!FEEL.on || !(dealt >= 0.5)) return;
-    const heavy = hit?.tag === 'heavy' || dealt >= HEAVY_HIT, near = t === this.player || hit?.by === this.player;
+    const heavy = hit?.tag === 'heavy' || hit?.crit || dealt >= HEAVY_HIT, near = t === this.player || hit?.by === this.player;
     if (FEEL.impact) {
       t.flash = Math.max(t.flash ?? 0, 0.12);
       const g = this.add.graphics({ x: Math.round(t.x), y: Math.round(t.y) - 10 }).setDepth(7002), n = heavy ? 10 : 7, r = 7 + dealt * 0.3, a0 = Math.random() * Math.PI;
