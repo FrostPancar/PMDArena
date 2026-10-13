@@ -1,6 +1,7 @@
 # Fetches a mon's sprite pack and portrait from the PMD SpriteCollab repository (github.com/PMDCollab/SpriteCollab)
 # into the folders the game reads: sprites/<id>/ for a playable species, evolutions/<id>/ for an evolved form, and
 # portraits/<id>.png.   python3 tools/fetch-sprites.py <id>=<dex>[/<form>] ... [--form <id>=<dex>[/<form>] ...]
+# (--boss in place of --form puts what follows in bosses/<id>/: mons that are fought, never played)
 # e.g.  python3 tools/fetch-sprites.py munchlax=0446 --form snorlax=0143 alolanmarowak=0105/0001
 # Needs the GitHub CLI (gh) for the file listings.
 import sys, os, json, subprocess, concurrent.futures as cf
@@ -14,9 +15,9 @@ def get(url, to):
     return None if r.returncode == 0 else f'{to}: {r.stderr.strip()[:120]}'
 jobs, form = [], False
 for arg in sys.argv[1:]:
-    if arg == '--form': form = True; continue
+    if arg in ('--form', '--boss'): form = arg; continue
     mon, dex = arg.split('=')
-    folder = os.path.join('evolutions' if form else 'sprites', mon)
+    folder = os.path.join({'--form': 'evolutions', '--boss': 'bosses'}.get(form, 'sprites'), mon)
     os.makedirs(folder, exist_ok=True)
     files = listing(f'sprite/{dex}')
     jobs += [(f['download_url'], os.path.join(folder, f['name'])) for f in files]

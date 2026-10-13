@@ -16,6 +16,7 @@ import { MAPS } from '../../maps.js';
 import { onLadder, wonOn } from '../ladder.js';
 import { Menu, banner, panel, text, INK, DEPTH, soundRows, soundPick } from '../ui.js';
 import { music } from '../music.js';
+import { nextBoss } from '../bosses.js';
 
 // The basic attacks kept on the keyboard next to the mouse: lunge, shot, double hit, charge up.
 const BASIC_KEYS = Object.fromEntries(Object.entries(KEYS).filter(([, anim]) => COMBAT[anim] || anim === 'Charge'));
@@ -82,7 +83,7 @@ export class Battle extends Play {
     // only the menus use these (fighting reads keys and mouse directly); made first so that the Esc press
     // that opens the pause menu is not also read as backing out of it
     this.actions = new Actions(this);
-    music.stage(this.mapId, this.level);
+    music.stage(this.mapId, this.cfg.boss ? 5 : this.level); // (a boss has the boss's tune)
     super.create();
     for (const x of this.fighters) if (this.gone.includes(x.f.owner) && x.controller instanceof RemoteController) x.controller.drop();
     this.hud = new BattleHud(this, this.player, this.moves);
@@ -92,8 +93,9 @@ export class Battle extends Play {
     this.showScore();
 
     const rivals = this.cfg.fighters.filter((f) => f.team !== this.me.team);
-    this.label = `${this.cfg.mode === '3v3' ? 'Crew' : this.cfg.mode} ${rivals.every((f) => f.kind === 'cpu') ? 'vs CPU' : 'vs players'}`; // also how the records file this fight
-    const announce = () => banner(this, arenaName(this.cfg), this.level ? `${this.label}  Lv ${this.level}` : this.label);
+    this.label = this.cfg.label ?? `${this.cfg.mode === '3v3' ? 'Crew' : this.cfg.mode} ${rivals.every((f) => f.kind === 'cpu') ? 'vs CPU' : 'vs players'}`; // also how the records file this fight
+    const boss = this.cfg.boss;
+    const announce = () => banner(this, boss ? SPECIES[boss.id].name : arenaName(this.cfg), boss ? `Boss ${boss.at + 1} of ${boss.order.length}  ${arenaName(this.cfg)}` : this.level ? `${this.label}  Lv ${this.level}` : this.label);
 
     if (this.online) {
       const offs = [
@@ -253,8 +255,9 @@ export class Battle extends Play {
       let mon = this.player;
       if (f === this.me) Object.assign(mon, { x, y, home: { x, y } });
       else {
-        mon = new Mon(this, x, y, { team, species: lookOf(f), move: f.moves[0] });
+        mon = new Mon(this, x, y, { team, species: lookOf(f), move: f.moves[0], hp: f.hp });
         mon.kit = f.moves;
+        if (f.scale) { mon.sprite.setScale(f.scale); mon.shadow.setScale(f.scale); } // a boss stands bigger than the rest
         this.npcs.push(mon);
       }
       mon.slot = f.slot;
@@ -308,6 +311,7 @@ export class Battle extends Play {
     if (this.over) return;
     const earned = won === null || !this.started ? null : this.book(won, false);
     this.over = true;
+    this.wonMatch = won === true;
     this.resume();
     this.waiting?.destroy();
     // a win on the ladder may open the next stage: said here, shown on the map next time
@@ -326,7 +330,7 @@ export class Battle extends Play {
     const size = (x) => x.crew?.length ?? 1, down = (x) => x.at + (x.mon.alive ? 0 : 1);
     const lost = (x) => (x.at + 1 - Math.max(0, x.mon.hp) / x.mon.maxHp) / size(x);
     return bookBattle({
-      mode: this.label, won, gaveUp, seconds: this.clock, species: this.me.species,
+      mode: this.label, won, gaveUp, seconds: this.clock, species: this.me.species, scale: this.cfg.expScale,
       dealt: foes.reduce((sum, x) => sum + lost(x), 0) / foes.length,
       kept: 1 - lost(self),
       kos: foes.reduce((sum, x) => sum + down(x), 0),
@@ -405,6 +409,9 @@ export class Battle extends Play {
     if (this.started && !this.over) this.book(false, true);
     this.over = true;
     if (this.online) net.send('battle.over');
+    // Boss Rush: a boss beaten sends you straight on to the next, until one beats you or none are left
+    const next = this.cfg.boss && this.wonMatch ? nextBoss(this.cfg) : null;
+    if (next) return go(this, 'battle', { battle: next });
     go(this, 'hub', { area: 'basement', entry: 'pillar' });
   }
 

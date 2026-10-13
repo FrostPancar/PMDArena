@@ -5,8 +5,11 @@ import { EVOLUTIONS } from './evolutions.js';
 // Packs under evolutions/ are the evolved forms those characters can come to wear (see evolutions.js): they are in
 // SPECIES too, marked `form`, but are not on the roster and their sheets are only loaded when one is needed.
 const xmls = import.meta.glob('../sprites/*/AnimData.xml', { eager: true, query: '?raw', import: 'default' });
-const urls = import.meta.glob(['../sprites/*/*.png', '../evolutions/*/*.png'], { eager: true, query: '?url', import: 'default' });
+const urls = import.meta.glob(['../sprites/*/*.png', '../evolutions/*/*.png', '../bosses/*/*.png'], { eager: true, query: '?url', import: 'default' });
 const formXmls = import.meta.glob('../evolutions/*/AnimData.xml', { eager: true, query: '?raw', import: 'default' });
+// the legendaries of Boss Rush (bosses/<id>/): mons that are fought and never played, so they are not in SPECIES_ORDER
+const bossXmls = import.meta.glob('../bosses/*/AnimData.xml', { eager: true, query: '?raw', import: 'default' });
+const BOSS_TYPES = { moltres: 'fire', zapdos: 'electric', articuno: 'ice', lugia: 'psychic', hooh: 'fire', mewtwo: 'psychic', groudon: 'ground', kyogre: 'water', rayquaza: 'dragon' };
 
 const TYPES = {
   chikorita: 'grass', bulbasaur: 'grass', treecko: 'grass', charmander: 'fire', torchic: 'fire',
@@ -20,11 +23,14 @@ const TYPES = {
 // ...and Cubone's Alolan Marowak, the other of the two forms a Cubone chooses between.
 const FORM_TYPES = { alolanmarowak: 'fire', vaporeon: 'water', jolteon: 'electric', flareon: 'fire', espeon: 'psychic', umbreon: 'dark', leafeon: 'grass', glaceon: 'ice', sylveon: 'fairy' };
 // Names that are not just the folder name capitalised
-const NAMES = { alolanvulpix: 'Alolan Vulpix', alolanninetales: 'Alolan Ninetales', alolanmarowak: 'Alolan Marowak', porygon2: 'Porygon2', porygonz: 'Porygon-Z' };
+const NAMES = { alolanvulpix: 'Alolan Vulpix', alolanninetales: 'Alolan Ninetales', alolanmarowak: 'Alolan Marowak', hooh: 'Ho-Oh', porygon2: 'Porygon2', porygonz: 'Porygon-Z' };
 const ORDER = ['bulbasaur', 'charmander', 'squirtle', 'chikorita', 'treecko', 'torchic', 'mudkip', 'ralts', 'eevee', 'axew', 'zorua', 'starly', 'corphish', 'cubone', 'nidoran', 'aron', 'venipede', 'rotom', 'riolu', 'combee', 'clefairy', 'rhyhorn', 'scyther', 'joltik', 'skarmory', 'cacnea', 'alolanvulpix', 'heracross', 'porygon', 'phantump', 'munchlax', 'staryu', 'honedge', 'torkoal', 'hawlucha'];
-// The animation a mon swings with for a close-range move, where it is not the usual Attack: the first of these its
-// sprite pack has (a blade slices; Aegislash's pack has no Slice, so it swings; Hawlucha kicks).
-const MELEE_ANIM = { hawlucha: ['Kick'], honedge: ['Slice', 'Swing'], doublade: ['Slice', 'Swing'], aegislash: ['Slice', 'Swing'] };
+// The animation a mon swings with for a close-range move. A pack with a Strike of its own (not just a copy of its
+// Attack) strikes with it; the mons listed here use the first of these their pack has instead (a blade slices;
+// Aegislash's pack has no Slice, so it swings; Hawlucha and Blaziken kick).
+const MELEE_ANIM = { hawlucha: ['Kick'], blaziken: ['Kick'], honedge: ['Slice', 'Swing'], doublade: ['Slice', 'Swing'], aegislash: ['Slice', 'Swing'] };
+// ...and for a heavy one, where that is something else again (Blaziken slams).
+const HEAVY_ANIM = { blaziken: ['Slam'] };
 
 // id -> { id, name, type, shadowSize, foot, anims: { name -> { sheet, key, fw, fh, durs[], rush, hit, ret, cols, rows } } }
 export const SPECIES = {};
@@ -56,7 +62,10 @@ function parse(id, xml, dir = 'sprites') {
   return {
     id, name: NAMES[id] ?? id[0].toUpperCase() + id.slice(1), type: TYPES[id] ?? 'normal',
     shadowSize: +(doc.querySelector('ShadowSize')?.textContent ?? 1), foot: 4, anims,
-    meleeAnim: (MELEE_ANIM[id] ?? []).find((name) => anims[name]) ?? 'Attack',
+    meleeAnim: (MELEE_ANIM[id] ?? []).find((name) => anims[name]) ?? (anims.Strike?.sheet === 'Strike' ? 'Strike' : 'Attack'),
+    heavyAnim: (HEAVY_ANIM[id] ?? []).find((name) => anims[name]) ?? null,
+    // a kicking move is a kick where the pack has one, and otherwise the plain Attack (never the Strike: Combusken punches with that)
+    kickAnim: anims.Kick?.sheet === 'Kick' ? 'Kick' : 'Attack',
   };
 }
 
@@ -75,6 +84,11 @@ for (const [base, forms] of Object.entries(EVOLUTIONS))
     const s = SPECIES[base] && xml ? parse(id, xml, 'evolutions') : null;
     if (s) SPECIES[id] = { ...s, type: FORM_TYPES[id] ?? SPECIES[base].type, form: true, base };
   }
+
+for (const p of Object.keys(bossXmls)) {
+  const id = p.split('/')[2], s = parse(id, bossXmls[p], 'bosses');
+  if (s) SPECIES[id] = { ...s, type: BOSS_TYPES[id] ?? 'normal', boss: true };
+}
 
 const sheets = (s) => [...new Set(Object.values(s.anims))];
 

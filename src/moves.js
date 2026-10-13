@@ -960,6 +960,16 @@ give('ember', { fx: '6060_mana_060', seqs: ['000'], slice: [0, 3], rotate: true,
 // Icicle Crash leaves a spire of ice standing where it lands: cover like a standing rock, for `time` seconds, but any
 // attack that reaches it wears it down (`hp`) and it breaks.
 give('icicleCrash', { icePillar: { fx: '6043_mana_043', time: 7, hp: 30 } });
+// ---- alpha 0.5.18 ----
+// Protect: one notch, and holding it costs nothing more (it stays up while held, for at most `max` seconds). Used again
+// straight after itself, each time it is `chain` likelier to fail (30%, 60%, 90%); any other move clears that.
+give('protect', { cost: 20, guard: { upkeep: 0, max: 1.5 }, chain: 0.3 });
+give('thunder', { rainQuick: 0.5 }); // under its own side's rain it charges in half the time
+// Waterfall: three falls at the corners of a triangle thrown down at random round the spot
+give('waterfall', (mv) => ({ trio: 26, dmg: Math.round(mv.dmg * 0.6), radius: 26, scale: (mv.scale ?? 1) * 0.8 }));
+// Gravity: the orbs that circle a Psychic being held, in grey, circling the zone for as long as it lasts
+give('gravity', { orbs: { n: 6, tint: 0xb8bcc8 }, alpha: 0.001 });
+
 // ---- alpha 0.5.17 ----
 give('willOWisp', { kind: 'homing', speed: 70, turn: 1.6, range: 300 }); // a slow wisp that hunts its target down
 give('woodHammer', { dmg: 31 });

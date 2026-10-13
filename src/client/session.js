@@ -118,6 +118,13 @@ function findTM(species) {
   return tm;
 }
 
+// A TM out of a chest (Survivor): one the player does not have yet, or null when they have them all.
+export function chestTM(species = session.species) {
+  const tm = findTM(species);
+  if (tm) { session.news = [...new Set([...session.news, tm])]; saveSession(); }
+  return tm;
+}
+
 // The moves a species takes to battle. Until the player picks, the first four it has.
 export function loadoutOf(id = session.species) {
   const open = unlockedMoves(id);
@@ -150,10 +157,12 @@ export const publicProfile = () => ({
 //   { exp, from, to, tm: the move id of the TM found (none for a fight walked out of, or when all are owned),
 //     unlocked: [move ids], evolved: form id or null, ready: true if a branching mon now awaits its choice }
 //   (from / to are levelFor() results)
-export function bookBattle({ mode, won, gaveUp, dealt, kept, seconds, kos, species }) {
+// scale: the share of the usual EXP this kind of fight is worth. exp: the EXP itself, where the mode works it out
+// (Survivor). noTm: no TM is found at the end (Survivor gives its TMs in chests along the way).
+export function bookBattle({ mode, won, gaveUp, dealt, kept, seconds, kos, species, scale = 1, exp: fixed, noTm = false }) {
   const id = species ?? session.species, mon = (session.mons[id] ??= { exp: 0, battles: 0, wins: 0 });
   const from = levelFor(mon.exp), branch = branchOf(id), look = formAt(id, from.level, branch);
-  const exp = battleExp({ won, gaveUp, dealt, kept, seconds });
+  const exp = fixed ?? Math.round(battleExp({ won, gaveUp, dealt, kept, seconds }) * scale);
   mon.exp += exp;
   mon.battles++;
   if (won) mon.wins++;
@@ -165,7 +174,7 @@ export function bookBattle({ mode, won, gaveUp, dealt, kept, seconds, kos, speci
   if (won) { r.wins++; m.wins++; r.streak++; r.bestStreak = Math.max(r.bestStreak, r.streak); } else { r.losses++; r.streak = 0; }
   r.kos += kos;
   r.seconds += Math.round(seconds);
-  const tm = gaveUp ? null : findTM(id);
+  const tm = gaveUp || noTm ? null : findTM(id);
   const unlocked = unlockPlan(id, branch).filter((u) => u.level > from.level && u.level <= to.level).map((u) => u.id);
   session.news = [...new Set([...session.news, ...unlocked, ...(tm ? [tm] : [])])];
   saveSession();

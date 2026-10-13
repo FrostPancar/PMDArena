@@ -23,7 +23,7 @@ export const CREW_SIZE = 3;
 export const before = (battle) => (battle.mode === '3v3' ? 'crew' : 'draw');
 // How many fights a side must win to take the match. A 1v1 or 2v2 is two fights, with a decider if they are shared;
 // a crew battle is one long fight, as it already runs until three mons are down.
-export const fightsToWin = (battle) => (battle.practice || battle.mode === '3v3' ? 1 : 2);
+export const fightsToWin = (battle) => (battle.practice || battle.mode === '3v3' || battle.rounds === 1 ? 1 : 2); // (rounds: 1: a story fight)
 
 // Owner of every fighter in a battle made here.
 export const ME = 'me';

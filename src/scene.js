@@ -216,7 +216,7 @@ export class Play extends Phaser.Scene {
   // The mons are left as they stand (revive them afterwards).
   clearField() {
     const gone = (list, kill) => { for (const q of list) kill(q); };
-    gone(this.zones, (z) => { z.img.destroy(); z.webG?.destroy(); });
+    gone(this.zones, (z) => { z.img.destroy(); z.webG?.destroy(); z.orbs?.forEach((i) => i.destroy()); });
     gone(this.shots, (q) => q.img.destroy());
     gone(this.holds, (h) => h.img.destroy());
     gone(this.decoys, (c) => c.m.destroy());
@@ -568,7 +568,7 @@ export class Play extends Phaser.Scene {
     const step = mv.cycle?.[(m.cycles[mv.name] ?? 0) % mv.cycle.length];
     // a combo move used again right after the last one comes out at once
     const chain = mv.combo && m.ramp?.mv === mv && m.ramp.t > 0;
-    m.windup = { mv, t: 0, track, free, cost, charge: chain || free ? 0.02 : step?.charge ?? mv.charge, aim: mv.kind === 'mid' || mv.kind === 'blink' || mv.lob ? this.aimOf(m, track) : null };
+    m.windup = { mv, t: 0, track, free, cost, charge: chain || free ? 0.02 : (step?.charge ?? mv.charge) * (mv.rainQuick && this.rain[m.team] > 0 ? mv.rainQuick : 1), aim: mv.kind === 'mid' || mv.kind === 'blink' || mv.lob ? this.aimOf(m, track) : null };
     if (mv.chargeFrames.length) {
       const img = this.add.image(m.x, m.y - 8, mv.chargeFrames[0]).setDepth(60 + m.y).setScale(mv.chargeScale ?? 1).setOrigin(...(mv.chargeOrigin ?? [0.5, 0.5]));
       this.chargeFx.push({ img, m, w: m.windup, frames: mv.chargeFrames });
@@ -854,7 +854,7 @@ export class Play extends Phaser.Scene {
       if (lunge) { m.kx = aim.dx * mv.step * DART; m.ky = aim.dy * mv.step * DART; m.dartT = 0.16; } else m.slide(aim.dx * mv.step, aim.dy * mv.step);
     }
     if (!lunge) this.fireMove(m, mv, aim);
-    if (mv.kind !== 'self' || mv.userAnim) m.mute = m.act(mv.userAnim ?? (mv.kind === 'melee' ? m.swing : 'Shoot'));
+    if (mv.kind !== 'self' || mv.userAnim) m.mute = m.act(mv.userAnim ?? (mv.kind === 'melee' ? m.swingFor(mv) : 'Shoot'));
     // a slash cuts for the whole of its swing, not just the instant it lands
     if (mv.cut) this.cuts.push({ m, mv, aim, t: m.state === 'action' ? m.anim.durs.reduce((a, b) => a + b, 0) / 60 : 0.25 });
     if (lunge && m.mute) m.pending = { mv, aim };
@@ -913,6 +913,7 @@ export class Play extends Phaser.Scene {
     const { dx, dy } = aim;
     m.lastAim = aim;
     m.lastMove = mv;
+    if (m.chainRun && m.chainRun.mv !== mv.id && !aim.one) m.chainRun = null; // (another move in between: Protect is sure again)
     if (this.registry.get('callouts') !== false && !aim.one) this.popup(m, mv.name.toUpperCase()); // every move is called out, unless turned off
     if (mv.dirFrames) mv = { ...mv, frames: mv.dirFrames[dirFromVec(dx, dy)], rotate: false, ...(mv.impactDirFrames ? { impactFrames: mv.impactDirFrames[dirFromVec(dx, dy)] } : {}) }; // art drawn for each facing: the one along the aim
     if (mv.selfFrames?.length) this.fx.push({ img: this.add.image(m.x, m.y - 12, mv.selfFrames[0]).setScale(mv.selfScale ?? 1), frames: mv.selfFrames, t: 0, fps: 60, follow: m, lift: 12 });
@@ -1184,7 +1185,13 @@ export class Play extends Phaser.Scene {
       if (healsOnly(mv)) m.healsUsed = (m.healsUsed ?? 0) + 1;
       if (mv.rain) this.rain[m.team] = mv.rain;
       if (mv.summon) this.spawnSummon(m, mv.summon);
-      if (mv.guard && !m.remote) this.guards.push({ m, mv, t: 0, track: aim.track });
+      if (mv.guard && !m.remote) {
+        // used straight after itself it may fail, likelier each time
+        const run = m.chainRun?.mv === mv.id && this.simMs - m.chainRun.at < 4000 ? m.chainRun.n : 0;
+        m.chainRun = { mv: mv.id, n: run + 1, at: this.simMs };
+        if (mv.chain && this.rand() < mv.chain * run) { m.shield = 0; this.popup(m, 'FAILED', 10); }
+        else this.guards.push({ m, mv, t: 0, track: aim.track });
+      }
       if (mv.cure) m.clearStatus();
       if (mv.empower) m.setCharged(true);
       if (mv.selfStatus) this.inflict(m, mv.selfStatus, true);
@@ -1351,7 +1358,14 @@ export class Play extends Phaser.Scene {
       }
     };
     const { x, y } = spot, hx = spot.hx ?? x, hy = spot.hy ?? y;
-    if (mv.multi) {
+    if (mv.trio) {
+      // three at once, at the corners of a triangle turned at random round the spot
+      const a0 = this.rand() * Math.PI * 2;
+      for (let i = 0; i < 3; i++) {
+        const a = a0 + (i * Math.PI * 2) / 3, sx = Math.cos(a) * mv.trio, sy = (Math.sin(a) * mv.trio) / 1.3;
+        land(x + sx, y + sy, hx + sx, hy + sy, { ...mv, thru: true });
+      }
+    } else if (mv.multi) {
       // several strikes in a row, scattered around the spot
       for (let i = 0; i < mv.multi.n; i++) {
         const sx = i ? (this.rand() - 0.5) * 2 * mv.multi.spread : 0, sy = i ? (this.rand() - 0.5) * 1.5 * mv.multi.spread : 0;
@@ -2090,7 +2104,7 @@ export class Play extends Phaser.Scene {
       v.left--;
       const aim = this.aimOf(m, v.track);
       m.dir = dirFromVec(aim.dx, aim.dy);
-      if (mv.kind === 'melee' && m.free) m.mute = m.act(m.swing); // a swing for each blow
+      if (mv.kind === 'melee' && m.free) m.mute = m.act(m.swingFor(mv)); // a swing for each blow
       this.fireMove(m, mv, { ...aim, track: v.track, one: true });
       return v.left > 0;
     });
@@ -2101,8 +2115,8 @@ export class Play extends Phaser.Scene {
     this.guards = this.guards.filter((q) => {
       const { m, mv } = q;
       q.t += dt;
-      if (!m.alive || m.stamina <= 0 || !(q.t < 0.25 || this.holding(m, q.track, q.t))) return false;
-      m.spend(mv.guard.upkeep * dt);
+      if (!m.alive || m.stamina <= 0 || !(q.t < 0.25 || this.holding(m, q.track, q.t)) || (mv.guard.max && q.t >= mv.guard.max)) return false;
+      if (mv.guard.upkeep) m.spend(mv.guard.upkeep * dt);
       m.shield = Math.max(m.shield, 0.15);
       return true;
     });
@@ -2682,6 +2696,16 @@ export class Play extends Phaser.Scene {
         }
         for (const q of this.shots) if (q.owner.team !== z.owner.team && Math.hypot(q.x - z.x, q.y - z.y) <= mv.radius * 2.6) this.bendShot(q, z.x, z.y, 3.5 * dt);
       }
+      if (mv.orbs) {
+        // orbs circle the edge of the zone, each trailing a fading tail, for as long as it stands
+        const n = mv.orbs.n, tail = 4, fade = Math.min(1, z.t * 4, (mv.linger - z.t) * 2);
+        z.orbs ??= [];
+        for (let o = 0; o < n; o++) for (let k = 0; k < tail; k++) {
+          const im = (z.orbs[o * tail + k] ??= this.add.image(0, 0, 'orb').setTint(mv.orbs.tint));
+          const a = z.t * 2.4 + (o / n) * Math.PI * 2 - k * 0.12, oy = z.y + (Math.sin(a) * mv.radius) / 1.3;
+          im.setPosition(Math.round(z.x + Math.cos(a) * mv.radius), Math.round(oy) - 8).setDepth(60 + oy).setAlpha(Math.max(0, fade) * (1 - k / tail)).setScale(1 - k * 0.16);
+        }
+      }
       const f = Math.floor(z.t * (mv.fps ?? 30));
       img.setTexture(mv.frames[mv.once ? Math.min(f, mv.frames.length - 1) : f % mv.frames.length]);
       if (z.t >= z.next && mv.dmg) {
@@ -2693,6 +2717,7 @@ export class Play extends Phaser.Scene {
       if (z.t < mv.linger && (!z.follow || z.follow.alive)) return true;
       if (mv.after && z.owner.alive) this.inflict(z.owner, mv.after, true);
       z.webG?.destroy();
+      z.orbs?.forEach((i) => i.destroy());
       img.destroy();
       return false;
     });
@@ -3011,6 +3036,17 @@ export class Play extends Phaser.Scene {
         const wx = scr.bx - scr.ax, wy = scr.by - scr.ay, l = Math.hypot(wx, wy), nx = -wy / l, ny = wx / l, dot = s.vx * nx + s.vy * ny;
         this.turnShot(s, scr.owner, s.vx - 2 * dot * nx, s.vy - 2 * dot * ny);
         this.spark(s.x, s.y - 8);
+      }
+      // ...and its own side's screen bends it: once through, it flies at the nearest foe
+      const lens = s.arc || s.owner.remote || s.lensed ? null : screens.find((w) => w.team === s.owner.team && segDist(s.x, s.y, w.ax, w.ay, w.bx, w.by) < 5);
+      if (lens) {
+        s.lensed = true;
+        const foe = this.nearestFoe(s.owner, s.x, s.y, 400), v = Math.hypot(s.vx, s.vy);
+        if (foe && v) {
+          const dx = foe.x - s.x, dy = foe.y - s.y, l = Math.hypot(dx, dy) || 1;
+          this.turnShot(s, s.owner, (dx / l) * v, (dy / l) * v);
+          this.spark(s.x, s.y - 8);
+        }
       }
       const u = s.arc ? 1 - Math.max(0, s.life) / s.life0 : 0; // lobbed shots rise and fall along the way
       s.img.setPosition(Math.round(s.x), Math.round(s.y - 8 - (s.arc ?? 0) * 4 * u * (1 - u))).setDepth(10 + s.y);

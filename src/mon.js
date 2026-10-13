@@ -313,8 +313,13 @@ export class Mon {
     this.setAnim('Wake', 'once', null, () => this.toIdle());
   }
 
-  // The animation this mon swings with for a close-range move (a blade slices: see MELEE_ANIM in sprites.js).
-  get swing() { return this.species.meleeAnim ?? 'Attack'; }
+  // The animation this mon swings with for a close-range move (see MELEE_ANIM in sprites.js): its kick for a kicking
+  // move, its heavy swing for a heavy one if it has one, and otherwise its usual.
+  swingFor(mv) {
+    const s = this.species, pick = mv && /kick/i.test(mv.id ?? '') ? s.kickAnim : mv?.tag === 'heavy' && s.heavyAnim ? s.heavyAnim : s.meleeAnim;
+    return s.anims[pick] ? pick : 'Attack';
+  }
+  get swing() { return this.swingFor(null); }
 
   // Trigger any animation by name as a state.
   act(name) {
@@ -636,6 +641,6 @@ export class Mon {
   }
 
   destroy() {
-    for (const o of [this.sprite, this.shadow, this.bar, this.barBg, this.stBar, this.stBg, ...this.stTicks, this.ice, this.doll, ...this.icons, ...this.flakes]) o?.destroy();
+    for (const o of [this.sprite, this.shadow, this.bar, this.barBg, this.stBar, this.stBg, ...this.stTicks, this.ice, this.doll, this.snareRing, ...this.icons, ...this.flakes]) o?.destroy();
   }
 }

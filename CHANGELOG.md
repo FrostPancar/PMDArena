@@ -3,6 +3,25 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.18
+
+**Modes**
+- The pillar asks Story or Online first. Story: 1v1, Crew, Survivor, Boss Rush.
+- Survivor: endless waves on a random stage (three mons at 25% HP, two at 50%, or one at 100%), the next a second
+  after the last falls. The CPUs go up a level every two waves; every fifth wave a chest holds a TM; 20% of your
+  health comes back per wave. EXP grows with waves beaten, to twice a usual fight at wave 15.
+- Boss Rush: nine legendaries in a random order, each with 500 HP at level 4, bigger than life, on a stage of its
+  own. One round a fight, 70% of the usual EXP, and a win sends you on to the next.
+
+**Moves**
+- Protect costs one notch and nothing more while held (up to 1.5 s); used again straight after itself it may fail,
+  30% likelier each time.
+- Your own shots through your Light Screen turn toward the nearest foe.
+- Rain Dance halves Thunder's charge. Waterfall lands three falls in a triangle. Gravity shows grey circling orbs.
+
+**Looks**
+- Mons with a Strike animation of their own use it for close-range moves; Blaziken kicks, and slams for heavy moves.
+
 ## alpha 0.5.17
 
 **New moves**
