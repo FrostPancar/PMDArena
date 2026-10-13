@@ -3,6 +3,19 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.21
+
+**Moves**
+- Fury Swipes is a flurry like Close Combat's: held, rooted, each swipe harder than the last. About 65% of Close
+  Combat's damage, and it does not lower its user's defence.
+- Snarl lowers the target's attack by 40% for 2 seconds.
+- Dig deals 20 damage (was 24).
+
+**Looks and sound**
+- The white sparks are gone from Aerial Ace, Giga Impact, Acrobatics and U-turn.
+- U-turn plays the dash sound again as it springs back off a hit.
+- The jump sound is louder.
+
 ## alpha 0.5.20
 
 **Survivor**

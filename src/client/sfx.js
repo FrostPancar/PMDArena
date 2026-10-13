@@ -36,7 +36,7 @@ const SOUNDS = {
   // menus
   ui_move: ['beep', 0.5], ui_pick: ['chime', 0.5], ui_back: ['exit', 0.5], pick_mon: ['song654', 0.7],
   // what happens in a fight
-  jump: ['song901', 0.5], hit: [['song652', 'song653', 'song655', 'song662', 'song610', 'song819'], 0.7], hit_light: ['take_hit', 0.35], hit_heavy: ['take_hit_heavy', 0.9],
+  jump: ['song901', 0.65], hit: [['song652', 'song653', 'song655', 'song662', 'song610', 'song819'], 0.7], hit_light: ['take_hit', 0.35], hit_heavy: ['take_hit_heavy', 0.9],
   parry: ['song509', 0.8], clash: ['song715', 0.9], shatter: ['song675', 0.6], faint: ['song347', 0.9], heal: ['song899', 0.6],
   break_rock: ['song682', 0.8], break_ice: ['song828', 0.8],
   // moves, by what they are
@@ -157,6 +157,7 @@ const HEARD = {
   move: ({ mv }) => { const name = moveSound(mv); if (name) sfx.play(name); },
   hit: ({ heavy, soft }) => sfx.play(soft ? 'hit_light' : heavy ? 'hit_heavy' : 'hit', soft ? {} : { rate: 0.94 + Math.random() * 0.12 }),
   jump: () => sfx.play('jump'),
+  rebound: () => sfx.play('dash'), // U-turn springing back off what it hit: the sound Bounce makes
   parry: () => sfx.play('parry'),
   clash: () => sfx.play('clash'),
   crit: () => sfx.play('sharp', { volume: 1.3 }),

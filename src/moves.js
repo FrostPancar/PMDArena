@@ -1015,6 +1015,16 @@ give('incinerate', { ray: { delay: 0.15, width: 1.1, len: 54, oy: 0.95 }, fixed:
 give('petalBlizzard', { origin: [0.5, 0.82] });
 // the shadow runs from where its user sank to where it will rise: where each facing's art starts and ends
 give('shadowSneak', { vanish: { time: 0.4, behind: true, trail: { from: [[24, 8], [68, 5], [64, 10], [68, 58], [24, 64], [68, 58], [76, 10], [68, 5]], to: [[24, 59], [116, 54], [112, 11], [116, 9], [24, 13], [20, 9], [28, 11], [20, 54]] } } });
+// Fury Swipes is a flurry like Close Combat's: rooted and swiping for as long as it is held, each swipe harder than
+// the last. Lighter blows, and it does not leave its user open.
+give('furySwipes', () => {
+  const cc = MOVES.closeCombat;
+  return { flurry: { ...cc.flurry, weak: undefined }, lunge: false, stream: undefined, combo: undefined, ramp: undefined, thru: undefined, reach: cc.reach, radius: cc.radius, cost: cc.cost, charge: cc.charge, dmg: Math.round(cc.dmg * 6.5) / 10 };
+});
+// the white flurry of sparks that used to ride along with a plain dash is gone
+for (const mv of Object.values(MOVES)) if (mv.kind === 'dash' && mv.fx === '0177_white_slash_flurry') mv.bare = true;
+give('snarl', { debuff: { stat: 'atk', mul: 0.6, time: 2 } });
+give('dig', { dmg: 20 });
 give('dazzlingGleam', { gray: undefined, tint: undefined, scale: 0.9 }); // its own colours, and smaller
 give('electroBall', { coreFx: ['0252_electric_orb_spark', '000'], coreScale: 0.6 });
 

@@ -1101,8 +1101,8 @@ export class Play extends Phaser.Scene {
 
     if (mv.kind === 'dash') {
       // the user vanishes and rushes along the aim; the art follows it
-      const img = this.add.image(m.x, m.y - 8, mv.frames[0]);
-      this.fx.push({ img, frames: mv.frames, t: 0, fps: mv.fps ?? 30, follow: m, lift: 8 });
+      // (a bare dash has no art of its own: the rush and its afterimages are all there is to see)
+      if (!mv.bare) this.fx.push({ img: this.add.image(m.x, m.y - 8, mv.frames[0]), frames: mv.frames, t: 0, fps: mv.fps ?? 30, follow: m, lift: 8 });
       m.state = 'dash';
       m.setAnim('Walk', 'loop'); // seen rushing, legs going, trailing afterimages
       m.animRate = 2.4;
@@ -2215,11 +2215,11 @@ export class Play extends Phaser.Scene {
       const held = f.t < 0.3 || this.holding(m, f.track, f.t);
       if (!m.braced || !m.alive || !held || m.stamina <= 0) {
         m.braced = false;
-        if (m.alive) { m.addBuff('def', c.weak, 2); if (m.state === 'loop') m.toIdle(); } // left open for a moment afterwards
+        if (m.alive) { if (c.weak) m.addBuff('def', c.weak, 2); if (m.state === 'loop') m.toIdle(); } // left open for a moment afterwards (Close Combat)
         return false;
       }
       m.spend(c.upkeep * dt);
-      m.addBuff('def', c.weak, 0.2);
+      if (c.weak) m.addBuff('def', c.weak, 0.2);
       m.dir = dirFromVec(f.dx, f.dy);
       if ((f.next -= dt) > 0) return true;
       f.next += c.gap;
@@ -2964,6 +2964,7 @@ export class Play extends Phaser.Scene {
         d.hit = true;
         if (d.mv.back) {
           // connected: straight back to where it set off from
+          this.game.events.emit('sfx', 'rebound');
           const bx = d.x0 - m.x, by = d.y0 - m.y, l = Math.hypot(bx, by) || 1;
           Object.assign(d, { returning: true, vx: (bx / l) * v, vy: (by / l) * v, t: 0, dur: l / v });
         }

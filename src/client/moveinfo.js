@@ -119,7 +119,7 @@ export function describe(id) {
   if (mv.fixedDmg) n.push(`Always ${mv.fixedDmg} damage. Goes through shields.`);
   if (mv.toss) n.push('Lifts the foe and slams it down.');
   if (mv.throw) n.push(mv.throwBack ? 'Throws the foe far behind you.' : 'Throws the foe to where you aim.');
-  if (mv.flurry) n.push('Each blow hits harder. You are rooted and take more damage.');
+  if (mv.flurry) n.push(mv.flurry.weak ? 'Each blow hits harder. You are rooted and take more damage.' : 'Each blow hits harder. You are rooted while it lasts.'); 
   if (mv.detect) n.push('For an instant the next hit misses: you appear behind whoever threw it, and they are stunned.');
   if (mv.bide) n.push(`For ${secs(mv.bide.time)}, a hit you take makes your next attack hit twice as hard.`);
   if (mv.ray) n.push(mv.ray.len ? 'A burst out of you toward where you aim: everything in it is hit.' : 'One flash down a line to where you aim: everything on the line is hit.');
