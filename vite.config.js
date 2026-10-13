@@ -2,23 +2,11 @@ import { defineConfig } from 'vite';
 import fs from 'node:fs';
 import path from 'node:path';
 import { attachRelay } from './server/relay.js';
+import { NAMES_FILE, listEffects, readNames } from './server/vfx-list.js';
 
-const VFX_DIR = path.resolve('move_VFX');
-const NAMES_FILE = path.join(VFX_DIR, 'names.json');
-
-const pngSize = (file) => {
-  const b = Buffer.alloc(24);
-  const fd = fs.openSync(file, 'r');
-  fs.readSync(fd, b, 0, 24, 0);
-  fs.closeSync(fd);
-  return [b.readUInt32BE(16), b.readUInt32BE(20)];
-};
 const MOVE_NOTES_FILE = path.resolve('move-notes.json');
 const readMoveNotes = () => {
   try { return JSON.parse(fs.readFileSync(MOVE_NOTES_FILE, 'utf8')); } catch { return {}; }
-};
-const readNames = () => {
-  try { return JSON.parse(fs.readFileSync(NAMES_FILE, 'utf8')); } catch { return {}; }
 };
 
 // Dev-only API behind vfx.html: lists the effect folders and stores the names you give them.
@@ -58,17 +46,7 @@ function vfxApi() {
           res.end(JSON.stringify(body));
         };
         if (req.method === 'GET') {
-          const dirs = fs.readdirSync(VFX_DIR).filter((d) => /^\d{4}/.test(d)).sort();
-          const effects = dirs.map((folder) => {
-            const dir = path.join(VFX_DIR, folder);
-            const seqs = fs.readdirSync(dir).filter((s) => /^\d+$/.test(s)).sort().map((seq) => {
-              const files = fs.readdirSync(path.join(dir, seq)).filter((f) => f.endsWith('.png')).sort();
-              const [w, h] = files.length ? pngSize(path.join(dir, seq, files[0])) : [0, 0];
-              return { seq, w, h, files };
-            });
-            return { id: folder.slice(0, 4), folder, seqs };
-          });
-          return json(200, { effects, names: readNames() });
+          return json(200, { effects: listEffects(), names: readNames() });
         }
         if (req.method === 'POST') {
           let body = '';

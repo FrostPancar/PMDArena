@@ -322,8 +322,8 @@ export class Hub extends Phaser.Scene {
       return d.close();
     }
     const options = friend
-      ? [[`1v1 vs ${nameOf(friend.species)}`, 'duel'], [`3v3 crew vs ${nameOf(friend.species)}`, 'crew'], ['2v2 vs CPU team', 'friends vs cpu'], ['2v2 vs random team', 'queue 2v2']]
-      : [['1v1 vs CPU', 'cpu 1v1'], ['3v3 crew vs CPU', 'cpu 3v3'], ['1v1 vs random player', 'queue 1v1', off], ['3v3 crew vs random player', 'queue 3v3', off],
+      ? [[`1v1 vs ${nameOf(friend.species)}`, 'duel'], [`Crew vs ${nameOf(friend.species)}`, 'crew'], ['2v2 vs CPU team', 'friends vs cpu'], ['2v2 vs random team', 'queue 2v2']]
+      : [['1v1 vs CPU', 'cpu 1v1'], ['Crew vs CPU', 'cpu 3v3'], ['1v1 vs random player', 'queue 1v1', off], ['Crew vs random player', 'queue 3v3', off],
         ...(cpu ? [['2v2 vs CPU team', 'cpu 2v2'], ['2v2 vs random team', 'queue 2v2', off]] : [])];
     const line = friend || cpu
       ? 'The pillar hums with a strange light. Where should it send you both?'

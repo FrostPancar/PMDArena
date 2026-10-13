@@ -89,7 +89,7 @@ export class Battle extends Play {
     this.showScore();
 
     const rivals = this.cfg.fighters.filter((f) => f.team !== this.me.team);
-    this.label = `${this.cfg.mode} ${rivals.every((f) => f.kind === 'cpu') ? 'vs CPU' : 'vs players'}`; // also how the records file this fight
+    this.label = `${this.cfg.mode === '3v3' ? 'Crew' : this.cfg.mode} ${rivals.every((f) => f.kind === 'cpu') ? 'vs CPU' : 'vs players'}`; // also how the records file this fight
     const announce = () => banner(this, arenaName(this.cfg), this.level ? `${this.label}  Lv ${this.level}` : this.label);
 
     if (this.online) {

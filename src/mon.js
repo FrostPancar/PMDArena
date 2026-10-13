@@ -23,6 +23,7 @@ export const RUN_MULT = 1.7;
 export const NOTCH = 20, NOTCHES = 5;
 const RUN_TIME = 2, RUN_COST = NOTCH / 2; // a burst of running: how long it lasts and what it costs
 export const BASE_HP = 150; // every mon's health
+const HEAVY_STUN = 0.75; // seconds a heavy move's hit leaves its target unable to act
 const STAMINA_REGEN = 48;
 const REGEN_DELAY = 0.7;
 export const JUMP_COST = 2 * NOTCH;
@@ -401,6 +402,7 @@ export class Mon {
       this.setAnim(has.Faint ? 'Faint' : 'Idle', 'hold', null, () => this.scene.fainted(this));
     } else {
       this.state = 'hurt';
+      if (hit?.tag === 'heavy') this.stun = Math.max(this.stun, HEAVY_STUN); // a heavy blow leaves it reeling for longer
       this.setAnim(has.Hurt ? 'Hurt' : 'Idle', 'once', null, () => this.toIdle());
     }
     return true;

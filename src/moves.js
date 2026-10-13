@@ -715,7 +715,7 @@ give('starShoot', { stream: STREAM, dmg: 4, thru: true, addFx: undefined, addSeq
 give('powderSnow', { stream: STREAM, light: true, thru: true });
 give('thunderShock', { stream: { gap: 0.18, upkeep: 36 }, dmg: 4, thru: true, linger: undefined, radius: 15, status: { kind: 'para', chance: 0.06 } });
 // Fury Swipes is held too: swipe after swipe, each a little harder than the last
-give('furySwipes', { stream: { gap: 0.24, upkeep: 30 }, thru: true }); // (thru: each seed lands on a foe still reeling from the one before)
+give('furySwipes', { stream: { gap: 0.57, upkeep: 30 }, thru: true }); // gap: the swipe's own animation, 8 frames at 14 a second; // (thru: each seed lands on a foe still reeling from the one before)
 give('ember pinMissile iceShard starShoot payDay', { light: true });
 give('flashCannon psychoCut powerGem auroraBeam chargeBeam', { pierce: true });
 give('fireBlast', { lob: true, burst: 28 });

@@ -3,6 +3,14 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.8
+
+- Tadpole Pond: the water can be walked on, and the side pools at the top are reached by a hop over the grass.
+- Fury Swipes: the next swipe waits for the one before to finish its animation.
+- Heavy moves leave their target unable to act for longer.
+- Crew battles are listed as "Crew vs CPU", "Crew vs random player" (no "3v3").
+- Test client: the effect viewer is published too, read only.
+
 ## alpha 0.5.7
 
 **Streams, lobs and beams**

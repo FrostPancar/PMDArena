@@ -1,8 +1,11 @@
 // Dev tool (vfx.html): browse every effect in move_VFX, give each a name, export the list.
+// On the published test client there is no dev server to list the effects or keep the names: the list comes from a
+// file made at build time, and the page is read only.
 import { MOVES } from './moves.js';
 
 const $ = (id) => document.getElementById(id);
-const { effects, names: saved } = await (await fetch('/api/vfx')).json();
+const READ_ONLY = !import.meta.env.DEV;
+const { effects, names: saved } = await (await fetch(READ_ONLY ? '/vfx.json' : '/api/vfx')).json();
 
 // which in-game moves already use each effect
 const usedBy = {};
@@ -31,6 +34,7 @@ const state = { sel: null, seq: null, filter: 'all', q: '', playing: true, fps: 
 // ---- saving ----
 let saveTimer = 0;
 function save() {
+  if (READ_ONLY) return;
   clearTimeout(saveTimer);
   $('saved').textContent = 'saving…';
   saveTimer = setTimeout(async () => {
@@ -195,6 +199,11 @@ function move(d, focusName = false) {
 }
 
 // ---- wiring ----
+if (READ_ONLY) {
+  $('name').readOnly = $('notes').readOnly = true;
+  $('reset').style.display = 'none';
+  $('saved').textContent = 'Read only: names are edited on the dev server';
+}
 $('name').oninput = () => {
   const e = state.sel;
   e.name = $('name').value.trim() || e.original;

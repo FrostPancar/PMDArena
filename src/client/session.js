@@ -47,6 +47,13 @@ export function loadSession() {
   session.tms = (Array.isArray(session.tms) ? session.tms : []).filter((id) => MOVES[id]);
   session.news = (Array.isArray(session.news) ? session.news : []).filter((id) => MOVES[id]);
   session.crew = (Array.isArray(session.crew) ? session.crew : []).filter((id) => SPECIES[id] && !SPECIES[id].form);
+  // crew battles were filed as '3v3 vs CPU' before they were called 'Crew vs CPU'
+  for (const [k, v] of Object.entries(session.records.modes ?? {})) {
+    if (!k.startsWith('3v3 ')) continue;
+    const to = (session.records.modes[`Crew ${k.slice(4)}`] ??= { battles: 0, wins: 0 });
+    to.battles += v.battles; to.wins += v.wins;
+    delete session.records.modes[k];
+  }
   if (!SPECIES[session.partner]) session.partner = null;
   if (!SPECIES[session.profile.face]) session.profile.face = null;
 }
