@@ -935,6 +935,15 @@ give('icicleCrash', { icePillar: { fx: '6043_mana_043', time: 7, hp: 30 } });
 give('cut slash nightSlash xScissor leafBlade shadowClaw dragonClaw metalClaw razorShell crossPoison steelWing psychoCut airSlash furyCutter razorLeaf razorWind aerialAce', { keen: true });
 // Close-range moves hit a tenth harder: they are the ones that have to get in.
 for (const mv of Object.values(MOVES)) if (mv.kind === 'melee' && mv.dmg) mv.dmg = Math.round(mv.dmg * 1.1);
+// ...and they no longer miss a foe that is right up against the user. A close-range hit is a circle some way ahead
+// (reach, plus the 14 px of the lunge unless the move has none), which left a gap between the user and its near edge.
+// The circle is made up to 6 px bigger and brought back by as much: its far edge stays where it was, so no move
+// reaches any less far, and its near edge comes back to the user.
+for (const mv of Object.values(MOVES)) {
+  if (mv.kind !== 'melee' || !mv.reach || !mv.radius) continue;
+  const gap = mv.reach + (mv.lunge === false ? 0 : 14) - mv.radius, k = Math.min(6, Math.ceil((gap - 2) / 2));
+  if (k > 0) { mv.reach -= k; mv.radius += k; }
+}
 for (const [id, mv] of Object.entries(MOVES)) mv.id = id; // carried by the one-use copies the engine makes, for messages between clients
 // ---- from the move notes ----
 // selfFx / selfScale: a piece of art played on the user as the move goes off. pillarStill: the standing rock is the move's own

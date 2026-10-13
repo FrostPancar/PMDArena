@@ -3,6 +3,11 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.16
+
+- Close-range moves no longer miss a foe standing right against the user: their hit circles are up to 6 px bigger
+  and sit that much closer, reaching exactly as far as before.
+
 ## alpha 0.5.15
 
 - Substitute: the doll has the HP spent on it and takes hits until that is gone (it used to break on the first).
