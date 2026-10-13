@@ -71,6 +71,9 @@ export class Mon {
     this.ingrain = null; // { t, hps } while rooted and healing
     this.regen = null; // { t, hps } healing over time
     this.sub = 0; // the health left in its substitute doll: while there is any it is drawn as the doll, which takes its hits
+    this.safeguard = 0; // seconds for which nothing a foe sends can lower its stats, give it a status or otherwise hamper it
+    this.critUp = null; // { t, add } while its hits are likelier to be critical (Focus Energy)
+    this.noCrit = 0; // seconds for which no hit on it can be critical (Lucky Chant)
     this.dollFlash = 0; // the doll blinks white for a moment when it takes a blow and holds
     this.under = false; // underground (Dig): nothing can hit it
     this.grip = 0; // seconds left held in a bite, as the biter or the bitten
@@ -274,6 +277,7 @@ export class Mon {
 
   // Leap in the given direction (or straight up).
   jump(vx, vy, speed) {
+    if (this.ingrain) { this.ingrain = null; return false; } // rooted: the jump pulls the roots up, and that is all it does
     if (!this.grounded || this.stuck || this.ailment.root || this.ingrain || this.snare > 0 || this.roost > 0 || this.beaming || this.stamina < JUMP_COST || this.scene.heavy?.(this)) return false;
     this.spend(JUMP_COST);
     const l = Math.hypot(vx, vy);
@@ -338,7 +342,7 @@ export class Mon {
     if (!this.alive || (this.invuln > 0 && !(hit?.thru && this.reel > 0))) return false;
     if (this.under && !(this.flying && hit?.swat) && !hit?.deep) return false; // only a swatting move reaches a flyer
     if (this.airborne && tag !== 'sweep' && !through && !hit?.deep) return false;
-    if (this.shield > 0 && !grab && !through && !hit?.pierce) return false;
+    if (this.shield > 0 && !grab && !through && !hit?.pierce) { this.scene.blocked?.(this, fromX, fromY); return false; }
     if (this.detect > 0 && !grab && !through) {
       // seen coming: the blow misses and the user is suddenly behind whoever threw it
       this.detect = 0;
@@ -365,13 +369,14 @@ export class Mon {
       // health (as much as was spent making it), and the mon behind it is not hurt, moved or stopped in what it is doing
       if (!(n > 0)) return false;
       this.sub -= hit?.raw ? n : n / this.mul('def');
-      if (this.sub > 0) { this.invuln = hit?.soft ? 0.1 : 0.2; this.dollFlash = 0.09; this.scene.subHit?.(this); return false; }
+      if (this.sub > 0) { this.invuln = hit?.soft ? 0.1 : 0.2; this.dollFlash = 0.09; this.scene.subHit?.(this); if (!hit?.soft) this.scene.blocked?.(this, fromX, fromY); return false; }
       this.sub = 0;
       this.invuln = 0.4;
       this.scene.subBroke(this);
       return false;
     }
     const dealt = hit?.raw ? n : n / this.mul('def'); // fixed damage ignores defence
+    if (this.braced && !hit?.soft) this.scene.blocked?.(this, fromX, fromY); // taken on a guard held up
     this.hp = Math.max(this.endure > 0 ? Math.min(1, this.hp) : 0, this.hp - dealt);
     this.lastHit = { by: hit?.by, n: dealt, t: this.scene.simMs ?? this.scene.time.now };
     this.scene.struck?.(this, dealt, hit); // for the eye only: the flash, the shake
@@ -419,7 +424,7 @@ export class Mon {
   }
 
   revive(x, y) {
-    Object.assign(this, { x, y, hp: this.maxHp, stamina: this.maxStamina, exhausted: false, runT: 0, snare: 0, armored: false, leap: 0, levi: 0, leviImmune: 0, buryImmune: 0, hop: 0, kx: 0, ky: 0, invuln: 1, buried: 0, shield: 0, leech: null, ingrain: null, regen: null, sub: false, lx: x, ly: y, detect: 0, bide: null, bond: 0, bondTo: null, endure: 0, webbed: 0, torment: null, tether: null, dance: null, fuse: null, rep: null, grip: 0, stun: 0, roost: 0, chill: null, locked: null, acro: null, locks: {}, ramp: null, status: null, freezeImmune: 0 });
+    Object.assign(this, { safeguard: 0, critUp: null, noCrit: 0, x, y, hp: this.maxHp, stamina: this.maxStamina, exhausted: false, runT: 0, snare: 0, armored: false, leap: 0, levi: 0, leviImmune: 0, buryImmune: 0, hop: 0, kx: 0, ky: 0, invuln: 1, buried: 0, shield: 0, leech: null, ingrain: null, regen: null, sub: false, lx: x, ly: y, detect: 0, bide: null, bond: 0, bondTo: null, endure: 0, webbed: 0, torment: null, tether: null, dance: null, fuse: null, rep: null, grip: 0, stun: 0, roost: 0, chill: null, locked: null, acro: null, locks: {}, ramp: null, status: null, freezeImmune: 0 });
     for (const b of Object.values(this.buffs)) b.t = 0;
     this.cancel();
     this.sprite.setAlpha(1);
@@ -497,6 +502,9 @@ export class Mon {
     if (this.ramp) this.ramp.t -= dt;
     this.runT = Math.max(0, this.runT - dt);
     this.snare = Math.max(0, this.snare - dt);
+    this.safeguard = Math.max(0, this.safeguard - dt);
+    this.noCrit = Math.max(0, this.noCrit - dt);
+    if (this.critUp && (this.critUp.t -= dt) <= 0) this.critUp = null;
     for (const k in this.locks) if ((this.locks[k] -= dt) <= 0) delete this.locks[k];
     if (this.regen) {
       if (this.alive) this.heal(this.regen.hps * dt);
@@ -574,6 +582,13 @@ export class Mon {
     const doll = this.sub && this.alive && !this.hidden;
     if (doll) (this.doll ??= this.scene.add.image(x, y, 'decoy').setOrigin(0.5, 1)).setFrame(this.dir * 2 + (Math.floor(this.scene.time.now / (this.state === 'walk' ? 140 : 400)) & 1)).setPosition(x, y + 3 - lift).setDepth(10 + this.y);
     this.doll?.setVisible(doll);
+    // held fast in a web: a white ring round its feet, tightening and loosening
+    const snared = this.snare > 0 && this.alive && !this.hidden;
+    if (snared) {
+      const k = 1 + 0.12 * Math.sin(this.scene.time.now / 90);
+      (this.snareRing ??= this.scene.add.ellipse(x, y, 26, 14).setStrokeStyle(1.5, 0xffffff, 0.95).setFillStyle(0xffffff, 0.12)).setPosition(x, y - 1).setScale(k).setDepth(9 + this.y);
+    }
+    this.snareRing?.setVisible(snared);
     if (doll) { if (this.dollFlash > 0) this.doll.setTintFill(0xffffff); else this.doll.clearTint(); }
     if (sunk) this.sprite.setCrop(0, 0, a.fw, a.fh / 2 + foot - sunk);
     else if (this.sprite.isCropped) this.sprite.setCrop();

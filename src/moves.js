@@ -286,6 +286,22 @@ const urls = import.meta.glob(
     '../move_VFX/0258_gust_spiral/001/*.png',
     '../move_VFX/0259_dark_scribble/000/*.png',
     '../move_VFX/0259_dark_scribble/002/*.png',
+    '../move_VFX/0043_white_orb_flash/003/*.png',
+    '../move_VFX/0043_white_orb_flash/004/*.png',
+    '../move_VFX/0015_white_puff_small/000/*.png',
+    '../move_VFX/0015_white_puff_small/001/*.png',
+    '../move_VFX/0049_orange_spin_burst/001/*.png',
+    '../move_VFX/0066_green_dashes_swirl/000/*.png',
+    '../move_VFX/0099_mega_moves/000/*.png',
+    '../move_VFX/0164_normal_ring/001/*.png',
+    '../move_VFX/0228_star_ring_twinkle/000/*.png',
+    '../move_VFX/0254_moonlight_slash/000/*.png',
+    '../move_VFX/0053_burn/001/*.png',
+    '../move_VFX/0184_shadow_sneak/000/*.png', '../move_VFX/0184_shadow_sneak/001/*.png', '../move_VFX/0184_shadow_sneak/003/*.png',
+    '../move_VFX/0184_shadow_sneak/004/*.png', '../move_VFX/0184_shadow_sneak/005/*.png', '../move_VFX/0184_shadow_sneak/006/*.png',
+    '../move_VFX/0184_shadow_sneak/007/*.png', '../move_VFX/0184_shadow_sneak/009/*.png', '../move_VFX/0184_shadow_sneak/010/*.png',
+    '../move_VFX/0184_shadow_sneak/011/*.png', '../move_VFX/0184_shadow_sneak/012/*.png', '../move_VFX/0184_shadow_sneak/013/*.png',
+    '../move_VFX/0184_shadow_sneak/014/*.png', '../move_VFX/0184_shadow_sneak/015/*.png',
     // art cut from other games' sheets (extra_VFX/<sheet>/, see tools/slice-sheets.py): named by folder like the rest
     '../extra_VFX/emerald/5016_emerald_016/000/*.png',
     '../extra_VFX/mana/6043_mana_043/000/*.png',
@@ -604,6 +620,10 @@ export const MOVES = {
   solarBeam: { name: 'Solar Beam', kind: 'beam', fx: '0113_white_laser_vertical', seqs: ['000'], length: 170, dmg: 30, cost: 55, charge: 1.1, fps: 45, anchor: 'top', tint: 0xd8ff7a, chargeSeqs: ['001'] },
   steelWing: { name: 'Steel Wing', kind: 'melee', fx: '0012_pin_missiles', seqs: ['000'], reach: 18, radius: 22, dmg: 19, cost: 20, charge: 0.08, fps: 20, impactFx: '0207_steel_slash', impactSeqs: ['001'], bonus: { chance: 0.3, buff: { stat: 'def', mul: 1.3, time: 6 }, scale: 0.6 }, bonusFx: '0216_yellow_powerup', bonusSeqs: ['000'] },
   ironTail: { name: 'Iron Tail', kind: 'melee', fx: '0219_dragon_ground_rush', seqs: ['000'], gray: true, reach: 20, radius: 22, dmg: 27, cost: 36, charge: 0.14, debuff: { stat: 'def', mul: 0.75, time: 6 } },
+  viceGrip: { name: 'Vice Grip', kind: 'melee', fx: '0049_orange_spin_burst', seqs: ['001'], reach: 18, radius: 18, dmg: 20, cost: 16, charge: 0.06, fps: 24 },
+  kingsShield: { name: "King's Shield", kind: 'self', fx: '0138_hex_shield', seqs: ['000'], tint: 0xffd98a, buff: { stat: 'def', mul: 1.6, time: 10 }, cost: 28, charge: 0, scale: 1.5, fps: 14, endSeqs: ['001'] },
+  safeguard: { name: 'Safeguard', kind: 'self', fx: '0095_rings_up', seqs: ['000'], safeguard: 8, cost: 28, charge: 0.3, fps: 24, lift: 14 },
+  punishment: { name: 'Punishment', kind: 'melee', fx: '0254_moonlight_slash', seqs: ['000'], reach: 18, radius: 22, dmg: 18, cost: 24, charge: 0.1, fps: 30, punish: 0.5 },
   braveBird: { name: 'Brave Bird', kind: 'hold', fx: '0251_brave_bird_silhouette', seqs: ['000'], speed: 250, radius: 14, dmg: 18, cost: 15, upkeep: 60, recoil: 0.35, charge: 0.1, fps: 10 },
 };
 
@@ -613,6 +633,14 @@ export const MOVES = {
 export const HEAL_LIMIT = 5;
 export const healsOnly = (mv) => mv.kind === 'self' && !!(mv.heal || mv.regen || mv.ingrain);
 export const PARRY = { cost: 0, gain: 20, window: 0.55, perfect: 0.15, cooldown: 0.9, hit: ['7023_dbz_023', '000'], scale: 0.7 };
+// A flash over an attack that was stopped: by a shield, a parry, a guard held up, a substitute.
+export const BLOCKED = { fx: ['0043_white_orb_flash', '003'], scale: 0.55 };
+// A spark over a critical hit.
+export const CRIT_FX = { fx: ['0066_green_dashes_swirl', '000'], scale: 1 };
+// The mark over a taunted mon's head for as long as it is taunted.
+export const TAUNTED = { fx: ['0015_white_puff_small', '001'], scale: 1 };
+// The rings that keep rising round a mon under Safeguard.
+export const SAFEGUARD = { fx: ['0095_rings_up', '000'] };
 // A shot cut or beaten out of the air breaks up in this burst of light.
 export const SHATTER = { fx: ['8006_negima_006', '000'], scale: 0.55 };
 
@@ -644,7 +672,8 @@ export const STATUS = {
   confuse: { label: 'confused', tint: 0xffc4e4, icon: 'question', time: 5, reverse: true },
   trap: { label: 'trapped', tint: 0xcdb4e6, icon: 'blind', time: 4, root: true },
   attract: { label: 'infatuated', tint: 0xffc0d8, icon: 'heart', time: 4, noMove: true, noAttack: true },
-  taunt: { label: 'taunted', tint: 0xffc9b0, icon: 'exclaim', time: 6, noStatus: true },
+  taunt: { label: 'taunted', tint: 0xffc9b0, // (its mark over the head is art of its own: TAUNTED)
+    time: 6, noStatus: true },
   encore: { label: 'encored', tint: 0xfff0c0, icon: 'eye', time: 5, encore: true, noAttack: true },
   toxic: { label: 'badly poisoned', tint: 0xb07aff, icon: 'skull', time: 10, dps: 5 },
   disable: { label: 'disabled', tint: 0xe6c4c4, icon: 'cross', time: 5, noMove: true },
@@ -931,6 +960,40 @@ give('ember', { fx: '6060_mana_060', seqs: ['000'], slice: [0, 3], rotate: true,
 // Icicle Crash leaves a spire of ice standing where it lands: cover like a standing rock, for `time` seconds, but any
 // attack that reaches it wears it down (`hp`) and it breaks.
 give('icicleCrash', { icePillar: { fx: '6043_mana_043', time: 7, hp: 30 } });
+// ---- alpha 0.5.17 ----
+give('willOWisp', { kind: 'homing', speed: 70, turn: 1.6, range: 300 }); // a slow wisp that hunts its target down
+give('woodHammer', { dmg: 31 });
+// Shadow Sneak: the shadow's own art for each of the eight ways it can go (travel 000-007, coming up 008-015), and less far.
+give('shadowSneak', { dir8: 0, impactDir8: 8, range: 90, scale: 1, fps: 30, vanish: { time: 0.4, behind: true, trail: true } });
+give('ingrain', { ingrain: { time: 10, hps: 3 } }); // (a jump pulls the roots up early: see Mon.jump)
+// Iron Defense, King's Shield and Bide are braced for while their button is held; what the first hit taken does differs:
+// Iron Defense bursts (a blast a little wider than Shock Wave), King's Shield raises Attack, Bide empowers the next attack.
+give('ironDefense', { charge: 0, burst: { radius: 66, mul: 1.5, min: 14 } });
+give('kingsShield', (mv) => ({ stance: { upkeep: 14 }, buff: { ...mv.buff, mul: 2.5 }, onBlock: { buff: { stat: 'atk', mul: 1.5, time: 8 } } }));
+give('bide', { fx: '0164_normal_ring', seqs: ['001'], tint: undefined, bide: undefined, charge: 0, stance: { upkeep: 14 }, buff: { stat: 'def', mul: 2.5, time: 10 }, onBlock: { empower: true }, cls: undefined });
+give('attract', { charge: 0.8 });
+give('grassKnot', { bury: 1.2 });
+give('earthquake', { scale: 0.7 }); // (its rubble, strewn over the ground)
+// Rock Blast: a held stream of stones, as Ember is of fire
+give('rockBlast', { stream: { gap: 0.2, upkeep: 30 }, softStream: true, thru: undefined, dmg: 5 });
+// the held streams start at once
+for (const mv of Object.values(MOVES)) if (mv.stream && mv.kind !== 'melee') mv.charge = Math.min(mv.charge ?? 0, 0.03);
+give('dragonDance', { stackFx: ['0053_burn', '001'] }); // a flare on each stack gained
+give('taunt', { fx: '0015_white_puff_small', seqs: ['000'], scale: 2, fps: 14 });
+// Flash Cannon: one flash down a long line from the user to where it is aimed (ray: see fireMove)
+give('flashCannon', { kind: 'mid', fx: '0043_white_orb_flash', seqs: ['004'], slice: undefined, ray: { delay: 0.32, width: 0.9 }, range: 230, radius: 10, speed: undefined, impactSeqs: undefined, pierce: undefined, fps: 30, charge: 0.25, lead: undefined });
+give('cut', { fx: '0099_mega_moves', seqs: ['000'], rotate: false, fps: 20, scale: 1.2 });
+give('furyCutter', { fx: '0099_mega_moves', seqs: ['000'], rotate: false, fps: 20, scale: 1.2, gray: true, tint: 0x7dff6a });
+give('focusEnergy', { empower: undefined, buff: undefined, critUp: { add: 0.25, time: 8 } });
+give('luckyChant', { fx: '0228_star_ring_twinkle', seqs: ['000'], field: undefined, buff: { stat: 'def', mul: 1.5, time: 8 }, noCrit: 8, fps: 30 });
+give('acupressure', { empower: undefined, buff: { stat: 'random', mul: 1.3, time: 12 } });
+give('punishment', { keen: undefined });
+// Grabs: a bite (or a kiss, a clinch, a pincer) lands twice, half the damage each time, the foe held and reeling between
+// the two; then the hold breaks and both are thrown apart. latch: seconds between the two hits.
+give('viceGrip', { tag: 'grab' });
+give('bite fireFang iceFang thunderFang bugBite drainingKiss drainPunch viceGrip', { latch: 0.45 });
+for (const mv of Object.values(MOVES)) if (mv.latch && mv.dmg) mv.dmg = Math.round(mv.dmg * 5) / 10;
+
 // Critical hits (see CRIT in scene.js): any hit may land one; a keen move, one that slices, does far more often.
 give('cut slash nightSlash xScissor leafBlade shadowClaw dragonClaw metalClaw razorShell crossPoison steelWing psychoCut airSlash furyCutter razorLeaf razorWind aerialAce', { keen: true });
 // Close-range moves hit a tenth harder: they are the ones that have to get in.
@@ -985,41 +1048,41 @@ give('dazzlingGleam powderSnow', { fresh: true });
 
 // First entry is equipped by default.
 export const MOVESETS = {
-  chikorita: ['razorLeaf', 'magicalLeaf', 'gigaDrain', 'bulletSeed', 'petalDance', 'vineWhip', 'petalBlizzard', 'leechSeed', 'aromatherapy', 'protect', 'helpingHand', 'seedBomb', 'ingrain', 'substitute', 'stunSpore', 'reflect', 'lightScreen', 'flail', 'poisonPowder', 'solarBeam', 'woodHammer'],
+  chikorita: ['razorLeaf', 'magicalLeaf', 'gigaDrain', 'bulletSeed', 'petalDance', 'vineWhip', 'petalBlizzard', 'leechSeed', 'aromatherapy', 'protect', 'helpingHand', 'seedBomb', 'ingrain', 'substitute', 'stunSpore', 'reflect', 'lightScreen', 'flail', 'poisonPowder', 'solarBeam', 'woodHammer', 'safeguard'],
   bulbasaur: ['leafStorm', 'grassKnot', 'magicalLeaf', 'powerWhip', 'energyBall', 'gigaDrain', 'petalDance', 'bulletSeed', 'sludgeBomb', 'vineWhip', 'petalBlizzard', 'leechSeed', 'protect', 'rest', 'seedBomb', 'sludgeWave', 'ingrain', 'sleepPowder', 'substitute', 'stunSpore', 'bide', 'stringShot', 'sleepTalk', 'snore', 'razorLeaf', 'doubleEdge', 'poisonPowder', 'solarBeam'],
   treecko: ['leafBlade', 'magicalLeaf', 'grassKnot', 'xScissor', 'nightSlash', 'quickAttack', 'bulletSeed', 'gigaDrain', 'energyBall', 'dualChop', 'aerialAce', 'slash', 'leechSeed', 'swordsDance', 'agility', 'protect', 'doubleTeam', 'seedBomb', 'megaPunch', 'cut', 'furyCutter', 'substitute', 'stunSpore', 'acrobatics', 'detect', 'dragonDance', 'leafStorm'],
   charmander: ['flameBurst', 'ember', 'fireFang', 'fireSpin', 'flamethrower', 'dragonClaw', 'fireBlast', 'dragonBreath', 'outrage', 'overheat', 'incinerate', 'blastBurn', 'slash', 'furySwipes', 'focusBlast', 'focusPunch', 'dragonRush', 'swordsDance', 'protect', 'megaPunch', 'megaKick', 'smokescreen', 'cut', 'firePunch', 'substitute', 'fly', 'acrobatics', 'seismicToss', 'dragonDance', 'dragonTail', 'bellyDrum', 'scaryFace', 'airSlash', 'shadowClaw', 'flareBlitz'],
   torchic: ['fireSpin', 'ember', 'flameBurst', 'flamethrower', 'willOWisp', 'quickAttack', 'aerialAce', 'overheat', 'incinerate', 'blastBurn', 'featherDance', 'swordsDance', 'agility', 'protect', 'doubleTeam', 'firePunch', 'substitute', 'bounce', 'closeCombat', 'brickBreak', 'endure', 'reversal', 'batonPass', 'braveBird', 'slash', 'focusEnergy', 'blazeKick', 'flareBlitz'],
   squirtle: ['bubble', 'waterPulse', 'bite', 'hydroPump', 'whirlpool', 'iceArmor', 'surf', 'bubbleBeam', 'brine', 'blizzard', 'avalanche', 'focusPunch', 'iceBeam', 'ironDefense', 'protect', 'rest', 'rainDance', 'waterfall', 'yawn', 'aquaRing', 'haze', 'lifeDew', 'substitute', 'waterSpout', 'aquaJet', 'seismicToss', 'bide', 'rollout', 'flail', 'waterGun', 'flashCannon'],
   mudkip: ['waterPulse', 'bite', 'mudBomb', 'whirlpool', 'hydroPump', 'surf', 'earthquake', 'rockSlide', 'blizzard', 'iceBall', 'avalanche', 'sandTomb', 'rockTomb', 'focusPunch', 'iceBeam', 'protect', 'rest', 'rainDance', 'waterfall', 'yawn', 'aquaRing', 'substitute', 'barrier', 'aquaJet', 'dig', 'rollout', 'sleepTalk', 'snore', 'waterGun', 'hammerArm', 'rockThrow', 'bide', 'mudShot'],
-  ralts: ['confusion', 'psybeam', 'shadowBall', 'psychic', 'hypnosis', 'futureSight', 'drainingKiss', 'moonblast', 'willOWisp', 'shadowSneak', 'thunderbolt', 'chargeBeam', 'shockWave', 'focusBlast', 'wish', 'protect', 'doubleTeam', 'sing', 'healBell', 'meanLook', 'confuseRay', 'disable', 'flash', 'luckyChant', 'auraSphere', 'nightShade', 'lifeDew', 'attract', 'gravity', 'substitute', 'cosmicPower', 'reflect', 'lightScreen', 'signalBeam', 'destinyBond', 'torment', 'magicalLeaf', 'psychoCut', 'nightSlash', 'closeCombat', 'leafBlade', 'teleport', 'healPulse', 'dreamEater', 'dazzlingGleam', 'kinesis'],
+  ralts: ['confusion', 'psybeam', 'shadowBall', 'psychic', 'hypnosis', 'futureSight', 'drainingKiss', 'moonblast', 'willOWisp', 'shadowSneak', 'thunderbolt', 'chargeBeam', 'shockWave', 'focusBlast', 'wish', 'protect', 'doubleTeam', 'sing', 'healBell', 'meanLook', 'confuseRay', 'disable', 'flash', 'luckyChant', 'auraSphere', 'nightShade', 'lifeDew', 'attract', 'gravity', 'substitute', 'cosmicPower', 'reflect', 'lightScreen', 'signalBeam', 'destinyBond', 'torment', 'magicalLeaf', 'psychoCut', 'nightSlash', 'closeCombat', 'leafBlade', 'teleport', 'healPulse', 'dreamEater', 'dazzlingGleam', 'kinesis', 'safeguard'],
   eevee: ['swift', 'bite', 'quickAttack', 'shadowBall', 'hyperVoice', 'wish', 'protect', 'doubleTeam', 'healBell', 'payDay', 'rest', 'rainDance', 'focusEnergy', 'helpingHand', 'yawn', 'attract', 'substitute', 'dig', 'reflect', 'detect', 'roar', 'copycat', 'endure', 'flail', 'sleepTalk', 'snore', 'batonPass', 'doubleEdge'],
   axew: ['dualChop', 'dragonPulse', 'outrage', 'dragonClaw', 'bite', 'nightSlash', 'xScissor', 'slash', 'focusBlast', 'dracoMeteor', 'swordsDance', 'protect', 'focusEnergy', 'cut', 'gigaImpact', 'substitute', 'psychoCut', 'closeCombat', 'brickBreak', 'dragonDance', 'dragonTail', 'roar', 'scaryFace', 'taunt'],
-  zorua: ['shadowClaw', 'snarl', 'nightDaze', 'scaryFace', 'darkPulse', 'shadowBall', 'nightSlash', 'hex', 'furySwipes', 'uproar', 'swordsDance', 'agility', 'protect', 'doubleTeam', 'confuseRay', 'nightShade', 'cut', 'taunt', 'substitute', 'dig', 'suckerPunch', 'bounce', 'uTurn', 'detect', 'phantomForce', 'spite', 'torment', 'roar', 'copycat', 'knockOff'],
+  zorua: ['shadowClaw', 'snarl', 'nightDaze', 'scaryFace', 'darkPulse', 'shadowBall', 'nightSlash', 'hex', 'furySwipes', 'uproar', 'swordsDance', 'agility', 'protect', 'doubleTeam', 'confuseRay', 'nightShade', 'cut', 'taunt', 'substitute', 'dig', 'suckerPunch', 'bounce', 'uTurn', 'detect', 'phantomForce', 'spite', 'torment', 'roar', 'copycat', 'knockOff', 'punishment'],
   starly: ['gust', 'airSlash', 'aerialAce', 'whirlwind', 'quickAttack', 'uproar', 'featherDance', 'tailwind', 'agility', 'protect', 'doubleTeam', 'braveBird', 'helpingHand', 'roost', 'substitute', 'fly', 'acrobatics', 'uTurn', 'hurricane', 'closeCombat'],
-  corphish: ['crabhammer', 'bubbleBeam', 'razorShell', 'surf', 'bubble', 'waterPulse', 'nightSlash', 'xScissor', 'blizzard', 'slash', 'iceBeam', 'swordsDance', 'ironDefense', 'protect', 'rainDance', 'waterfall', 'substitute', 'aquaJet', 'brickBreak', 'dragonDance', 'waterGun', 'taunt', 'swift', 'knockOff'],
+  corphish: ['crabhammer', 'bubbleBeam', 'razorShell', 'surf', 'bubble', 'waterPulse', 'nightSlash', 'xScissor', 'blizzard', 'slash', 'iceBeam', 'swordsDance', 'ironDefense', 'protect', 'rainDance', 'waterfall', 'substitute', 'aquaJet', 'brickBreak', 'dragonDance', 'waterGun', 'taunt', 'swift', 'knockOff', 'viceGrip'],
   cubone: ['bonemerang', 'earthquake', 'rockSlide', 'stoneEdge', 'fireBlast', 'rockTomb', 'focusPunch', 'incinerate', 'swordsDance', 'ironDefense', 'protect', 'rest', 'focusEnergy', 'stealthRock', 'megaPunch', 'substitute', 'dig', 'dynamicPunch', 'seismicToss', 'bide', 'brickBreak', 'endure', 'bellyDrum', 'boneRush', 'doubleEdge'],
   nidoran: ['poisonSting', 'poisonJab', 'sludgeBomb', 'bite', 'thunderbolt', 'thunder', 'shockWave', 'protect', 'doubleTeam', 'helpingHand', 'sludgeWave', 'substitute', 'toxicSpikes', 'furySwipes', 'megahorn'],
   venipede: ['poisonSting', 'xScissor', 'poisonJab', 'sludgeBomb', 'bite', 'gyroBall', 'crossPoison', 'bugBite', 'swordsDance', 'agility', 'ironDefense', 'protect', 'doubleTeam', 'pinMissile', 'megahorn', 'furyCutter', 'substitute', 'toxicSpikes', 'signalBeam', 'rollout', 'batonPass', 'venoshock', 'doubleEdge'],
   rotom: ['thunderShock', 'thunderbolt', 'thunder', 'chargeBeam', 'shockWave', 'discharge', 'shadowBall', 'hex', 'willOWisp', 'darkPulse', 'doubleTeam', 'protect', 'confuseRay', 'flash', 'nightShade', 'charge', 'substitute', 'suckerPunch', 'lightScreen', 'signalBeam', 'phantomForce', 'spite', 'magnetPull', 'uproar', 'electroBall'],
   riolu: ['forcePalm', 'quickAttack', 'drainPunch', 'focusPunch', 'focusBlast', 'bite', 'metalClaw', 'swordsDance', 'agility', 'doubleTeam', 'protect', 'focusEnergy', 'helpingHand', 'auraSphere', 'megaPunch', 'megaKick', 'crossChop', 'substitute', 'meteorMash', 'dynamicPunch', 'machPunch', 'circleThrow', 'closeCombat', 'detect', 'bulletPunch', 'brickBreak', 'copycat', 'endure', 'reversal', 'dragonPulse', 'lifeDew', 'healPulse', 'counter', 'boneRush'],
   combee: ['attackOrder', 'gust', 'bugBite', 'defendOrder', 'healOrder', 'airSlash', 'furyCutter', 'tailwind', 'agility', 'protect', 'substitute', 'powerGem', 'uTurn', 'hurricane', 'signalBeam', 'destinyBond', 'stringShot', 'bugBuzz', 'poisonSting', 'confuseRay', 'furySwipes', 'slash'],
-  clefairy: ['metronome', 'moonblast', 'drainingKiss', 'sing', 'wakeUpSlap', 'megaPunch', 'megaKick', 'attract', 'swift', 'gravity', 'softBoiled', 'moonlight', 'wish', 'lifeDew', 'healBell', 'helpingHand', 'luckyChant', 'flash', 'thunderbolt', 'protect', 'doubleTeam', 'substitute', 'meteorMash', 'triAttack', 'cosmicPower', 'reflect', 'lightScreen', 'bounce', 'signalBeam', 'seismicToss', 'rollout', 'copycat', 'sleepTalk', 'snore', 'waterGun', 'dazzlingGleam'],
+  clefairy: ['metronome', 'moonblast', 'drainingKiss', 'sing', 'wakeUpSlap', 'megaPunch', 'megaKick', 'attract', 'swift', 'gravity', 'softBoiled', 'moonlight', 'wish', 'lifeDew', 'healBell', 'helpingHand', 'luckyChant', 'flash', 'thunderbolt', 'protect', 'doubleTeam', 'substitute', 'meteorMash', 'triAttack', 'cosmicPower', 'reflect', 'lightScreen', 'bounce', 'signalBeam', 'seismicToss', 'rollout', 'copycat', 'sleepTalk', 'snore', 'waterGun', 'dazzlingGleam', 'safeguard'],
   rhyhorn: ['rockThrow', 'stoneEdge', 'earthquake', 'megahorn', 'rockSlide', 'rockBlast', 'stealthRock', 'hammerArm', 'rockTomb', 'rockWrecker', 'gigaImpact', 'ironDefense', 'rest', 'protect', 'substitute', 'iceFang', 'thunderFang', 'dig', 'seismicToss', 'bide', 'rollout', 'magnitude', 'dragonTail', 'roar', 'scaryFace', 'poisonJab'],
-  scyther: ['furyCutter', 'cut', 'xScissor', 'slash', 'nightSlash', 'aerialAce', 'airSlash', 'quickAttack', 'bugBite', 'razorWind', 'gigaImpact', 'swordsDance', 'agility', 'focusEnergy', 'roost', 'doubleTeam', 'protect', 'substitute', 'psychoCut', 'lightScreen', 'acrobatics', 'uTurn', 'closeCombat', 'detect', 'bulletPunch', 'reversal', 'batonPass', 'bugBuzz', 'metalClaw', 'ironDefense'],
+  scyther: ['furyCutter', 'cut', 'xScissor', 'slash', 'nightSlash', 'aerialAce', 'airSlash', 'quickAttack', 'bugBite', 'razorWind', 'gigaImpact', 'swordsDance', 'agility', 'focusEnergy', 'roost', 'doubleTeam', 'protect', 'substitute', 'psychoCut', 'lightScreen', 'acrobatics', 'uTurn', 'closeCombat', 'detect', 'bulletPunch', 'reversal', 'batonPass', 'bugBuzz', 'metalClaw', 'ironDefense', 'viceGrip'],
   joltik: ['bugBite', 'spiderWeb', 'thunderbolt', 'discharge', 'chargeBeam', 'shockWave', 'furyCutter', 'xScissor', 'pinMissile', 'crossPoison', 'slash', 'charge', 'agility', 'doubleTeam', 'protect', 'substitute', 'suckerPunch', 'lightScreen', 'bounce', 'signalBeam', 'stringShot', 'stickyWeb', 'magnetPull', 'bugBuzz', 'electroweb', 'electroBall'],
   skarmory: ['metalClaw', 'airSlash', 'aerialAce', 'flashCannon', 'whirlwind', 'braveBird', 'stealthRock', 'nightSlash', 'slash', 'cut', 'gigaImpact', 'roost', 'ironDefense', 'agility', 'swordsDance', 'tailwind', 'taunt', 'protect', 'substitute', 'fly', 'hurricane', 'torment', 'swift', 'spikes', 'steelWing'],
   aron: ['metalClaw', 'flashCannon', 'stoneEdge', 'rockSlide', 'earthquake', 'rockBlast', 'sandTomb', 'rockTomb', 'avalanche', 'ironDefense', 'protect', 'rest', 'stealthRock', 'gigaImpact', 'substitute', 'dig', 'rollout', 'magnetPull', 'dragonTail', 'roar', 'endure', 'doubleEdge', 'ironTail'],
-  cacnea: ['needleArm', 'poisonSting', 'magicalLeaf', 'acid', 'bulletSeed', 'gigaDrain', 'leafStorm', 'energyBall', 'poisonJab', 'swift', 'shadowBall', 'grassKnot', 'darkPulse', 'hyperBeam', 'drainPunch', 'scaryFace', 'focusBlast', 'focusPunch', 'leechSeed', 'swordsDance', 'protect', 'doubleTeam', 'rest', 'disable', 'flash', 'rainDance', 'helpingHand', 'seedBomb', 'pinMissile', 'megaPunch', 'megaKick', 'ingrain', 'cut', 'furyCutter', 'gigaImpact', 'attract', 'taunt', 'substitute', 'stunSpore', 'suckerPunch', 'destinyBond', 'spikes', 'woodHammer'],
-  alolanvulpix: ['iceShard', 'iceArmor', 'auroraBeam', 'iceFang', 'drainingKiss', 'moonblast', 'iceBeam', 'blizzard', 'swift', 'energyBall', 'hypnosis', 'darkPulse', 'hyperBeam', 'hex', 'avalanche', 'agility', 'protect', 'doubleTeam', 'healBell', 'confuseRay', 'rest', 'disable', 'rainDance', 'helpingHand', 'gigaImpact', 'attract', 'substitute', 'icicleCrash', 'spite', 'roar', 'auroraVeil', 'dazzlingGleam', 'powderSnow'],
-  heracross: ['megahorn', 'closeCombat', 'brickBreak', 'bugBite', 'pinMissile', 'nightSlash', 'aerialAce', 'furyCutter', 'seismicToss', 'circleThrow', 'reversal', 'focusPunch', 'bulletSeed', 'stoneEdge', 'rockTomb', 'earthquake', 'bugBuzz', 'swordsDance', 'detect', 'endure', 'bide', 'substitute', 'protect', 'counter'],
+  cacnea: ['needleArm', 'poisonSting', 'magicalLeaf', 'acid', 'bulletSeed', 'gigaDrain', 'leafStorm', 'energyBall', 'poisonJab', 'swift', 'shadowBall', 'grassKnot', 'darkPulse', 'hyperBeam', 'drainPunch', 'scaryFace', 'focusBlast', 'focusPunch', 'leechSeed', 'swordsDance', 'protect', 'doubleTeam', 'rest', 'disable', 'flash', 'rainDance', 'helpingHand', 'seedBomb', 'pinMissile', 'megaPunch', 'megaKick', 'ingrain', 'cut', 'furyCutter', 'gigaImpact', 'attract', 'taunt', 'substitute', 'stunSpore', 'suckerPunch', 'destinyBond', 'spikes', 'woodHammer', 'punishment'],
+  alolanvulpix: ['iceShard', 'iceArmor', 'auroraBeam', 'iceFang', 'drainingKiss', 'moonblast', 'iceBeam', 'blizzard', 'swift', 'energyBall', 'hypnosis', 'darkPulse', 'hyperBeam', 'hex', 'avalanche', 'agility', 'protect', 'doubleTeam', 'healBell', 'confuseRay', 'rest', 'disable', 'rainDance', 'helpingHand', 'gigaImpact', 'attract', 'substitute', 'icicleCrash', 'spite', 'roar', 'auroraVeil', 'dazzlingGleam', 'powderSnow', 'safeguard'],
+  heracross: ['megahorn', 'closeCombat', 'brickBreak', 'bugBite', 'pinMissile', 'nightSlash', 'aerialAce', 'furyCutter', 'seismicToss', 'circleThrow', 'reversal', 'focusPunch', 'bulletSeed', 'stoneEdge', 'rockTomb', 'earthquake', 'bugBuzz', 'swordsDance', 'detect', 'endure', 'bide', 'substitute', 'protect', 'counter', 'viceGrip'],
   porygon: ['triAttack', 'psybeam', 'lockOn', 'thunderShock', 'thunderbolt', 'psychic', 'discharge', 'swift', 'shadowBall', 'iceArmor', 'darkPulse', 'hyperBeam', 'aerialAce', 'uproar', 'thunder', 'blizzard', 'chargeBeam', 'shockWave', 'iceBeam', 'agility', 'protect', 'doubleTeam', 'rest', 'flash', 'rainDance', 'barrier', 'charge', 'gigaImpact', 'gravity', 'substitute', 'reflect', 'signalBeam', 'zapCannon', 'explosion'],
   phantump: ['woodHammer', 'confuseRay', 'ingrain', 'leechSeed', 'willOWisp', 'destinyBond', 'phantomForce', 'shadowClaw', 'shadowBall', 'energyBall', 'gigaDrain', 'solarBeam', 'seedBomb', 'grassKnot', 'magicalLeaf', 'darkPulse', 'psychic', 'dreamEater', 'hex', 'poisonJab', 'xScissor', 'rockSlide', 'earthquake', 'drainPunch', 'focusBlast', 'hyperBeam', 'gigaImpact', 'protect', 'rest', 'substitute', 'reflect', 'spite', 'disable', 'attract', 'sleepTalk', 'snore', 'endure', 'leafStorm'],
   munchlax: ['explosion', 'metronome', 'payDay', 'bellyDrum', 'rollout', 'flail', 'bite', 'doubleEdge', 'counter', 'whirlwind', 'yawn', 'rest', 'snore', 'sleepTalk', 'gigaImpact', 'hammerArm', 'earthquake', 'rockSlide', 'rockTomb', 'firePunch', 'megaPunch', 'megaKick', 'focusPunch', 'brickBreak', 'fireBlast', 'flamethrower', 'iceBeam', 'blizzard', 'thunder', 'thunderbolt', 'shadowBall', 'solarBeam', 'hyperBeam', 'surf', 'psychic', 'protect', 'rainDance', 'seedBomb', 'outrage', 'uproar', 'seismicToss', 'dynamicPunch', 'bide', 'endure', 'substitute'],
-  staryu: ['starShoot', 'hydroBurst', 'swift', 'waterGun', 'bubbleBeam', 'hydroPump', 'powerGem', 'cosmicPower', 'gyroBall', 'confuseRay', 'lightScreen', 'reflect', 'psychic', 'psybeam', 'brine', 'waterfall', 'surf', 'waterPulse', 'teleport', 'flash', 'dazzlingGleam', 'signalBeam', 'gravity', 'thunderbolt', 'thunder', 'iceBeam', 'blizzard', 'hyperBeam', 'gigaImpact', 'protect', 'rest', 'rainDance', 'substitute'],
-  honedge: ['slash', 'nightSlash', 'shadowSneak', 'shadowClaw', 'furyCutter', 'aerialAce', 'swordsDance', 'ironDefense', 'flashCannon', 'gyroBall', 'rockSlide', 'brickBreak', 'shadowBall', 'protect', 'rest', 'substitute', 'gigaImpact', 'hyperBeam', 'psychoCut', 'closeCombat', 'destinyBond', 'cut', 'reflect', 'attract', 'sleepTalk', 'snore', 'endure', 'airSlash'],
+  staryu: ['starShoot', 'hydroBurst', 'swift', 'waterGun', 'bubbleBeam', 'hydroPump', 'powerGem', 'cosmicPower', 'gyroBall', 'confuseRay', 'lightScreen', 'reflect', 'psychic', 'psybeam', 'brine', 'waterfall', 'surf', 'waterPulse', 'teleport', 'flash', 'dazzlingGleam', 'signalBeam', 'gravity', 'thunderbolt', 'thunder', 'iceBeam', 'blizzard', 'hyperBeam', 'gigaImpact', 'protect', 'rest', 'rainDance', 'substitute', 'safeguard'],
+  honedge: ['slash', 'nightSlash', 'shadowSneak', 'shadowClaw', 'furyCutter', 'aerialAce', 'swordsDance', 'ironDefense', 'flashCannon', 'gyroBall', 'rockSlide', 'brickBreak', 'shadowBall', 'protect', 'rest', 'substitute', 'gigaImpact', 'hyperBeam', 'psychoCut', 'closeCombat', 'destinyBond', 'cut', 'reflect', 'attract', 'sleepTalk', 'snore', 'endure', 'airSlash', 'kingsShield'],
   torkoal: ['eruption', 'lavaPlume', 'explosion', 'ember', 'flamethrower', 'fireSpin', 'fireBlast', 'overheat', 'incinerate', 'willOWisp', 'smokescreen', 'ironDefense', 'stealthRock', 'yawn', 'protect', 'gyroBall', 'flail', 'rest', 'earthquake', 'rockSlide', 'rockTomb', 'stoneEdge', 'solarBeam', 'sludgeBomb', 'hyperBeam', 'gigaImpact', 'substitute', 'endure', 'sleepTalk', 'snore'],
-  hawlucha: ['detect', 'roost', 'aerialAce', 'bounce', 'featherDance', 'braveBird', 'swordsDance', 'taunt', 'acrobatics', 'fly', 'brickBreak', 'drainPunch', 'focusBlast', 'poisonJab', 'xScissor', 'uTurn', 'rockSlide', 'rockTomb', 'stoneEdge', 'steelWing', 'closeCombat', 'crossChop', 'agility', 'megaKick', 'megaPunch', 'firePunch', 'gigaImpact', 'protect', 'rest', 'substitute', 'grassKnot', 'dig', 'reversal', 'tailwind', 'endure', 'attract', 'sleepTalk', 'snore'],
+  hawlucha: ['detect', 'roost', 'aerialAce', 'bounce', 'featherDance', 'braveBird', 'swordsDance', 'taunt', 'acrobatics', 'fly', 'brickBreak', 'drainPunch', 'focusBlast', 'poisonJab', 'xScissor', 'uTurn', 'rockSlide', 'rockTomb', 'stoneEdge', 'steelWing', 'closeCombat', 'crossChop', 'agility', 'megaKick', 'megaPunch', 'firePunch', 'gigaImpact', 'protect', 'rest', 'substitute', 'grassKnot', 'dig', 'reversal', 'tailwind', 'endure', 'attract', 'sleepTalk', 'snore', 'punishment'],
 };
 // Eevee (and Cubone, between its two Marowaks) picks one evolution and keeps it for good: from then on it has its own moves plus only that evolution's, never
 // another's. The choice lives with the player's save (session.mons.eevee.branch); see CHOICES in evolutions.js.
@@ -1039,7 +1102,7 @@ export const BRANCH_MOVES = {
 // The moves of each set that the mon (or a form it evolves into) learns by itself as it levels up in the main games.
 // Everything else in its set is taught: a TM, in this game's terms (machines, tutors and egg moves alike).
 const NATURAL = {
-  chikorita: 'razorLeaf magicalLeaf petalDance petalBlizzard aromatherapy reflect lightScreen poisonPowder solarBeam',
+  chikorita: 'razorLeaf magicalLeaf petalDance petalBlizzard aromatherapy reflect lightScreen poisonPowder solarBeam safeguard',
   bulbasaur: 'vineWhip leechSeed sleepPowder petalDance petalBlizzard seedBomb razorLeaf doubleEdge poisonPowder solarBeam',
   treecko: 'leafBlade quickAttack gigaDrain energyBall dualChop xScissor nightSlash slash agility detect furyCutter leafStorm',
   charmander: 'flameBurst ember fireFang fireSpin flamethrower dragonClaw dragonBreath slash smokescreen scaryFace airSlash shadowClaw flareBlitz',
@@ -1049,9 +1112,9 @@ const NATURAL = {
   ralts: 'confusion psybeam psychic hypnosis futureSight drainingKiss moonblast wish doubleTeam luckyChant lifeDew magicalLeaf psychoCut nightSlash closeCombat leafBlade teleport healPulse dreamEater',
   eevee: 'swift bite quickAttack helpingHand batonPass copycat focusEnergy doubleEdge',
   axew: 'dualChop dragonPulse outrage dragonClaw bite slash swordsDance dragonDance gigaImpact scaryFace taunt',
-  zorua: 'scaryFace furySwipes nightDaze nightSlash agility taunt torment uTurn knockOff',
+  zorua: 'scaryFace furySwipes nightDaze nightSlash agility taunt torment uTurn knockOff punishment',
   starly: 'gust quickAttack whirlwind aerialAce agility braveBird closeCombat doubleTeam',
-  corphish: 'crabhammer bubbleBeam razorShell bubble nightSlash swordsDance protect waterGun taunt swift knockOff',
+  corphish: 'crabhammer bubbleBeam razorShell bubble nightSlash swordsDance protect waterGun taunt swift knockOff viceGrip',
   cubone: 'bonemerang focusEnergy boneRush doubleEdge',
   nidoran: 'poisonSting poisonJab bite helpingHand toxicSpikes furySwipes megahorn',
   venipede: 'poisonSting bugBite protect agility ironDefense megahorn rollout batonPass venoshock doubleEdge',
@@ -1065,13 +1128,13 @@ const NATURAL = {
   skarmory: 'metalClaw airSlash slash nightSlash agility ironDefense swift spikes steelWing',
   aron: 'metalClaw rockTomb rockSlide ironDefense protect roar doubleEdge ironTail',
   cacnea: 'needleArm poisonSting leechSeed ingrain suckerPunch pinMissile destinyBond energyBall spikes',
-  alolanvulpix: 'iceShard auroraBeam iceBeam blizzard confuseRay hex spite disable roar auroraVeil dazzlingGleam powderSnow',
+  alolanvulpix: 'iceShard auroraBeam iceBeam blizzard confuseRay hex spite disable roar auroraVeil dazzlingGleam powderSnow safeguard',
   heracross: 'megahorn closeCombat brickBreak pinMissile nightSlash aerialAce reversal bulletSeed swordsDance endure counter',
   porygon: 'triAttack psybeam lockOn thunderShock discharge signalBeam agility hyperBeam zapCannon',
   phantump: 'confuseRay ingrain leechSeed willOWisp destinyBond phantomForce woodHammer shadowClaw',
   munchlax: 'metronome bellyDrum rollout flail bite yawn rest snore sleepTalk gigaImpact hammerArm',
   staryu: 'starShoot hydroBurst swift waterGun bubbleBeam hydroPump powerGem cosmicPower gyroBall confuseRay lightScreen reflect psybeam brine',
-  honedge: 'slash nightSlash shadowSneak furyCutter aerialAce swordsDance ironDefense protect',
+  honedge: 'slash nightSlash shadowSneak furyCutter aerialAce swordsDance ironDefense protect kingsShield',
   torkoal: 'ember smokescreen fireSpin lavaPlume flamethrower ironDefense protect flail eruption',
   hawlucha: 'detect roost aerialAce bounce featherDance braveBird swordsDance taunt',
   // Cubone's two Marowaks
@@ -1135,8 +1198,8 @@ const FRAME_URL = new Map(); // texture key -> where its picture is
 
 // Every texture key a move draws with.
 const keysOf = (mv) => [
-  mv.frames, mv.chargeFrames, mv.bonusFrames, mv.impactFrames, mv.altFrames, mv.addFrames, mv.landFrames, mv.endFrames, mv.selfFrames, mv.bounceFrames, mv.pillarFrames,
-  ...(mv.dirFrames ?? []), ...(mv.cycle ?? []).map((v) => v.frames),
+  mv.frames, mv.chargeFrames, mv.bonusFrames, mv.impactFrames, mv.altFrames, mv.addFrames, mv.landFrames, mv.endFrames, mv.selfFrames, mv.bounceFrames, mv.pillarFrames, mv.stackFrames,
+  ...(mv.dirFrames ?? []), ...(mv.impactDirFrames ?? []), ...(mv.cycle ?? []).map((v) => v.frames),
 ].flatMap((list) => list ?? []);
 // The other moves whose art a move borrows as it plays out.
 const needs = (mv) => [...(mv.blaze ? [MOVES.fireSpin] : []), ...(mv.summon?.moves ?? []).map((id) => MOVES[id])];
@@ -1202,6 +1265,10 @@ export function preloadMoves(scene, lazy = false) {
   CANCEL.frames = build(CANCEL.fx[0], [CANCEL.fx[1]]).slice(...CANCEL.slice);
   PARRY.hitFrames = build(PARRY.hit[0], [PARRY.hit[1]]);
   SHATTER.frames = build(SHATTER.fx[0], [SHATTER.fx[1]]);
+  BLOCKED.frames = build(BLOCKED.fx[0], [BLOCKED.fx[1]]);
+  CRIT_FX.frames = build(CRIT_FX.fx[0], [CRIT_FX.fx[1]]).slice(-3); // its last three pictures: a spark that opens out
+  TAUNTED.frames = build(TAUNTED.fx[0], [TAUNTED.fx[1]]);
+  SAFEGUARD.frames = build(SAFEGUARD.fx[0], [SAFEGUARD.fx[1]]);
   HEAL.frames = build(HEAL.fx[0], [HEAL.fx[1]]);
   DANCE.cueFrames = build(DANCE.cue[0], [DANCE.cue[1]]);
   DANCE.hitFrames = build(DANCE.hit[0], [DANCE.hit[1]]);
@@ -1210,6 +1277,8 @@ export function preloadMoves(scene, lazy = false) {
   for (const mv of Object.values(MOVES)) {
     mv.selfFrames = mv.selfFx ? build(mv.selfFx[0], [mv.selfFx[1]]) : [];
     mv.bounceFrames = mv.bounceFx ? build(mv.bounceFx[0], [mv.bounceFx[1]]) : [];
+    mv.stackFrames = mv.stackFx ? build(mv.stackFx[0], [mv.stackFx[1]]) : [];
+    if (mv.impactDir8 !== undefined) mv.impactDirFrames = Array.from({ length: 8 }, (_, k) => build(mv.fx, [String(mv.impactDir8 + k).padStart(3, '0')]));
     mv.pillarFrames = mv.icePillar ? build(mv.icePillar.fx, ['000']).slice(3) : []; // (its first picture is a stray spark)
   }
 }

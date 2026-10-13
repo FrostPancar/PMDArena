@@ -86,6 +86,7 @@ export class Battle extends Play {
     super.create();
     for (const x of this.fighters) if (this.gone.includes(x.f.owner) && x.controller instanceof RemoteController) x.controller.drop();
     this.hud = new BattleHud(this, this.player, this.moves);
+    this.player.kit = this.moves; // (the moves it has with it: Sleep Talk picks from these)
     this.menuTab();
     this.score = new ScoreStrip(this, this.crewed ? Math.max(...this.fighters.map((x) => x.crew?.length ?? 1)) : this.need);
     this.showScore();
@@ -218,7 +219,7 @@ export class Battle extends Play {
     m.setSpecies(look);
     m.revive(m.x, m.y);
     m.toIdle();
-    Object.assign(m, { move: spec.moves[0], invuln: 1.6, flash: 0.5 });
+    Object.assign(m, { move: spec.moves[0], kit: spec.moves, invuln: 1.6, flash: 0.5 });
     if (x.controller instanceof CpuController) Object.assign(x.controller, { moves: spec.moves, cool: 1.2 });
     if (m === this.player) {
       this.moves = spec.moves;
@@ -253,6 +254,7 @@ export class Battle extends Play {
       if (f === this.me) Object.assign(mon, { x, y, home: { x, y } });
       else {
         mon = new Mon(this, x, y, { team, species: lookOf(f), move: f.moves[0] });
+        mon.kit = f.moves;
         this.npcs.push(mon);
       }
       mon.slot = f.slot;
@@ -640,9 +642,14 @@ export class Battle extends Play {
   aimOf(m, track) {
     if (track !== 'touch') return super.aimOf(m, track);
     const a = touch.aim, [sx, sy] = touch.stick;
-    // a teleport goes the way the stick is pushed (unless its button was dragged to aim it)
+    // A teleport lands where its guide is. Dragged, that is where the drag points. Otherwise it is as far as the move
+    // goes the way the stick is pushed (or the mon faces): always for one that only moves (Teleport), and for one that
+    // strikes when the stick is pushed or the button is held. A plain tap of a striking one goes at the nearest foe.
     const mv = MOVES[m.move] ?? MOVES[this.moves[touch.aiming]];
-    if (!a && mv?.kind === 'blink' && (sx || sy)) return { dx: sx, dy: sy, dist: mv.range ?? 100 };
+    if (!a && mv?.kind === 'blink' && m === this.player && (!mv.dmg || sx || sy || holdAim())) {
+      const l = Math.hypot(sx, sy), [fx, fy] = l ? [sx / l, sy / l] : dirVec(m.dir), n = Math.hypot(fx, fy) || 1;
+      return { dx: fx / n, dy: fy / n, dist: mv.range ?? 100 };
+    }
     if (a) return { dx: a.dx, dy: a.dy, dist: 40 + a.reach * 100 };
     if (m.state === 'bird' && (sx || sy)) return { dx: sx, dy: sy, dist: 99 };
     // a button held (not tapped) and not dragged yet: aimed by hand, starting just ahead of the player, the way it
@@ -710,6 +717,8 @@ export class Battle extends Play {
     // a press on the pad that may still turn out to be a tap shows no guide yet: a tap goes at the nearest foe, and the
     // guide of a hold starts ahead of the player, so it is never first seen at the spot the tap would have picked
     if (touch.on && touch.aiming >= 0 && !touch.aim && !holdAim()) return;
+    // a move that carries the user about while its button is down (Dig, Surf, Brave Bird...) is steered, not aimed
+    if (mv.kind === 'hold') return;
     const p = this.player, a = this.aimOf(p, track), col = (this.reticle ??= this.reticleColor()), dark = 0x06101c;
     const on = p.stamina >= mv.cost || p.state === 'windup' || p.state === 'bird' || !!p.beaming ? 1 : 0.4; // faint: no energy for it
     // every mark is drawn dark first and then in colour over it, so it reads on any ground
@@ -722,7 +731,9 @@ export class Battle extends Play {
       const x = Math.round(p.x + a.dx * d), y = Math.round(p.y + a.dy * d);
       g.fillStyle(dark, 0.55 * on).fillRect(x - 2, y - 2, 4, 4).fillStyle(col, on).fillRect(x - 1, y - 1, 2, 2);
     }
-    ring(p.x + a.dx * reach, p.y + a.dy * reach, spot ? mv.burst ?? mv.radius ?? 12 : Math.max(5, mv.radius ?? 6));
+    // (a teleport's ring is where it will really come out: short of a wall, if there is one in the way)
+    const end = mv.kind === 'blink' ? this.blinkSpot(p, mv, a) : { x: p.x + a.dx * reach, y: p.y + a.dy * reach };
+    ring(end.x, end.y, spot ? (mv.burst ?? mv.radius) || 12 : Math.max(5, mv.radius ?? 6));
   }
 
   // The aim guide's colour on this stage: whichever of a few strong colours stands furthest from the ground's own.

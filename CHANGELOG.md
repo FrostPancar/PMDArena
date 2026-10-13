@@ -3,6 +3,36 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.17
+
+**New moves**
+- Vice Grip (a grab), King's Shield (a guard that raises Attack when it is hit), Safeguard (8 s in which no status,
+  stat drop or other ill effect from a foe takes hold) and Punishment (harder for every stat the foe has raised).
+
+**Guards and blocks**
+- Iron Defense: no charge time; the first hit taken while it is held sets off a blast all round, a little wider than
+  Shock Wave. Bide is held the same way, and the hit that ends it doubles the next attack.
+- A white flash shows over an attack that a shield, a doll or a held guard stops.
+
+**Grabs**
+- Bites, Draining Kiss, Drain Punch and Vice Grip land twice at half damage each, the foe held reeling between the
+  two, then both mons are thrown apart.
+
+**Crits and luck**
+- Focus Energy: +25% critical chance for 8 s (and nothing else). Lucky Chant: Defense up and no critical hits on
+  you for 8 s. Acupressure raises one stat at random. A spark shows over a critical hit.
+
+**Moves**
+- Teleport moves land where their guide is; on the pad, where the stick is pushed or the mon faces.
+- Shadow Sneak: its own art for each direction, and it reaches less far.
+- Flash Cannon is one flash down a line to the aimed spot. Rock Blast is a held stream; Will-O-Wisp a slow homing wisp.
+- Ingrain lasts 10 s for 3 HP a second, and a jump ends it. Grass Knot buries. Wood Hammer hits harder.
+- Sleep Talk uses one of the other moves brought to the fight, never Rest.
+- Attract charges for longer; held streams start at once; Giga Impact shows one impact, at the end.
+- New art: Cut, Fury Cutter, Bide, Taunt (with its own mark over a taunted mon), a flare on each Dragon Dance stack,
+  smaller Earthquake rubble, a white ring round a snared mon.
+- No aim guide while holding a move that is steered (Dig, Surf, Brave Bird...).
+
 ## alpha 0.5.16
 
 - Close-range moves no longer miss a foe standing right against the user: their hit circles are up to 6 px bigger

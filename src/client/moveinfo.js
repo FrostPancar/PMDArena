@@ -6,7 +6,7 @@ const TYPE_MOVES = {
   fire: 'blazeKick flareBlitz flameBurst fireSpin fireFang ember fireBlast flamethrower willOWisp eruption overheat incinerate lavaPlume blastBurn firePunch',
   water: 'bubble waterSpout waterPulse hydroBurst hydroPump whirlpool crabhammer bubbleBeam razorShell surf brine waterfall waterGun rainDance aquaRing lifeDew',
   psychic: 'teleport healPulse dreamEater confusion psybeam psychic hypnosis futureSight psychoCut kinesis rest agility barrier gravity reflect lightScreen',
-  dark: 'knockOff bite nightSlash darkPulse nightDaze snarl taunt suckerPunch torment',
+  dark: 'knockOff bite nightSlash darkPulse nightDaze snarl taunt suckerPunch torment punishment',
   ghost: 'shadowBall shadowClaw shadowSneak hex confuseRay nightShade phantomForce destinyBond spite',
   fairy: 'dazzlingGleam drainingKiss moonblast moonlight',
   fighting: 'counter drainPunch hammerArm wakeUpSlap focusBlast focusPunch auraSphere forcePalm crossChop dynamicPunch machPunch seismicToss circleThrow closeCombat detect brickBreak reversal',
@@ -17,7 +17,7 @@ const TYPE_MOVES = {
   ground: 'mudShot spikes boneRush bonemerang earthquake mudBomb sandTomb magnitude',
   rock: 'rockSlide stoneEdge rockBlast rockTomb rockWrecker stealthRock rockThrow powerGem rollout',
   poison: 'venoshock poisonPowder poisonSting sludgeBomb poisonJab acid crossPoison sludgeWave toxicSpikes',
-  steel: 'steelWing ironTail metalClaw flashCannon gyroBall meteorMash ironDefense bulletPunch magnetPull',
+  steel: 'steelWing ironTail metalClaw flashCannon gyroBall meteorMash ironDefense bulletPunch magnetPull kingsShield',
   ice: 'auroraVeil powderSnow iceArmor iceFang iceShard blizzard avalanche iceBall iceBeam auroraBeam haze icicleCrash',
 };
 const TYPE_OF = {};
@@ -122,6 +122,14 @@ export function describe(id) {
   if (mv.flurry) n.push('Each blow hits harder. You are rooted and take more damage.');
   if (mv.detect) n.push('For an instant the next hit misses: you appear behind whoever threw it, and they are stunned.');
   if (mv.bide) n.push(`For ${secs(mv.bide.time)}, a hit you take makes your next attack hit twice as hard.`);
+  if (mv.ray) n.push('One flash down a line to where you aim: everything on the line is hit.');
+  if (mv.punish) n.push(`Hits ${pct(mv.punish)} harder for every stat the foe has raised.`);
+  if (mv.safeguard) n.push(`For ${secs(mv.safeguard)}, nothing a foe sends can give you a status, lower your stats or hamper you.`);
+  if (mv.critUp) n.push(`For ${secs(mv.critUp.time)}, your hits are ${pct(mv.critUp.add)} likelier to be critical.`);
+  if (mv.noCrit) n.push(`No hit on you can be critical for ${secs(mv.noCrit)}.`);
+  if (mv.keen) n.push('A slicing move: a critical hit one time in four.');
+  if (mv.asleep === 'talk') n.push('Only while asleep: uses one of your other three moves (never Rest).');
+  if (mv.vanish?.trail) n.push('Sinks into the ground and comes up behind the foe.');
   if (mv.breaker) n.push('Smashes shields, the substitute, walls and standing rocks, and stuns their owner.');
   if (mv.repeat) n.push('Costs more each time it is used in a row.');
   if (mv.grapple) n.push(mv.meet ? 'Pulls you and the first foe it reaches together.' : 'Drags the first foe it reaches to you.', 'Hitting a wall, it pulls you there.');
@@ -159,7 +167,7 @@ export function describe(id) {
   if (mv.step > 16) n.push('A longer dart in than most.'); // every melee move darts a little: only the long ones say so
   if (mv.jab) n.push('Counter: hits much harder on a foe caught charging a move.');
   if (mv.cut) n.push('Cuts light shots out of the air.');
-  if (mv.latch) n.push(`Latches on: you and the foe are both held for ${secs(mv.latch)} while it keeps biting.`);
+  if (mv.latch) n.push('A grab: it lands twice, the foe held helpless between the two, then you are both thrown apart.');
   if (mv.combo) n.push('Use it again right after it lands and it comes out at once.');
   if (mv.versus) n.push(mv.versus.any ? 'Hits twice as hard on a foe with a status condition.' : `Hits much harder on a foe that is ${mv.versus.status.map((k) => STATUS[k].label).join(' or ')}.`);
   if (mv.stream) n.push(`Keeps ${mv.kind === 'melee' ? 'striking' : 'firing'} while held, for ${+(mv.stream.upkeep / 20).toFixed(1)} energy a second.`);
@@ -171,7 +179,7 @@ export function describe(id) {
   if (mv.ricochet) n.push(`Bounces off walls up to ${mv.ricochet} times, harder each time.`);
   if (mv.swell) n.push('Grows as it flies: weak up close, strong at range.');
   if (mv.appear && mv.kind === 'auto') n.push('A ring shows where it will land a moment before it does.');
-  if (mv.stance) n.push('A strong guard while held. The first hit ends it.');
+  if (mv.stance) n.push(mv.burst ? 'A strong guard while held. The first hit ends it in a blast all round you.' : mv.onBlock?.buff ? `A strong guard while held. The first hit ends it and raises your ${STAT[mv.onBlock.buff.stat]} for ${secs(mv.onBlock.buff.time)}.` : mv.onBlock?.empower ? 'A strong guard while held. The first hit ends it, and your next attack hits twice as hard.' : 'A strong guard while held. The first hit ends it.');
   if (mv.ritual) n.push(`Builds up to ${mv.ritual.max} stacks of ${STAT[mv.buff.stat]}${mv.buff.also ? ` and ${STAT[mv.buff.also]}` : ''}. A hit loses them.`);
   if (mv.field?.lane) n.push(`A lane for ${secs(mv.field.time)}: speeds your side, slows enemy shots.`);
   else if (mv.field) n.push(`Leaves a circle for ${secs(mv.field.time)}: it only works while you stand in it.`);
@@ -186,8 +194,8 @@ export function describe(id) {
   if (mv.drain) n.push(`Heals you for ${pct(mv.drain)} of the damage.`);
   if (mv.heal) n.push(`Restores ${mv.heal} HP${(mv.healDelay ?? 0) >= 2000 ? ` after ${secs(mv.healDelay / 1000)}` : ''}.`);
   if (mv.regen && !mv.field) n.push(`Heals ${mv.regen.hps} HP a second for ${secs(mv.regen.time)}.`);
-  if (mv.ingrain) n.push(`Roots you and heals ${mv.ingrain.hps} HP a second for ${secs(mv.ingrain.time)}.`);
-  if (mv.buff && !mv.stance && !mv.ritual && !mv.field) n.push(mv.buff.stat === 'eva' ? `Dodge half of all hits for ${secs(mv.buff.time)}.` : `Raises your ${STAT[mv.buff.stat] ?? 'stats'} for ${secs(mv.buff.time)}.`);
+  if (mv.ingrain) n.push(`Roots you and heals ${mv.ingrain.hps} HP a second for ${secs(mv.ingrain.time)}. Jump to pull the roots up early.`);
+  if (mv.buff && !mv.stance && !mv.ritual && !mv.field) n.push(mv.buff.stat === 'eva' ? `Dodge half of all hits for ${secs(mv.buff.time)}.` : mv.buff.stat === 'random' ? `Raises one of your stats, at random, for ${secs(mv.buff.time)}.` : `Raises your ${STAT[mv.buff.stat] ?? 'stats'} for ${secs(mv.buff.time)}.`);
   if (mv.bonus) n.push(`${pct(mv.bonus.chance)} chance to raise your ${STAT[mv.bonus.buff.stat]}.`);
   if (mv.debuff) n.push(`Lowers the foe's ${STAT[mv.debuff.stat]} for ${secs(mv.debuff.time)}.`);
   if (mv.guard) n.push(`Blocks every hit while held, for ${+(mv.guard.upkeep / 20).toFixed(1)} energy a second.`);

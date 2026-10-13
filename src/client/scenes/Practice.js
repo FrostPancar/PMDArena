@@ -132,6 +132,7 @@ export class Practice extends Battle {
     const moves = [...attacks.slice(0, 3), ...set.filter((id) => !attacks.includes(id)).sort(() => Math.random() - 0.5)].slice(0, 4);
     const f = { slot: this.fighters.length + 10, team: 1, kind: 'cpu', owner: ME, species, moves };
     const mon = new Mon(this, x, y, { team: 'n', species, move: moves[0] });
+    mon.kit = moves;
     mon.slot = f.slot;
     this.npcs.push(mon);
     this.lastHp.set(mon, mon.hp);
