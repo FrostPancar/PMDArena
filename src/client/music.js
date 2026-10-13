@@ -30,8 +30,12 @@ function context() {
   if (ctx) return ctx;
   const AC = window.AudioContext ?? window.webkitAudioContext;
   if (!AC) return null;
-  // the tracks are 32 kHz: a context at that rate holds them decoded in two thirds of the memory
-  try { ctx = new AC({ sampleRate: 32000 }); } catch { ctx = new AC(); }
+  // the tracks are 32 kHz: a context at that rate holds them decoded in two thirds of the memory. Not on an iPhone
+  // or iPad, where a context asked for its own rate can come up silent: there it takes the device's.
+  const apple = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  try { ctx = apple ? new AC() : new AC({ sampleRate: 32000 }); } catch { ctx = new AC(); }
+  // an iPhone with its ringer switched off plays nothing from a web page unless the page says it is playing media
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch { /* older Safari: the ringer switch decides */ }
   master = ctx.createGain();
   master.gain.value = prefs.muted ? 0 : prefs.volume;
   master.connect(ctx.destination);
@@ -98,7 +102,10 @@ function unlock() {
   if (!context()) return;
   if (ctx.state !== 'running') ctx.resume().then(() => start(wanted)).catch(() => {});
 }
-for (const type of ['pointerdown', 'keydown', 'touchend']) window.addEventListener(type, unlock, { passive: true });
+// Heard on the way down to whatever was pressed (capture), not on the way back up: the touch pad keeps its touches
+// to itself, so nothing pressed on it would ever arrive here otherwise. Safari on a phone only lets sound start from
+// the end of a touch or a click, so those are listened for as well as the press.
+for (const type of ['touchend', 'pointerup', 'click', 'pointerdown', 'keydown']) window.addEventListener(type, unlock, { capture: true, passive: true });
 // nothing plays on behind a hidden tab
 document.addEventListener('visibilitychange', () => { if (ctx) (document.hidden ? ctx.suspend() : ctx.resume()).catch(() => {}); });
 window.addEventListener('keydown', (e) => {

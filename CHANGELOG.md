@@ -3,6 +3,11 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.14
+
+- Sound on phones: presses on the touch pad now start the audio (they never reached it before), an iPhone with its
+  ringer off still plays, and iPhones use their own audio rate.
+
 ## alpha 0.5.13
 
 - Phantump (Ghost, evolves into Trevenant) takes Mimikyu's place.
