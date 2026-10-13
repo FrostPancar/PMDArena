@@ -10,6 +10,7 @@ import { fetchStages, stagesNote, whenStages } from '../stages.js';
 import { cap } from '../moveinfo.js';
 import { tapActs } from '../touch.js';
 import { DEPTH, INK, Hints, text, icon, typeIcon, panel } from '../ui.js';
+import { music } from '../music.js';
 
 const COLS = 6, CELL_W = 24, CELL_H = 24;
 const GRID_X = 228, GRID_Y = 6, GRID_W = COLS * CELL_W + 8;
@@ -36,6 +37,7 @@ export class Dream extends Phaser.Scene {
   }
 
   create() {
+    music.play('screen_dream');
     this.walkable = () => true; // Mon asks its scene where it may stand
     this.add.image(0, 0, 'px').setOrigin(0).setDisplaySize(VIEW_W, VIEW_H).setTint(DREAM_GLOW);
     // the lighter band lies under the darker, narrower one; the right side mirrors the left

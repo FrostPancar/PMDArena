@@ -3,6 +3,29 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.9
+
+**Sound**
+- Music: every stage and screen has a track (Red Rescue Team and Explorers), looping from its loop point; Versus
+  Legendary plays against level 5 CPUs; jingles for a loss, a stage opening, a TM, a level and an evolution.
+- Sound effects, a first pass: hits, jumps, parries, clashes, faints, heals, menu steps, and 180 of the moves.
+- Music and Sounds switches in the pause menu and behind a Sound tab in every room; M mutes music.
+
+**Fighting**
+- Two close-range blows that meet clash: neither lands, both mons are thrown apart and reel for a moment.
+- Icicle Crash leaves a spire of ice: cover that any attack can chip away and break.
+- Heavy hits knock back again as well as stunning (0.5.8 had lost the knockback).
+- Tadpole Pond: hops between the side pools at the top and the bank.
+
+**Looks**
+- New title card.
+- Spikes are caltrops that stay in sight; Ember is a fireball that faces its flight; a landed parry and a broken
+  shot have new bursts of light.
+
+**Tools**
+- Sound viewer (sounds.html) for naming and sorting the sound effects.
+- The effect viewer has sections for sheets from other games, cut up by tools/slice-sheets.py.
+
 ## alpha 0.5.8
 
 - Tadpole Pond: the water can be walked on, and the side pools at the top are reached by a hop over the grass.

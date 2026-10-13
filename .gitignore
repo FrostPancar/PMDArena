@@ -2,3 +2,5 @@ node_modules/
 dist/
 .DS_Store
 dist-tools/
+# the soundtrack as downloaded (.brstm): Music/ holds what the game plays (tools/convert-music.py)
+PMDRRT Soundtrack/

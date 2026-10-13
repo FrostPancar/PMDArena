@@ -1,0 +1,437 @@
+{
+ "beep.mp3": {
+  "name": "beep",
+  "group": "ui",
+  "notes": ""
+ },
+ "bubbles1.mp3": {
+  "name": "bubbles1",
+  "group": "element",
+  "notes": ""
+ },
+ "bubbles2.mp3": {
+  "name": "bubbles2",
+  "group": "element",
+  "notes": ""
+ },
+ "bubles.mp3": {
+  "name": "bubles",
+  "group": "element",
+  "notes": ""
+ },
+ "chime.mp3": {
+  "name": "chime",
+  "group": "whoosh",
+  "notes": ""
+ },
+ "effect.mp3": {
+  "name": "effect",
+  "group": "whoosh",
+  "notes": ""
+ },
+ "exit.mp3": {
+  "name": "exit",
+  "group": "status",
+  "notes": ""
+ },
+ "explosive_echo.mp3": {
+  "name": "explosive_echo",
+  "group": "explosion",
+  "notes": ""
+ },
+ "levelup.mp3": {
+  "name": "levelup",
+  "group": "jingle",
+  "notes": ""
+ },
+ "shaker.mp3": {
+  "name": "shaker",
+  "group": "whoosh",
+  "notes": ""
+ },
+ "song200.mp3": {
+  "name": "",
+  "group": "jingle",
+  "notes": ""
+ },
+ "song201.mp3": {
+  "name": "",
+  "group": "jingle",
+  "notes": ""
+ },
+ "song202.mp3": {
+  "name": "",
+  "group": "jingle",
+  "notes": ""
+ },
+ "song203.mp3": {
+  "name": "",
+  "group": "jingle",
+  "notes": ""
+ },
+ "song205.mp3": {
+  "name": "",
+  "group": "jingle",
+  "notes": ""
+ },
+ "song206.mp3": {
+  "name": "",
+  "group": "jingle",
+  "notes": ""
+ },
+ "song208.mp3": {
+  "name": "",
+  "group": "jingle",
+  "notes": ""
+ },
+ "song210.mp3": {
+  "name": "",
+  "group": "jingle",
+  "notes": ""
+ },
+ "song211.mp3": {
+  "name": "",
+  "group": "jingle",
+  "notes": ""
+ },
+ "song212.mp3": {
+  "name": "",
+  "group": "jingle",
+  "notes": ""
+ },
+ "song214.mp3": {
+  "name": "",
+  "group": "jingle",
+  "notes": ""
+ },
+ "song215.mp3": {
+  "name": "",
+  "group": "whoosh",
+  "notes": ""
+ },
+ "song302.mp3": {
+  "name": "",
+  "group": "ui",
+  "notes": ""
+ },
+ "song303.mp3": {
+  "name": "",
+  "group": "ui",
+  "notes": ""
+ },
+ "song306.mp3": {
+  "name": "",
+  "group": "ui",
+  "notes": ""
+ },
+ "song312.mp3": {
+  "name": "",
+  "group": "jingle",
+  "notes": ""
+ },
+ "song330.mp3": {
+  "name": "",
+  "group": "ui",
+  "notes": ""
+ },
+ "song331.mp3": {
+  "name": "",
+  "group": "ui",
+  "notes": ""
+ },
+ "song332.mp3": {
+  "name": "",
+  "group": "whoosh",
+  "notes": ""
+ },
+ "song333.mp3": {
+  "name": "",
+  "group": "whoosh",
+  "notes": ""
+ },
+ "song337.mp3": {
+  "name": "",
+  "group": "whoosh",
+  "notes": ""
+ },
+ "song338.mp3": {
+  "name": "",
+  "group": "whoosh",
+  "notes": ""
+ },
+ "song339.mp3": {
+  "name": "",
+  "group": "whoosh",
+  "notes": ""
+ },
+ "song342.mp3": {
+  "name": "",
+  "group": "whoosh",
+  "notes": ""
+ },
+ "song343.mp3": {
+  "name": "",
+  "group": "whoosh",
+  "notes": ""
+ },
+ "song344.mp3": {
+  "name": "grab",
+  "group": "",
+  "notes": ""
+ },
+ "song401.mp3": {
+  "name": "",
+  "group": "whoosh",
+  "notes": ""
+ },
+ "song404.mp3": {
+  "name": "beam",
+  "group": "beam",
+  "notes": ""
+ },
+ "song406.mp3": {
+  "name": "",
+  "group": "status",
+  "notes": ""
+ },
+ "song408.mp3": {
+  "name": "",
+  "group": "status",
+  "notes": ""
+ },
+ "song409.mp3": {
+  "name": "",
+  "group": "hit",
+  "notes": ""
+ },
+ "song410.mp3": {
+  "name": "",
+  "group": "hit",
+  "notes": ""
+ },
+ "song412.mp3": {
+  "name": "",
+  "group": "whoosh",
+  "notes": ""
+ },
+ "song413.mp3": {
+  "name": "",
+  "group": "whoosh",
+  "notes": ""
+ },
+ "song414.mp3": {
+  "name": "",
+  "group": "hit",
+  "notes": ""
+ },
+ "song415.mp3": {
+  "name": "",
+  "group": "whoosh",
+  "notes": ""
+ },
+ "song417.mp3": {
+  "name": "",
+  "group": "explosion",
+  "notes": ""
+ },
+ "song470.mp3": {
+  "name": "star shoot",
+  "group": "",
+  "notes": ""
+ },
+ "song479.mp3": {
+  "name": "swords dance",
+  "group": "",
+  "notes": ""
+ },
+ "song482.mp3": {
+  "name": "bell",
+  "group": "",
+  "notes": ""
+ },
+ "song498.mp3": {
+  "name": "double burst",
+  "group": "explosion",
+  "notes": ""
+ },
+ "song508.mp3": {
+  "name": "beam heavy",
+  "group": "",
+  "notes": ""
+ },
+ "song509.mp3": {
+  "name": "shine",
+  "group": "",
+  "notes": ""
+ },
+ "song616.mp3": {
+  "name": "warble echo",
+  "group": "",
+  "notes": ""
+ },
+ "song620.mp3": {
+  "name": "detect",
+  "group": "",
+  "notes": ""
+ },
+ "song622.mp3": {
+  "name": "denied",
+  "group": "",
+  "notes": ""
+ },
+ "song629.mp3": {
+  "name": "claps",
+  "group": "",
+  "notes": ""
+ },
+ "song641.mp3": {
+  "name": "boulders break",
+  "group": "",
+  "notes": ""
+ },
+ "song648.mp3": {
+  "name": "singsong",
+  "group": "",
+  "notes": ""
+ },
+ "song651.mp3": {
+  "name": "impact wind up",
+  "group": "",
+  "notes": ""
+ },
+ "song652.mp3": {
+  "name": "impact",
+  "group": "",
+  "notes": ""
+ },
+ "song653.mp3": {
+  "name": "impact",
+  "group": "",
+  "notes": ""
+ },
+ "song655.mp3": {
+  "name": "impact",
+  "group": "",
+  "notes": ""
+ },
+ "song662.mp3": {
+  "name": "impact",
+  "group": "",
+  "notes": ""
+ },
+ "song669.mp3": {
+  "name": "flare",
+  "group": "",
+  "notes": ""
+ },
+ "song671.mp3": {
+  "name": "flare2",
+  "group": "",
+  "notes": ""
+ },
+ "song675.mp3": {
+  "name": "shine",
+  "group": "",
+  "notes": ""
+ },
+ "song678.mp3": {
+  "name": "wind_blow",
+  "group": "",
+  "notes": ""
+ },
+ "song682.mp3": {
+  "name": "rock break",
+  "group": "",
+  "notes": ""
+ },
+ "song688.mp3": {
+  "name": "wind blade",
+  "group": "",
+  "notes": ""
+ },
+ "song689.mp3": {
+  "name": "fury swipe/double cut",
+  "group": "",
+  "notes": ""
+ },
+ "song690.mp3": {
+  "name": "double burst",
+  "group": "",
+  "notes": ""
+ },
+ "song697.mp3": {
+  "name": "",
+  "group": "element",
+  "notes": ""
+ },
+ "song711.mp3": {
+  "name": "status down",
+  "group": "",
+  "notes": ""
+ },
+ "song715.mp3": {
+  "name": "sword clash",
+  "group": "",
+  "notes": ""
+ },
+ "song716.mp3": {
+  "name": "fire",
+  "group": "",
+  "notes": ""
+ },
+ "song772.mp3": {
+  "name": "scary face",
+  "group": "",
+  "notes": ""
+ },
+ "song787.mp3": {
+  "name": "explosion mid",
+  "group": "explosion",
+  "notes": ""
+ },
+ "song808.mp3": {
+  "name": "confusion",
+  "group": "",
+  "notes": ""
+ },
+ "song828.mp3": {
+  "name": "ice shard",
+  "group": "",
+  "notes": ""
+ },
+ "song868.mp3": {
+  "name": "",
+  "group": "whoosh",
+  "notes": ""
+ },
+ "song882.mp3": {
+  "name": "power up",
+  "group": "",
+  "notes": ""
+ },
+ "song899.mp3": {
+  "name": "shimmer",
+  "group": "",
+  "notes": ""
+ },
+ "song901.mp3": {
+  "name": "jump",
+  "group": "",
+  "notes": ""
+ },
+ "song910.mp3": {
+  "name": "shooting star",
+  "group": "",
+  "notes": ""
+ },
+ "song915.mp3": {
+  "name": "drop",
+  "group": "",
+  "notes": ""
+ },
+ "song935.mp3": {
+  "name": "metal",
+  "group": "",
+  "notes": ""
+ }
+}

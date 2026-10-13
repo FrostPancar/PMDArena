@@ -2,7 +2,8 @@ import { defineConfig } from 'vite';
 import fs from 'node:fs';
 import path from 'node:path';
 import { attachRelay } from './server/relay.js';
-import { NAMES_FILE, listEffects, readNames } from './server/vfx-list.js';
+import { NAMES_FILE, listEffects, readNames, sectionLabels } from './server/vfx-list.js';
+import { SOUND_NAMES_FILE, listSounds, readSoundNames } from './server/sound-list.js';
 
 const MOVE_NOTES_FILE = path.resolve('move-notes.json');
 const readMoveNotes = () => {
@@ -39,6 +40,31 @@ function vfxApi() {
           }
         });
       });
+      // sounds.html: the names, groups and notes given to the sound effects, kept in "Sound Effects/names.json"
+      server.middlewares.use('/api/sounds', (req, res) => {
+        const json = (code, body) => {
+          res.statusCode = code;
+          res.setHeader('content-type', 'application/json');
+          res.end(JSON.stringify(body));
+        };
+        if (req.method === 'GET') return json(200, { sounds: listSounds(), names: readSoundNames() });
+        if (req.method !== 'POST') return json(405, { error: 'method' });
+        let body = '';
+        req.on('data', (c) => { body += c; if (body.length > 1e6) req.destroy(); });
+        req.on('end', () => {
+          try {
+            const names = {};
+            for (const [file, v] of Object.entries(JSON.parse(body))) {
+              if (!/^[\w .-]+\.mp3$/.test(file) || !v) continue;
+              names[file] = { name: String(v.name ?? '').slice(0, 80), group: String(v.group ?? '').slice(0, 40), notes: String(v.notes ?? '').slice(0, 300) };
+            }
+            fs.writeFileSync(SOUND_NAMES_FILE, JSON.stringify(names, null, 1) + '\n');
+            json(200, { saved: Object.keys(names).length });
+          } catch (e) {
+            json(400, { error: String(e) });
+          }
+        });
+      });
       server.middlewares.use('/api/vfx', (req, res) => {
         const json = (code, body) => {
           res.statusCode = code;
@@ -46,7 +72,7 @@ function vfxApi() {
           res.end(JSON.stringify(body));
         };
         if (req.method === 'GET') {
-          return json(200, { effects: listEffects(), names: readNames() });
+          return json(200, { effects: listEffects(), names: readNames(), sections: sectionLabels() });
         }
         if (req.method === 'POST') {
           let body = '';

@@ -76,6 +76,7 @@ export class Mon {
     this.braced = false; // holding a stance: rooted until it is let go or broken
     this.reel = 0; // seconds since it was last hurt during which a follow-up strike still lands
     this.stun = 0; // seconds left unable to act (a parried lock-on dash, a missed chain dash)
+    this.shove = 0; // seconds for which a blow still carries it back although it is stunned (a heavy hit, two blows clashing)
     this.hop = 0; // px the sprite is drawn above its shadow (Fly, Bounce)
     this.flying = false; // up in the air with Fly: only moves that swat flyers can reach it
     this.beaming = null; // the held beam it is firing: slow to walk, cannot turn its body
@@ -279,6 +280,7 @@ export class Mon {
     if (l) this.dir = dirFromVec(vx, vy);
     this.state = 'jump';
     this.running = false;
+    this.scene.game.events.emit('sfx', 'jump');
     const hop = this.species.anims.Hop;
     this.setAnim(hop ? 'Hop' : 'Idle', 'hold');
     if (hop) this.animRate = hop.durs.reduce((a, b) => a + b, 0) / 60 / JUMP_TIME;
@@ -402,7 +404,7 @@ export class Mon {
       this.setAnim(has.Faint ? 'Faint' : 'Idle', 'hold', null, () => this.scene.fainted(this));
     } else {
       this.state = 'hurt';
-      if (hit?.tag === 'heavy') this.stun = Math.max(this.stun, HEAVY_STUN); // a heavy blow leaves it reeling for longer
+      if (hit?.tag === 'heavy') { this.stun = Math.max(this.stun, HEAVY_STUN); this.shove = 0.4; } // a heavy blow leaves it reeling for longer
       this.setAnim(has.Hurt ? 'Hurt' : 'Idle', 'once', null, () => this.toIdle());
     }
     return true;
@@ -454,6 +456,7 @@ export class Mon {
     this.lx = this.x; this.ly = this.y;
     this.invuln = Math.max(0, this.invuln - dt);
     this.stun = Math.max(0, this.stun - dt);
+    this.shove = Math.max(0, this.shove - dt);
     this.reel = Math.max(0, this.reel - dt);
     this.roost = Math.max(0, this.roost - dt);
     for (const k of ['detect', 'bond', 'endure', 'webbed']) this[k] = Math.max(0, this[k] - dt);
@@ -510,7 +513,7 @@ export class Mon {
       this.stamina = Math.min(this.maxStamina, this.stamina + STAMINA_REGEN * dt);
       if (this.stamina >= NOTCH) this.exhausted = false;
     }
-    if (this.stuck) this.kx = this.ky = 0;
+    if (this.stuck && !(this.shove > 0)) this.kx = this.ky = 0;
     if (this.kx || this.ky) {
       this.slide(this.kx * dt, this.ky * dt);
       const k = Math.max(0, 1 - 9 * dt);

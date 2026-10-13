@@ -1,0 +1,228 @@
+{
+ "stage_beach": {
+  "title": "Beach Cave",
+  "game": "Pokémon Mystery Dungeon: Explorers of Time & Darkness",
+  "seconds": 53.73,
+  "loopStart": 0.9752,
+  "loopEnd": 53.7254
+ },
+ "stage_pond": {
+  "title": "Tiny Woods",
+  "game": "Pokémon Mystery Dungeon: Red Rescue Team",
+  "seconds": 45.95,
+  "loopStart": 3.2853,
+  "loopEnd": 45.9523
+ },
+ "stage_safari": {
+  "title": "Apple Woods",
+  "game": "Pokémon Mystery Dungeon: Explorers of Time & Darkness",
+  "seconds": 88.27,
+  "loopStart": 2.2756,
+  "loopEnd": 88.2676
+ },
+ "stage_mushroom": {
+  "title": "Sinister Woods",
+  "game": "Pokémon Mystery Dungeon: Red Rescue Team",
+  "seconds": 56.77,
+  "loopStart": 0.5973,
+  "loopEnd": 56.7673
+ },
+ "stage_jungle": {
+  "title": "Treeshroud Forest",
+  "game": "Pokémon Mystery Dungeon: Explorers of Time & Darkness",
+  "seconds": 90.67,
+  "loopStart": 0.9752,
+  "loopEnd": 90.6684
+ },
+ "stage_mistrise": {
+  "title": "Foggy Forest",
+  "game": "Pokémon Mystery Dungeon: Explorers of Time & Darkness",
+  "seconds": 91.67,
+  "loopStart": 10.0775,
+  "loopEnd": 91.6738
+ },
+ "stage_secretive": {
+  "title": "Mystifying Forest",
+  "game": "Pokémon Mystery Dungeon: Explorers of Time & Darkness",
+  "seconds": 58.83,
+  "loopStart": 0.9752,
+  "loopEnd": 58.8326
+ },
+ "stage_swamp": {
+  "title": "Silent Chasm",
+  "game": "Pokémon Mystery Dungeon: Red Rescue Team",
+  "seconds": 71.74,
+  "loopStart": 2.3893,
+  "loopEnd": 71.7383
+ },
+ "stage_sacred": {
+  "title": "Great Canyon",
+  "game": "Pokémon Mystery Dungeon: Red Rescue Team",
+  "seconds": 80.6,
+  "loopStart": 22.9973,
+  "loopEnd": 80.5973
+ },
+ "stage_scorched": {
+  "title": "Magma Cavern",
+  "game": "Pokémon Mystery Dungeon: Red Rescue Team",
+  "seconds": 113.89,
+  "loopStart": 10.4533,
+  "loopEnd": 113.8853
+ },
+ "stage_desert": {
+  "title": "Northern Desert",
+  "game": "Pokémon Mystery Dungeon: Explorers of Time & Darkness",
+  "seconds": 97.96,
+  "loopStart": 0.6502,
+  "loopEnd": 97.9613
+ },
+ "stage_blaze": {
+  "title": "Mt. Blaze Peak",
+  "game": "Pokémon Mystery Dungeon: Red Rescue Team",
+  "seconds": 82.19,
+  "loopStart": 11.9467,
+  "loopEnd": 82.1907
+ },
+ "stage_steel": {
+  "title": "Mt. Steel",
+  "game": "Pokémon Mystery Dungeon: Red Rescue Team",
+  "seconds": 88.89,
+  "loopStart": 1.1947,
+  "loopEnd": 88.8877
+ },
+ "stage_northern": {
+  "title": "Mt. Freeze",
+  "game": "Pokémon Mystery Dungeon: Red Rescue Team",
+  "seconds": 86.93,
+  "loopStart": 2.688,
+  "loopEnd": 86.93
+ },
+ "stage_plant": {
+  "title": "Amp Plains",
+  "game": "Pokémon Mystery Dungeon: Explorers of Time & Darkness",
+  "seconds": 66.01,
+  "loopStart": 0.9752,
+  "loopEnd": 66.0115
+ },
+ "stage_serene": {
+  "title": "Drenched Bluff",
+  "game": "Pokémon Mystery Dungeon: Explorers of Time & Darkness",
+  "seconds": 81.93,
+  "loopStart": 0.6502,
+  "loopEnd": 81.93
+ },
+ "stage_bountiful": {
+  "title": "Surrounded Sea",
+  "game": "Pokémon Mystery Dungeon: Explorers of Time & Darkness",
+  "seconds": 73.97,
+  "loopStart": 0.6502,
+  "loopEnd": 73.9706
+ },
+ "stage_enclosed": {
+  "title": "Craggy Coast",
+  "game": "Pokémon Mystery Dungeon: Explorers of Time & Darkness",
+  "seconds": 94.95,
+  "loopStart": 1.6254,
+  "loopEnd": 94.9478
+ },
+ "screen_title": {
+  "title": "Title",
+  "game": "Pokémon Mystery Dungeon: Red Rescue Team",
+  "seconds": 30.31
+ },
+ "screen_save": {
+  "title": "File Select",
+  "game": "Pokémon Mystery Dungeon: Red Rescue Team",
+  "seconds": 34.88,
+  "loopStart": 0.5973,
+  "loopEnd": 34.8823
+ },
+ "screen_dream": {
+  "title": "Personality Test",
+  "game": "Pokémon Mystery Dungeon: Red Rescue Team",
+  "seconds": 25.21,
+  "loopStart": 0.5973,
+  "loopEnd": 25.2134
+ },
+ "screen_welcome": {
+  "title": "Welcome to the World of Pokemon!",
+  "game": "Pokémon Mystery Dungeon: Red Rescue Team",
+  "seconds": 76.81,
+  "loopStart": 6.5707,
+  "loopEnd": 76.8147
+ },
+ "screen_base": {
+  "title": "Rescue Team Base",
+  "game": "Pokémon Mystery Dungeon: Red Rescue Team",
+  "seconds": 29.54,
+  "loopStart": 0.0,
+  "loopEnd": 29.538
+ },
+ "screen_dojo": {
+  "title": "Marowak Dojo",
+  "game": "Pokémon Mystery Dungeon: Explorers of Time & Darkness",
+  "seconds": 82.65,
+  "loopStart": 4.5511,
+  "loopEnd": 82.6454
+ },
+ "screen_basement": {
+  "title": "Time Gear",
+  "game": "Pokémon Mystery Dungeon: Explorers of Time & Darkness",
+  "seconds": 117.7,
+  "loopStart": 17.2292,
+  "loopEnd": 117.6986
+ },
+ "screen_lab": {
+  "title": "Friend Area Lab",
+  "game": "Pokémon Mystery Dungeon: Red Rescue Team",
+  "seconds": 42.67,
+  "loopStart": 0.0,
+  "loopEnd": 42.667
+ },
+ "screen_crew": {
+  "title": "Do Your Best, As Always!",
+  "game": "Pokémon Mystery Dungeon: Explorers of Time & Darkness",
+  "seconds": 51.29,
+  "loopStart": 0.9752,
+  "loopEnd": 51.2911
+ },
+ "screen_map": {
+  "title": "Top Menu Theme",
+  "game": "Pokémon Mystery Dungeon: Explorers of Time & Darkness",
+  "seconds": 28.66,
+  "loopStart": 0.9752,
+  "loopEnd": 28.6566
+ },
+ "fight_boss": {
+  "title": "Versus Legendary",
+  "game": "Pokémon Mystery Dungeon: Red Rescue Team",
+  "seconds": 161.53,
+  "loopStart": 61.2267,
+  "loopEnd": 161.5257
+ },
+ "screen_evolution": {
+  "title": "Evolution",
+  "game": "Pokémon Mystery Dungeon: Red Rescue Team",
+  "seconds": 2.06
+ },
+ "jingle_loss": {
+  "title": "Mission Failed",
+  "game": "Pokémon Mystery Dungeon: Red Rescue Team",
+  "seconds": 2.88
+ },
+ "jingle_unlock": {
+  "title": "Dungeon Unlocked",
+  "game": "Pokémon Mystery Dungeon: Red Rescue Team",
+  "seconds": 3.05
+ },
+ "jingle_tm": {
+  "title": "Get Special Item",
+  "game": "Pokémon Mystery Dungeon: Red Rescue Team",
+  "seconds": 2.63
+ },
+ "jingle_levelup": {
+  "title": "Level Up",
+  "game": "Pokémon Mystery Dungeon: Red Rescue Team",
+  "seconds": 2.65
+ }
+}

@@ -286,6 +286,12 @@ const urls = import.meta.glob(
     '../move_VFX/0258_gust_spiral/001/*.png',
     '../move_VFX/0259_dark_scribble/000/*.png',
     '../move_VFX/0259_dark_scribble/002/*.png',
+    // art cut from other games' sheets (extra_VFX/<sheet>/, see tools/slice-sheets.py): named by folder like the rest
+    '../extra_VFX/emerald/5016_emerald_016/000/*.png',
+    '../extra_VFX/mana/6043_mana_043/000/*.png',
+    '../extra_VFX/mana/6060_mana_060/000/*.png',
+    '../extra_VFX/dbz/7023_dbz_023/000/*.png',
+    '../extra_VFX/negima/8006_negima_006/000/*.png',
   ],
   { eager: true, query: '?url', import: 'default' },
 );
@@ -605,7 +611,9 @@ export const MOVES = {
 // How many times in one match a mon may use moves that only heal it (Rest, Recover-likes, Ingrain, Aqua Ring...).
 export const HEAL_LIMIT = 5;
 export const healsOnly = (mv) => mv.kind === 'self' && !!(mv.heal || mv.regen || mv.ingrain);
-export const PARRY = { cost: 0, gain: 20, window: 0.55, perfect: 0.15, cooldown: 0.9, hit: ['0239_shine_orb', '003'] };
+export const PARRY = { cost: 0, gain: 20, window: 0.55, perfect: 0.15, cooldown: 0.9, hit: ['7023_dbz_023', '000'], scale: 0.7 };
+// A shot cut or beaten out of the air breaks up in this burst of light.
+export const SHATTER = { fx: ['8006_negima_006', '000'], scale: 0.55 };
 
 // The sparks that loop on a mon whose next attack is boosted, and the trail behind one that is running.
 export const EMPOWER = { fx: ['0224_focus_punch', '000'] };
@@ -914,6 +922,14 @@ give('futureSight', (mv) => ({ radius: 42, scale: (mv.scale ?? 1) * 1.5 }));
 give('waterfall', (mv) => ({ radius: 34, scale: (mv.scale ?? 1) * 1.5 }));
 give('eruption', { charge: 0.2 });
 give('hammerArm', { charge: 0.15 });
+// Art from other games' sheets.
+// Spikes: caltrops that stay in sight where they were thrown (trapArt: how many are strewn over the spot).
+give('spikes', { fx: '5016_emerald_016', seqs: ['000'], gray: undefined, origin: undefined, fps: 9, trapArt: 5 });
+// Ember: a fireball with its tail behind it, turned the way it flies.
+give('ember', { fx: '6060_mana_060', seqs: ['000'], slice: [0, 3], rotate: true, spin: false });
+// Icicle Crash leaves a spire of ice standing where it lands: cover like a standing rock, for `time` seconds, but any
+// attack that reaches it wears it down (`hp`) and it breaks.
+give('icicleCrash', { icePillar: { fx: '6043_mana_043', time: 7, hp: 30 } });
 for (const [id, mv] of Object.entries(MOVES)) mv.id = id; // carried by the one-use copies the engine makes, for messages between clients
 // ---- from the move notes ----
 // selfFx / selfScale: a piece of art played on the user as the move goes off. pillarStill: the standing rock is the move's own
@@ -1053,7 +1069,7 @@ export const movesOf = (speciesId, branch) => [...(MOVESETS[speciesId] ?? ['bite
 
 const files = (fx, seq) =>
   Object.keys(urls)
-    .filter((p) => p.startsWith(`../move_VFX/${fx}/${seq}/`))
+    .filter((p) => p.includes(`/${fx}/${seq}/`))
     .map((p) => ({ tick: +p.slice(-7, -4), key: `vfx-${fx}-${seq}-${p.slice(-7, -4)}`, url: urls[p] }))
     .sort((a, b) => a.tick - b.tick);
 
@@ -1087,7 +1103,7 @@ const FRAME_URL = new Map(); // texture key -> where its picture is
 
 // Every texture key a move draws with.
 const keysOf = (mv) => [
-  mv.frames, mv.chargeFrames, mv.bonusFrames, mv.impactFrames, mv.altFrames, mv.addFrames, mv.landFrames, mv.endFrames, mv.selfFrames, mv.bounceFrames,
+  mv.frames, mv.chargeFrames, mv.bonusFrames, mv.impactFrames, mv.altFrames, mv.addFrames, mv.landFrames, mv.endFrames, mv.selfFrames, mv.bounceFrames, mv.pillarFrames,
   ...(mv.dirFrames ?? []), ...(mv.cycle ?? []).map((v) => v.frames),
 ].flatMap((list) => list ?? []);
 // The other moves whose art a move borrows as it plays out.
@@ -1153,6 +1169,7 @@ export function preloadMoves(scene, lazy = false) {
   POWERUP.frames = build(POWERUP.fx[0], [POWERUP.fx[1]]);
   CANCEL.frames = build(CANCEL.fx[0], [CANCEL.fx[1]]).slice(...CANCEL.slice);
   PARRY.hitFrames = build(PARRY.hit[0], [PARRY.hit[1]]);
+  SHATTER.frames = build(SHATTER.fx[0], [SHATTER.fx[1]]);
   HEAL.frames = build(HEAL.fx[0], [HEAL.fx[1]]);
   DANCE.cueFrames = build(DANCE.cue[0], [DANCE.cue[1]]);
   DANCE.hitFrames = build(DANCE.hit[0], [DANCE.hit[1]]);
@@ -1161,5 +1178,6 @@ export function preloadMoves(scene, lazy = false) {
   for (const mv of Object.values(MOVES)) {
     mv.selfFrames = mv.selfFx ? build(mv.selfFx[0], [mv.selfFx[1]]) : [];
     mv.bounceFrames = mv.bounceFx ? build(mv.bounceFx[0], [mv.bounceFx[1]]) : [];
+    mv.pillarFrames = mv.icePillar ? build(mv.icePillar.fx, ['000']).slice(3) : []; // (its first picture is a stray spark)
   }
 }

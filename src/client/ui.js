@@ -1,5 +1,7 @@
 import { VIEW_W, VIEW_H } from '../scene.js';
 import { touch } from './touch.js';
+import { music } from './music.js';
+import { sfx } from './sfx.js';
 
 // Screen-space widgets shared by every screen: text in the game font, framed windows, list menus, the dialogue box and the button bar.
 // Everything here ignores the camera (scroll factor 0) and sits above the world.
@@ -165,7 +167,7 @@ export class Menu {
       const t = this.group.add(text(scene, x + 22, top + i * LINE, it.label, it.off ? INK.off : it.tint ?? INK.white));
       const zone = this.group.add(pin(scene.add.zone(x + 4, top + i * LINE - 1, w - 8, LINE).setOrigin(0), 3)).setInteractive({ useHandCursor: true });
       zone.on('pointerover', () => this.move(i));
-      zone.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); this.move(i); this.onPick?.(i); });
+      zone.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); this.move(i); sfx.play('ui_pick'); this.onPick?.(i); });
       return t;
     });
     this.cursor = this.group.add(icon(scene, x + 10, top, 'caretR'));
@@ -174,8 +176,8 @@ export class Menu {
     this.handler = actions.push({
       up: () => this.move((this.index + items.length - 1) % items.length),
       down: () => this.move((this.index + 1) % items.length),
-      confirm: () => this.onPick?.(this.index),
-      cancel: () => this.onCancel?.(),
+      confirm: () => { sfx.play('ui_pick'); this.onPick?.(this.index); },
+      cancel: () => { if (this.onCancel) sfx.play('ui_back'); this.onCancel?.(); },
     });
     this.move(index, true);
   }
@@ -184,7 +186,7 @@ export class Menu {
     if (i === this.index && !quiet) return;
     this.index = i;
     this.cursor.y = this.top + i * LINE + 6;
-    if (!quiet) this.onMove?.(i);
+    if (!quiet) { sfx.play('ui_move'); this.onMove?.(i); }
   }
 
   close() {
@@ -193,6 +195,16 @@ export class Menu {
     if (this.buttons) this.hints.pop(this.buttons);
     this.group.clear();
   }
+}
+
+// The two sound switches a menu can carry: its rows, and what a pick of one does (the row says the new state).
+export const soundRows = () => [{ label: `Music: ${music.muted ? 'Off' : 'On'}` }, { label: `Sounds: ${sfx.muted ? 'Off' : 'On'}` }];
+export function soundPick(menu, i, first) {
+  if (i === first) music.mute(!music.muted);
+  else if (i === first + 1) sfx.mute(!sfx.muted);
+  else return false;
+  soundRows().forEach((row, k) => menu.rows[first + k].setText(row.label));
+  return true;
 }
 
 // Resolves with the index picked, or -1 when backed out of.

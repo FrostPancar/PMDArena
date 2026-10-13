@@ -10,6 +10,7 @@ import { net } from '../net.js';
 import { ARENAS, mine, lookOf, seeded } from '../modes.js';
 import { BAR_H, INK, Hints, text, panel } from '../ui.js';
 import { onLadder, isOpen, openStages, freshStages, markShown, levelOfStage, atLevel, MAX_LEVEL } from '../ladder.js';
+import { music } from '../music.js';
 
 const PICK_SECONDS = 15;
 const SHARE_MS = 120; // how often a player repeats where they stand, so a client that arrives late still learns it
@@ -61,6 +62,7 @@ export class StageDraw extends Phaser.Scene {
   preload() { loadSpecies(this, this.players.map((p) => lookOf(p.f))); }
 
   create() {
+    music.play('screen_map');
     this.walkable = () => true; // Mon asks its scene where it may stand
     this.add.image(0, 0, 'worldmap').setOrigin(0);
     this.nodes = ARENAS.map((id) => {
@@ -147,6 +149,7 @@ export class StageDraw extends Phaser.Scene {
     }
     const n = this.byId[id];
     this.spot = id;
+    this.time.delayedCall(800, () => music.jingle('jingle_unlock'));
     this.time.delayedCall(800, () => this.tweens.add({ targets: n.img, x: n.x + 2, duration: 45, yoyo: true, repeat: 5, onComplete: () => { n.img.x = n.x; } }));
     this.time.delayedCall(1450, () => {
       this.opening = this.opening.map((o) => (o === id ? null : o)); // no longer drawn locked

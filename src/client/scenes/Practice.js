@@ -13,6 +13,7 @@ import { BattleHud } from '../hud.js';
 import { Battle } from './Battle.js';
 import { touch } from '../touch.js';
 import { DEPTH, INK, banner, text, panel } from '../ui.js';
+import { music } from '../music.js';
 
 const MAX_SPAWNS = 6; // of each kind at once
 const DUMMY_HP = 225, DUMMY_TINT = 0xb9c0cf;
@@ -41,6 +42,7 @@ export class Practice extends Battle {
   create() {
     for (const f of this.cfg.fighters) ensureSpecies(this, lookOf(f));
     this.actions = new Actions(this);
+    music.play('screen_dojo');
     Play.prototype.create.call(this); // the stage, the player, input: without Battle's online and result handling
     this.label = 'Practice';
     this.hud = new BattleHud(this, this.player, this.me.moves);

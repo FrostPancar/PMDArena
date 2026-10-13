@@ -12,6 +12,7 @@ import { Wipe, go, wipe } from './transition.js';
 import { net } from './net.js';
 import { before } from './modes.js';
 import { touch, fit, initTouch } from './touch.js';
+import { wireSfx } from './sfx.js';
 
 // The player client: title on Sharpedo Bluff -> the dream (choose a Pokémon) -> the room inside the bluff (find a
 // partner) -> Marowak Dojo (choose moves) -> the pillar in its basement -> the world map (players pick stages and
@@ -46,6 +47,7 @@ for (const type of ['resize', 'orientationchange']) window.addEventListener(type
 window.visualViewport?.addEventListener('resize', resize);
 fit(game.scale.zoom);
 initTouch(game);
+wireSfx(game);
 if (import.meta.env.DEV) Object.assign(window, { game, net });
 
 // A match from the relay can arrive whatever the player is doing (their partner may have started it), so it is

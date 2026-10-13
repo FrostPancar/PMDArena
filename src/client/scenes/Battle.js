@@ -14,7 +14,8 @@ import { BattleHud, ScoreStrip, callout, controlsCard, resultCard } from '../hud
 import { touch } from '../touch.js';
 import { MAPS } from '../../maps.js';
 import { onLadder, wonOn } from '../ladder.js';
-import { Menu, banner, panel, text, INK, DEPTH } from '../ui.js';
+import { Menu, banner, panel, text, INK, DEPTH, soundRows, soundPick } from '../ui.js';
+import { music } from '../music.js';
 
 // The basic attacks kept on the keyboard next to the mouse: lunge, shot, double hit, charge up.
 const BASIC_KEYS = Object.fromEntries(Object.entries(KEYS).filter(([, anim]) => COMBAT[anim] || anim === 'Charge'));
@@ -81,6 +82,7 @@ export class Battle extends Play {
     // only the menus use these (fighting reads keys and mouse directly); made first so that the Esc press
     // that opens the pause menu is not also read as backing out of it
     this.actions = new Actions(this);
+    music.stage(this.mapId, this.level);
     super.create();
     for (const x of this.fighters) if (this.gone.includes(x.f.owner) && x.controller instanceof RemoteController) x.controller.drop();
     this.hud = new BattleHud(this, this.player, this.moves);
@@ -128,6 +130,7 @@ export class Battle extends Play {
   callRound() {
     this.hold = true;
     const decider = this.need > 1 && this.wins.every((n) => n === this.need - 1);
+    if (decider) music.swap('fight_decider'); // the deciding fight has its own tune (when the soundtrack has it)
     callout(this, this.crewed ? 'Crew battle' : decider ? 'Final round' : `Round ${this.round}`, `${this.level ? `Lv ${this.level}   ` : ''}${this.crewed ? 'Last crew standing wins' : `First to ${this.need} wins`}`, 1000);
     this.after(1250, () => {
       if (this.over) return;
@@ -308,6 +311,7 @@ export class Battle extends Play {
     // a win on the ladder may open the next stage: said here, shown on the map next time
     const opened = won === true && this.level ? wonOn(this.mapId) : null;
     if (opened) this.time.delayedCall(1400, () => banner(this, 'New stage opened!', MAPS[opened].name));
+    if (won !== null) { music.stop(); music.jingle(won ? 'jingle_win' : 'jingle_loss'); }
     if (won === null) banner(this, message);
     else callout(this, won ? 'You win!' : message === 'A draw!' ? 'Draw' : 'You lose', this.need > 1 || won ? null : message, 1900, won ? INK.gold : INK.rose, this.need > 1 ? this.tally() : null);
     this.time.delayedCall(2200, () => (earned ? this.showResult(earned) : this.leave()));
@@ -329,6 +333,7 @@ export class Battle extends Play {
 
   showResult(earned) {
     this.card = resultCard(this, this.me.species, earned, lookOf(this.me));
+    if (earned.tm) music.jingle('jingle_tm'); else if (earned.to.level > earned.from.level) music.jingle('jingle_levelup');
     // on from the card: to the evolution, if the fight brought one, and then out
     const done = () => {
       if (!this.card) return;
@@ -361,6 +366,7 @@ export class Battle extends Play {
     let t = 0, next = 0.5, isNew = false, over = false;
     const finish = () => {
       over = true;
+      music.jingle('screen_evolution');
       this.cameras.main.flash(260, 255, 255, 255);
       mon.setTexture(...frame(to)).clearTint();
       this.tweens.add({ targets: mon, scale: { from: 3.6, to: 3 }, duration: 320, ease: 'Back.easeOut' });
@@ -784,11 +790,12 @@ export class Battle extends Play {
     this.freeze(true);
     this.menu = new Menu(this, this.actions, {
       x: (VIEW_W - 116) >> 1, y: 74, w: 116, title: this.online ? 'Menu' : 'Paused',
-      items: [{ label: 'Keep fighting' }, { label: 'Controls' }, { label: this.online ? 'Give up' : this.leaveLabel ?? 'Back to the dojo' }],
+      items: [{ label: 'Keep fighting' }, { label: 'Controls' }, ...soundRows(), { label: this.online ? 'Give up' : this.leaveLabel ?? 'Back to the dojo' }],
       onPick: (i) => {
         if (i === 1) return this.showControls();
+        if (soundPick(this.menu, i, 2)) return;
         this.resume();
-        if (i === 2) this.leave();
+        if (i === 4) this.leave();
       },
       onCancel: () => this.resume(),
     });

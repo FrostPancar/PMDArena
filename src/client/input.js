@@ -1,5 +1,8 @@
 import { wipe } from './transition.js';
 import { touch, attach } from './touch.js';
+import { sfx } from './sfx.js';
+
+const STEPS = new Set(['up', 'down', 'left', 'right']);
 
 // Menus and the dojo are driven by pad-style actions rather than raw keys, so the touch pad (touch.js) feeds the same handlers.
 // The on-screen button icons stand for these: d-pad = up / down / left / right, A = confirm, B = cancel, START = menu.
@@ -56,7 +59,10 @@ export class Actions {
   // Also called by on-screen buttons.
   fire(action) {
     if (wipe.busy) return;
-    this.top?.[action]?.();
+    const top = this.top;
+    // stepping through any menu ticks (walking about is `steer`, and has no steps)
+    if (STEPS.has(action) && top?.[action] && !top.steer) sfx.play('ui_move');
+    top?.[action]?.();
   }
 
   // A letter for the handler that takes typing, or null to rub the last one out. Also called by the on-screen letters.

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sound Viewer</title>
+<style>
+  :root { --bg:#0e1118; --panel:#161b26; --line:#262e3f; --ink:#dfe6f3; --dim:#8492ab; --acc:#8fd14f; --warn:#f2c94c; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink);
+    font: 12px/1.45 ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  #app { display: grid; grid-template-columns: 320px 1fr; height: 100%; }
+  aside { background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+  header { padding: 12px; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 13px; margin: 0 0 8px; letter-spacing: .08em; color: var(--acc); }
+  h2 { font-size: 10px; margin: 18px 0 6px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); font-weight: 600; }
+  input[type=text], input[type=search], textarea, select { font: inherit; color: var(--ink); background: #0a0d13; border: 1px solid var(--line);
+    border-radius: 4px; padding: 5px 7px; width: 100%; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--acc); }
+  button, a.btn { font: inherit; color: var(--ink); background: #1e2534; border: 1px solid var(--line); border-radius: 4px;
+    padding: 4px 8px; cursor: pointer; text-decoration: none; display: inline-block; }
+  button:hover, a.btn:hover { border-color: var(--acc); }
+  button.on { background: var(--acc); color: #10140a; border-color: var(--acc); }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  #count, #saved { color: var(--dim); margin-top: 6px; }
+  #list { overflow-y: auto; flex: 1; }
+  .item { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 5px 10px; cursor: pointer; border-bottom: 1px solid #1b2130; }
+  .item:hover { background: #1b2231; }
+  .item.sel { background: #243044; box-shadow: inset 3px 0 0 var(--acc); }
+  .item .id { color: var(--dim); font-size: 10px; }
+  .item .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--dim); }
+  .item.named .nm { color: var(--warn); }
+  .item .len { color: var(--dim); font-size: 10px; }
+  .tag { font-size: 9px; color: #10140a; background: var(--acc); border-radius: 3px; padding: 0 4px; margin-left: 4px; }
+  .tag.twin { background: #7c8aa6; }
+  main { padding: 16px 20px; overflow-y: auto; min-width: 0; }
+  #title { font-size: 15px; margin: 0; }
+  #sub { color: var(--dim); margin-top: 2px; }
+  #wave { display: block; margin-top: 12px; width: 100%; max-width: 640px; height: 120px; background: #0a0d13; border: 1px solid var(--line); border-radius: 6px; cursor: pointer; }
+  #edit { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 12px; max-width: 640px; }
+  #name { font-size: 14px; padding: 7px 9px; }
+  #notes { grid-column: 1 / -1; resize: vertical; min-height: 34px; }
+  #groups { max-width: 640px; }
+  #groups button.on { background: var(--warn); border-color: var(--warn); }
+  kbd { font: inherit; font-size: 10px; color: var(--dim); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; background: #10141d; }
+  #help { color: var(--dim); margin-top: 18px; max-width: 640px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside>
+    <header>
+      <h1>SOUND VIEWER</h1>
+      <input type="search" id="q" placeholder="search file, name, group, notes…" />
+      <div class="row" id="filters" style="margin-top:8px">
+        <button data-f="all" class="on">All</button>
+        <button data-f="todo">Not named</button>
+        <button data-f="named">Named</button>
+        <button data-f="twins">Repeats</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <select id="groupfilter"></select>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <select id="sort">
+          <option value="file">Sort by file</option>
+          <option value="len">Sort by length</option>
+          <option value="kind">Sort by rough kind</option>
+          <option value="group">Sort by group</option>
+        </select>
+      </div>
+      <div id="count"></div>
+      <div class="row" style="margin-top:8px">
+        <button id="exp-json">Export JSON</button>
+        <button id="exp-csv">Export CSV</button>
+        <a class="btn" href="/playground.html">Playground</a>
+        <a class="btn" href="/vfx.html">Effects</a>
+      </div>
+      <div id="saved"></div>
+    </header>
+    <div id="list"></div>
+  </aside>
+  <main>
+    <h2 style="margin-top:0">Sound</h2>
+    <p id="title"></p>
+    <div id="sub"></div>
+    <canvas id="wave" width="1280" height="240" title="click to play"></canvas>
+    <div class="row" style="margin-top:8px">
+      <button id="play">▶ Play</button>
+      <button id="loop">Loop</button>
+      <button id="auto" class="on">Play on select</button>
+      <button id="twin" style="display:none"></button>
+    </div>
+    <div id="edit">
+      <input type="text" id="name" placeholder="name for this sound" spellcheck="false" />
+      <button id="useguess">Use rough guess</button>
+      <textarea id="notes" placeholder="notes (optional): which move or moment it suits…"></textarea>
+    </div>
+    <h2>Group</h2>
+    <div class="row" id="groups"></div>
+    <div id="help">
+      <kbd>↑</kbd> <kbd>↓</kbd> previous / next sound &nbsp; <kbd>Space</kbd> play again &nbsp; <kbd>Enter</kbd> jumps to the name box,
+      and in the name box saves and goes to the next &nbsp; <kbd>1</kbd>–<kbd>9</kbd> <kbd>0</kbd> set the group &nbsp;
+      names save automatically to <code>Sound Effects/names.json</code>; the files themselves are not renamed.
+      The grey name under an unnamed sound is a rough guess made by measuring it (length, pitch, noise), not by ear.
+    </div>
+  </main>
+</div>
+<script type="module" src="/src/sound-tool.js"></script>
+</body>
+</html>

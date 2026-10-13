@@ -8,6 +8,7 @@ import { session, saveSession, loadoutOf, levelOf } from '../session.js';
 import { net } from '../net.js';
 import { mine, lookOf, crewOf, withCrew, CREW_SIZE } from '../modes.js';
 import { DEPTH, INK, Hints, text, panel, shade, typeIcon } from '../ui.js';
+import { music } from '../music.js';
 
 const PICK_SECONDS = 30;
 const SHARE_MS = 250; // how often a player repeats their crew once it is locked in, so a client that arrives late still learns it
@@ -47,6 +48,7 @@ export class CrewPick extends Phaser.Scene {
   }
 
   create() {
+    music.play('screen_crew');
     if (this.textures.exists('worldmap')) this.add.image(0, 0, 'worldmap').setOrigin(0).setScrollFactor(0);
     shade(this, 0, 0, VIEW_W, VIEW_H, 0x06101c, 0.78);
     const face = (x, y, id, size) => this.paint(this.add.image(x, y, 'px').setScrollFactor(0).setDepth(DEPTH + 1), id, size);

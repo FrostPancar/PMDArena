@@ -14,7 +14,8 @@ import { MoveMenu } from '../movemenu.js';
 import { ProfileMenu } from '../profilemenu.js';
 import { MapMenu } from '../practicemenu.js';
 import { EvolveMenu } from '../evolvemenu.js';
-import { INK, Hints, Dialog, choose, enterCode, banner, text, panel } from '../ui.js';
+import { INK, Hints, Dialog, Menu, choose, enterCode, banner, text, panel, soundRows, soundPick } from '../ui.js';
+import { music } from '../music.js';
 
 const PRESENCE_MS = 100;
 const OFFLINE = 'The link to other players is down right now.';
@@ -35,6 +36,7 @@ export class Hub extends Phaser.Scene {
   preload() { loadSpecies(this, [formOf(), ...(session.partner ? [formOf(session.partner)] : [])]); }
 
   create() {
+    music.play(`screen_${this.areaId}`);
     ensureSpecies(this, formOf());
     const a = this.area = AREAS[this.areaId], [w, h] = a.size, ox = this.ox = Math.max(0, (VIEW_W - w) >> 1);
     const cam = this.cameras.main;
@@ -65,6 +67,7 @@ export class Hub extends Phaser.Scene {
     this.bob = 0;
     this.near = undefined;
     this.menu = null;
+    this.soundTab();
     this.setNear(null);
 
     // the party: a CPU partner who follows, or a friend who walks on their own
@@ -182,6 +185,27 @@ export class Hub extends Phaser.Scene {
       { icon: 'start', key: 'Tab', label: 'Moves', action: 'menu' },
       ...(this.areaId === 'dojo' ? [{ icon: 'btnB', key: 'Esc', label: 'Try moves', action: 'cancel' }] : []),
     ]);
+  }
+
+  // The way to the sound switches, top right (on a phone there is no M key to mute with).
+  soundTab() {
+    const tab = panel(this, VIEW_W - 55, 3, 52, 15, 'dim').setInteractive({ useHandCursor: true });
+    tab.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); this.openSound(); });
+    text(this, VIEW_W - 29, 5, 'Sound').setOrigin(0.5, 0);
+  }
+
+  openSound() {
+    if (this.menu || !this.free) return;
+    const close = () => { this.menu.close(); this.menu = null; this.showHints(); };
+    const menu = new Menu(this, this.actions, {
+      x: VIEW_W - 124, y: 22, w: 116, title: 'Sound', items: [...soundRows(), { label: 'Close' }],
+      onPick: (i) => { if (!soundPick(menu, i, 0)) close(); },
+      onCancel: close,
+    });
+    menu.update = () => {};
+    menu.hints = [{ icon: 'dpadUD', key: 'W S', label: 'Choose' }, { icon: 'btnA', key: 'Enter', label: 'OK', action: 'confirm' }, { icon: 'btnB', key: 'Esc', label: 'Back', action: 'cancel' }];
+    this.menu = menu;
+    this.showHints();
   }
 
   // B in the dojo: straight onto the training floor with the moveset as it stands, to see the moves in action.

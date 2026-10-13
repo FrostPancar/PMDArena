@@ -4,7 +4,7 @@ import { MAPS, WORLD_URL, makeWalkable, inBlock, buildTestRealm, buildFxTextures
 import { SPECIES } from './sprites.js';
 import { Mon, JUMP_COST, dirVec, dirFromVec, DIR_NAMES, RUN_MULT } from './mon.js';
 import { STATUS_SHEET_URL, DECOY_SHEET_URL, buildStatusIcons, buildDecoy } from './statusfx.js';
-import { MOVES, PARRY, CANCEL, EMPOWER, POWERUP, LEECH, SPRINT, STATUS, TAGS, DANCE, HEAL, KIND_LABEL, HEAL_LIMIT, healsOnly, movesOf, preloadMoves, grayFrames, ensureMove, moveReady } from './moves.js';
+import { MOVES, PARRY, SHATTER, CANCEL, EMPOWER, POWERUP, LEECH, SPRINT, STATUS, TAGS, DANCE, HEAL, KIND_LABEL, HEAL_LIMIT, healsOnly, movesOf, preloadMoves, grayFrames, ensureMove, moveReady } from './moves.js';
 
 export const VIEW_W = 384, VIEW_H = 216;
 export const WALK_SPEED = 62;
@@ -34,6 +34,7 @@ const HEAVY_HIT = 28; // damage from which a hit gets the full-screen treatment 
 const RAIN_BOOST = 1.3; // water moves under the user's own side's rain
 const DETECT_STUN = 0.7; // seconds a foe that hit a Detect is stunned
 const WEB_SNARE = 2; // seconds a web holds what steps into it
+const MELEE_CLASH = { push: 150, stun: 0.35 }; // two close-range blows meeting: how hard both mons are thrown apart, and how long they reel
 const LUNGE_REACH = 14; // how much further out a lunging melee move lands
 const DART = 9; // a shove of v px/s carries a mon v / 9 px before it dies away (see Mon.update), so this times the distance is the shove
 export const COMBAT = {
@@ -223,6 +224,7 @@ export class Play extends Phaser.Scene {
     gone(this.beams, (b) => b.g.destroy());
     gone(this.auras, (q) => q.imgs.forEach((i) => i.destroy()));
     gone(this.pillars, (q) => q.img.destroy());
+    gone(this.traps, (q) => q.imgs?.forEach((i) => i.destroy()));
     gone(this.bits, (q) => q.img.destroy());
     gone(this.dives, (q) => q.h.img.destroy());
     gone(this.walls, (w) => w.g.destroy());
@@ -503,8 +505,9 @@ export class Play extends Phaser.Scene {
     m.stamina = Math.min(m.maxStamina, m.stamina + PARRY.gain);
     m.exhausted = false;
     m.flash = 0.4; // as long as the blocker stays untouchable
+    this.game.events.emit('sfx', 'parry');
     if (FEEL.on && FEEL.shake) this.cameras.main.shake(130, 0.006, true);
-    const img = this.add.image(m.x, m.y - 8, PARRY.hitFrames[0]);
+    const img = this.add.image(m.x, m.y - 8, PARRY.hitFrames[0]).setScale(PARRY.scale);
     this.fx.push({ img, frames: PARRY.hitFrames, t: 0, fps: 30, follow: m, lift: 8 });
   }
 
@@ -874,6 +877,7 @@ export class Play extends Phaser.Scene {
 
   fireMove(m, mv, aim) {
     grayFrames(this, mv);
+    this.game.events.emit('sfx', 'move', { mv, m }); // (the engine makes no sound itself: see client/sfx.js)
     if ((mv.volley || mv.stream) && !aim.one) {
       // a volley or a stream: this only starts it; the shots follow one by one (updateVolleys), each fired through here as `one`
       m.lastMove = mv;
@@ -1252,8 +1256,13 @@ export class Play extends Phaser.Scene {
         // the art shows once, then an unseen hurtbox waits on the spot; a mon keeps at most three
         this.fx.push({ img, frames: mv.frames, t: 0, fps: mv.fps ?? 30 });
         const mine = this.traps.filter((q) => q.owner === m);
-        if (mine.length >= 3) this.traps.splice(this.traps.indexOf(mine[0]), 1);
-        this.traps.push({ x: hx, y: hy, mv, owner: m, dmg, t: mv.trap, wait: 0.4 });
+        if (mine.length >= 3) { mine[0].imgs?.forEach((i) => i.destroy()); this.traps.splice(this.traps.indexOf(mine[0]), 1); }
+        // (some traps are not unseen: Spikes lie strewn over the spot for as long as the trap lasts)
+        const imgs = mv.trapArt && Array.from({ length: mv.trapArt }, (_, k) => {
+          const a = (k / mv.trapArt) * Math.PI * 2 + 0.6, d = k ? mv.radius * 0.62 : 0;
+          return this.add.image(Math.round(hx + Math.cos(a) * d), Math.round(hy + (Math.sin(a) * d) / 1.3), mv.frames[0]).setOrigin(0.5, 0.8).setDepth(9 + hy);
+        });
+        this.traps.push({ x: hx, y: hy, mv, owner: m, dmg, t: mv.trap, wait: 0.4, imgs });
         return;
       }
       if (mv.linger) {
@@ -1277,6 +1286,13 @@ export class Play extends Phaser.Scene {
       const live = mv.active ?? (mv.sustain ? Math.max(0.1, mv.frames.length / (mv.fps ?? 30) - delay / 1000) : 0);
       if (live) this.actives.push({ owner: m, x: hx, y: hy, r: R, dmg, mv, t: -delay / 1000, life: live, done: new Set(), onHit: drained });
       else this.after(delay, () => { if (this.hitCircle(m, hx, hy, R, dmg, hmv)) drained(); });
+      if (mv.icePillar) {
+        // a spire of ice grows where it came down: cover, until it melts or is broken (see hitPillars)
+        this.after(delay + 60, () => {
+          const fr = mv.pillarFrames, pim = this.add.image(Math.round(hx), Math.round(hy) + 3, fr[0]).setOrigin(0.5, 0.97).setDepth(10 + hy);
+          this.pillars.push({ x: hx, y: hy, r: 11, t: mv.icePillar.time, img: pim, hp: mv.icePillar.hp, grow: { frames: fr, t: 0 } });
+        });
+      }
       if (mv.pillar) {
         // the rock stays standing as cover
         this.after(delay + 60, () => {
@@ -1306,6 +1322,7 @@ export class Play extends Phaser.Scene {
   get targets() { return [this.player, ...this.npcs, ...this.decoys.map((d) => d.m)]; }
 
   healFx(m) {
+    this.game.events.emit('sfx', 'heal');
     const fr = LEECH.healFrames?.length ? LEECH.healFrames : HEAL.frames; // every heal shows the same way a Leech Seed's does
     this.fx.push({ img: this.add.image(m.x, m.y - 12, fr[0]), frames: fr, t: 0, fps: 30, follow: m, lift: 12 });
   }
@@ -1422,11 +1439,24 @@ export class Play extends Phaser.Scene {
     else if (name === 'Eat') m.heal(25);
   }
 
+  // Ice left standing as cover takes the hits that reach it, whoever throws them, and breaks when it has taken enough.
+  hitPillars(x, y, r, dmg) {
+    for (const q of this.pillars) {
+      if (q.hp === undefined || q.t <= 0 || !(dmg > 0) || Math.hypot(q.x - x, (q.y - y) * 1.3) > r + q.r) continue;
+      q.img.setTintFill(0xffffff); q.flash = 0.08;
+      if ((q.hp -= dmg) > 0) continue;
+      q.t = 0;
+      this.shinePop(q.x, q.y - 24, 14);
+      this.game.events.emit('sfx', 'break', { ice: true });
+    }
+  }
+
   // Every hit in the game goes through here; airborne mons are skipped by Mon.damage.
   // skip: a set of mons this hit has already caught (they are passed over, new ones are added)
   // shot: the projectile behind the hit, if it is one (named in the verdict so its owner's client can stop it)
   hitCircle(owner, x, y, r, dmg, mv, skip, shot) {
     this.hits.push({ x, y, r, ttl: 0.18 });
+    this.hitPillars(x, y, r, dmg);
     let any = false;
     this.guessed = false;
     const hit = mv && { tag: mv.tag, jab: !!mv.jab, swat: mv.swat, thru: mv.thru, by: owner, raw: !!mv.fixedDmg, pierce: mv.pierceShield || !!mv.fixedDmg, deep: mv.deep, soft: mv.kind === 'beam' ? 'beam' : mv.softStream ? 'stream' : false };
@@ -1464,6 +1494,7 @@ export class Play extends Phaser.Scene {
       const versus = mv?.versus && (mv.versus.any ? !!t.status : mv.versus.status.includes(t.status?.kind));
       // a flyer that is swatted, or a roosting mon caught by a ground move, takes half again
       const extra = (mv?.swat && t.flying) || (mv?.ground && t.roost > 0) ? 1.5 : 1;
+      if (this.swingsMeet(owner, t, mv)) { this.meleeClash(owner, t); continue; }
       const blocking = t.parry > 0, hp0 = t.hp;
       if (!t.damage(dmg * (counter ? mv.jab : 1) * (versus ? mv.versus.mul : 1) * extra, owner.x, owner.y, hit)) {
         // a lock-on dash that is parried leaves its user wide open
@@ -1483,6 +1514,37 @@ export class Play extends Phaser.Scene {
       if (owner.remote) this.sayHit(owner, t, mv, dealt, counter, shot); // tell the attacker's client it landed
     }
     return any;
+  }
+
+  // Is this close-range blow landing on a foe that is itself mid-swing with a close-range move, aimed back this way?
+  // (A heavy move goes through a lighter one, and nothing stops an armoured mon.)
+  swingsMeet(owner, t, mv) {
+    if (mv?.kind !== 'melee' || !t.alive || t.armored || t.invuln > 0 || t.airborne) return false;
+    const theirs = t.pending ?? (t.state === 'windup' ? t.windup : null);
+    if (theirs?.mv.kind !== 'melee') return false;
+    if (mv.tag === 'heavy' ? theirs.mv.tag !== 'heavy' : !t.pending && theirs.mv.tag === 'heavy') return false; // (a heavy move still charging is not stopped by a jab)
+    const [fx, fy] = theirs.aim ? [theirs.aim.dx, theirs.aim.dy] : dirVec(t.dir), dx = owner.x - t.x, dy = owner.y - t.y, l = Math.hypot(dx, dy) || 1;
+    return (fx * dx + fy * dy) / (l * (Math.hypot(fx, fy) || 1)) > 0.3;
+  }
+
+  // Two close-range blows have met: neither lands. Both mons are thrown back from each other and left reeling.
+  meleeClash(a, b) {
+    const dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy) || 1;
+    for (const [q, side] of [[a, -1], [b, 1]]) {
+      if (q.remote) continue; // each client throws back the fighters it runs
+      q.cancel();
+      const k = q.ingrain ? 0 : MELEE_CLASH.push * side; // a rooted mon is not shoved
+      q.kx = (dx / l) * k; q.ky = (dy / l) * k;
+      q.stun = Math.max(q.stun, MELEE_CLASH.stun);
+      q.shove = 0.3;
+      q.invuln = Math.max(q.invuln, 0.2);
+      q.state = 'hurt';
+      q.setAnim(q.species.anims.Hurt ? 'Hurt' : 'Idle', 'once', null, () => q.toIdle());
+    }
+    this.shinePop((a.x + b.x) / 2, (a.y + b.y) / 2 - 10, 12);
+    if (FEEL.on && FEEL.shake) this.cameras.main.shake(110, 0.005, true);
+    this.popup(a, 'CLASH');
+    this.game.events.emit('sfx', 'clash');
   }
 
   // Everything a hit does once it has landed. On the client that runs the fighter that was hit this follows the hit at once;
@@ -2098,6 +2160,8 @@ export class Play extends Phaser.Scene {
       return (q.t -= dt) > 0;
     });
     this.pillars = this.pillars.filter((q) => {
+      if (q.grow) q.img.setTexture(q.grow.frames[Math.min(q.grow.frames.length - 1, Math.floor((q.grow.t += dt) * 36))]);
+      if (q.flash > 0 && (q.flash -= dt) <= 0) q.img.clearTint();
       if ((q.t -= dt) > 0) { q.img.setAlpha(Math.min(1, q.t * 2)); return true; }
       q.img.destroy();
       return false;
@@ -2315,6 +2379,12 @@ export class Play extends Phaser.Scene {
   }
 
   // A thin ring that snaps outward and is gone: where a shot was cut or beaten.
+  // The burst of light a shot breaks up in (SHATTER), sized a little by the shot.
+  shinePop(x, y, r = 8) {
+    const img = this.add.image(Math.round(x), Math.round(y), SHATTER.frames[0]).setDepth(7001).setScale(SHATTER.scale * Phaser.Math.Clamp(r / 9, 0.8, 1.5));
+    this.fx.push({ img, frames: SHATTER.frames, t: 0, fps: 40 });
+  }
+
   ringPop(x, y, r = 8) {
     const ring = this.add.circle(Math.round(x), Math.round(y), Math.max(5, r)).setStrokeStyle(1.5, 0xffffff, 1).setDepth(7001);
     this.tweens.add({ targets: ring, scale: 2.6, alpha: 0, duration: 140, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
@@ -2324,6 +2394,7 @@ export class Play extends Phaser.Scene {
   // A mon has just been hurt for `dealt`. The moment is marked: the mon flashes white, lines burst from the spot, the
   // screen shakes by how hard the hit was, and a really heavy one gets the whole screen. hit: what Mon.damage was told.
   struck(t, dealt, hit) {
+    if (dealt >= 0.5) this.game.events.emit('sfx', 'hit', { heavy: hit?.tag === 'heavy' || dealt >= HEAVY_HIT, soft: !!hit?.soft });
     if (!FEEL.on || !(dealt >= 0.5)) return;
     const heavy = hit?.tag === 'heavy' || dealt >= HEAVY_HIT, near = t === this.player || hit?.by === this.player;
     if (FEEL.impact) {
@@ -2376,6 +2447,7 @@ export class Play extends Phaser.Scene {
   }
 
   fainted(m) {
+    this.game.events.emit('sfx', 'faint');
     if (m.summon) return; // a summoned copy is simply gone (updateSummons)
     if (m === this.player) {
       this.after(1400, () => m.revive(...this.map.spawn));
@@ -2576,7 +2648,9 @@ export class Play extends Phaser.Scene {
         this.fx.push({ img, frames: q.mv.frames, t: 0, fps: q.mv.fps ?? 30 });
         this.hitCircle(q.owner, q.x, q.y, q.mv.radius, q.dmg * (rush ? q.mv.ambush : 1), rush ? { ...q.mv, deep: true } : q.mv);
       }
-      return (q.t -= dt) > 0;
+      if ((q.t -= dt) > 0) { q.imgs?.forEach((i) => i.setAlpha(Math.min(1, q.t))); return true; }
+      q.imgs?.forEach((i) => i.destroy());
+      return false;
     });
   }
 
@@ -2780,9 +2854,9 @@ export class Play extends Phaser.Scene {
       }
       if (s.dead || (s.back && !s.owner.alive)) {
         if (s.dead && FEEL.on && FEEL.shatter) {
-          // cut or beaten out of the air: it hangs there white for an instant inside a ring that snaps outward, then its
+          // cut or beaten out of the air: it hangs there white for an instant inside a burst of light, then its
           // two halves fly apart and fade
-          if (s.shatter === undefined) { s.shatter = 0.07; s.img.setTintFill(0xffffff); this.ringPop(s.x, s.y - 8, s.r); }
+          if (s.shatter === undefined) { s.shatter = 0.07; s.img.setTintFill(0xffffff); this.shinePop(s.x, s.y - 8, s.r); this.game.events.emit('sfx', 'shatter'); }
           if ((s.shatter -= dt) > 0) return true;
           if (s.mv?.tint) s.img.setTint(s.mv.tint); else s.img.clearTint();
           this.halve(s, s.x, s.y);
@@ -2846,7 +2920,7 @@ export class Play extends Phaser.Scene {
       // flying up an enemy Tailwind lane, it makes half the headway
       if (lanes.some((f) => f.team !== s.owner.team && s.vx * f.dx + s.vy * f.dy < 0 && this.inField(f, s.x, s.y))) { s.x -= s.vx * dt * 0.5; s.y -= s.vy * dt * 0.5; }
       // an enemy Light Screen stops it; a light shot bounces off and belongs to the screen's owner from then on
-      if (!s.arc && this.pillars.some((q) => Math.hypot(s.x - q.x, (s.y - q.y) * 1.3) < q.r)) { s.dead = true; return true; } // a standing rock stops it
+      if (!s.arc && this.pillars.some((q) => Math.hypot(s.x - q.x, (s.y - q.y) * 1.3) < q.r)) { this.hitPillars(s.x, s.y, 0, s.dmg); s.dead = true; return true; } // a standing rock stops it (ice is chipped by it)
       const scr = s.arc ? null : screens.find((w) => !w.owner.remote && w.team !== s.owner.team && segDist(s.x, s.y, w.ax, w.ay, w.bx, w.by) < 5); // the screen's own client decides
       if (scr) {
         if (s.mv && !s.mv.light) { s.dead = true; this.sayShot(s, 'dead'); return true; }

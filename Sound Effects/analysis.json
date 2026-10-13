@@ -1,0 +1,3348 @@
+{
+"beep.mp3": {
+"guess": "",
+"kind": "noise",
+"seconds": 0.05,
+"hz": 3083,
+"twin": ""
+},
+"bubbles1.mp3": {
+"guess": "",
+"kind": "tonal",
+"seconds": 0.47,
+"hz": 624,
+"twin": ""
+},
+"bubbles2.mp3": {
+"guess": "",
+"kind": "mixed",
+"seconds": 0.43,
+"hz": 1734,
+"twin": ""
+},
+"bubles.mp3": {
+"guess": "",
+"kind": "tonal",
+"seconds": 1.99,
+"hz": 581,
+"twin": ""
+},
+"chime.mp3": {
+"guess": "",
+"kind": "tonal",
+"seconds": 0.5,
+"hz": 1873,
+"twin": ""
+},
+"effect.mp3": {
+"guess": "",
+"kind": "noise",
+"seconds": 0.77,
+"hz": 5071,
+"twin": ""
+},
+"exit.mp3": {
+"guess": "",
+"kind": "noise",
+"seconds": 0.46,
+"hz": 5291,
+"twin": ""
+},
+"explosive_echo.mp3": {
+"guess": "",
+"kind": "tonal",
+"seconds": 3.31,
+"hz": 516,
+"twin": ""
+},
+"levelup.mp3": {
+"guess": "",
+"kind": "tonal",
+"seconds": 1.52,
+"hz": 882,
+"twin": ""
+},
+"shaker.mp3": {
+"guess": "",
+"kind": "noise",
+"seconds": 0.46,
+"hz": 5444,
+"twin": ""
+},
+"song200.mp3": {
+"guess": "200_rumble_low_long",
+"kind": "noise",
+"seconds": 1.64,
+"hz": 1341,
+"twin": ""
+},
+"song201.mp3": {
+"guess": "201_rumble_low_down_long",
+"kind": "noise",
+"seconds": 1.64,
+"hz": 1426,
+"twin": ""
+},
+"song202.mp3": {
+"guess": "202_fanfare_mid_down_long",
+"kind": "tonal",
+"seconds": 1.32,
+"hz": 645,
+"twin": ""
+},
+"song203.mp3": {
+"guess": "203_swoop_mid_down",
+"kind": "mixed",
+"seconds": 0.7,
+"hz": 2879,
+"twin": ""
+},
+"song205.mp3": {
+"guess": "205_flurry_low_long",
+"kind": "mixed",
+"seconds": 2.05,
+"hz": 1460,
+"twin": ""
+},
+"song206.mp3": {
+"guess": "206_fanfare_mid_up_long",
+"kind": "tonal",
+"seconds": 1.48,
+"hz": 1055,
+"twin": ""
+},
+"song208.mp3": {
+"guess": "208_rumble_low_long",
+"kind": "noise",
+"seconds": 1.64,
+"hz": 1335,
+"twin": "song200.mp3"
+},
+"song210.mp3": {
+"guess": "210_rattle_mid_up_long",
+"kind": "noise",
+"seconds": 1.06,
+"hz": 2149,
+"twin": ""
+},
+"song211.mp3": {
+"guess": "211_flurry_mid_up",
+"kind": "mixed",
+"seconds": 0.75,
+"hz": 1941,
+"twin": ""
+},
+"song212.mp3": {
+"guess": "212_swell_mid_down_long",
+"kind": "mixed",
+"seconds": 1.63,
+"hz": 2027,
+"twin": ""
+},
+"song213.mp3": {
+"guess": "213_swoop_mid_down",
+"kind": "mixed",
+"seconds": 0.7,
+"hz": 2895,
+"twin": "song203.mp3"
+},
+"song214.mp3": {
+"guess": "214_flurry_mid_down_long",
+"kind": "mixed",
+"seconds": 2.87,
+"hz": 2521,
+"twin": ""
+},
+"song215.mp3": {
+"guess": "215_warble_mid_up_long",
+"kind": "tonal",
+"seconds": 2.65,
+"hz": 1378,
+"twin": ""
+},
+"song302.mp3": {
+"guess": "302_click_mid",
+"kind": "noise",
+"seconds": 0.05,
+"hz": 3044,
+"twin": ""
+},
+"song303.mp3": {
+"guess": "303_click_mid",
+"kind": "noise",
+"seconds": 0.12,
+"hz": 2400,
+"twin": ""
+},
+"song306.mp3": {
+"guess": "306_effect_mid_short",
+"kind": "mixed",
+"seconds": 0.17,
+"hz": 3059,
+"twin": ""
+},
+"song307.mp3": {
+"guess": "307_click_mid",
+"kind": "noise",
+"seconds": 0.05,
+"hz": 3053,
+"twin": ""
+},
+"song308.mp3": {
+"guess": "308_swoop_mid_up",
+"kind": "mixed",
+"seconds": 0.72,
+"hz": 3077,
+"twin": ""
+},
+"song309.mp3": {
+"guess": "309_boom_low",
+"kind": "noise",
+"seconds": 0.83,
+"hz": 2355,
+"twin": ""
+},
+"song310.mp3": {
+"guess": "310_buzz_low",
+"kind": "mixed",
+"seconds": 0.83,
+"hz": 2518,
+"twin": ""
+},
+"song311.mp3": {
+"guess": "311_click_mid",
+"kind": "noise",
+"seconds": 0.08,
+"hz": 3182,
+"twin": ""
+},
+"song312.mp3": {
+"guess": "312_jingle_mid",
+"kind": "tonal",
+"seconds": 0.65,
+"hz": 624,
+"twin": ""
+},
+"song330.mp3": {
+"guess": "330_burst_mid_short",
+"kind": "noise",
+"seconds": 0.32,
+"hz": 2934,
+"twin": ""
+},
+"song331.mp3": {
+"guess": "331_burst_mid",
+"kind": "noise",
+"seconds": 0.41,
+"hz": 2515,
+"twin": ""
+},
+"song332.mp3": {
+"guess": "332_hiss_high_short",
+"kind": "noise",
+"seconds": 0.18,
+"hz": 6367,
+"twin": ""
+},
+"song333.mp3": {
+"guess": "333_hiss_high_short",
+"kind": "noise",
+"seconds": 0.16,
+"hz": 5284,
+"twin": ""
+},
+"song337.mp3": {
+"guess": "337_whoosh_mid_down",
+"kind": "noise",
+"seconds": 0.53,
+"hz": 3611,
+"twin": ""
+},
+"song338.mp3": {
+"guess": "338_whoosh_mid_down_short",
+"kind": "noise",
+"seconds": 0.27,
+"hz": 2624,
+"twin": ""
+},
+"song339.mp3": {
+"guess": "339_burst_mid_short",
+"kind": "noise",
+"seconds": 0.33,
+"hz": 3051,
+"twin": ""
+},
+"song342.mp3": {
+"guess": "342_burst_mid_short",
+"kind": "noise",
+"seconds": 0.21,
+"hz": 2857,
+"twin": ""
+},
+"song343.mp3": {
+"guess": "343_burst_mid_short",
+"kind": "noise",
+"seconds": 0.21,
+"hz": 2566,
+"twin": ""
+},
+"song344.mp3": {
+"guess": "344_boom_low_up",
+"kind": "noise",
+"seconds": 0.16,
+"hz": 2249,
+"twin": ""
+},
+"song346.mp3": {
+"guess": "346_click_high",
+"kind": "noise",
+"seconds": 0.1,
+"hz": 5199,
+"twin": ""
+},
+"song347.mp3": {
+"guess": "347_smack_mid",
+"kind": "noise",
+"seconds": 0.89,
+"hz": 2436,
+"twin": ""
+},
+"song348.mp3": {
+"guess": "348_click_high",
+"kind": "noise",
+"seconds": 0.12,
+"hz": 5424,
+"twin": ""
+},
+"song351.mp3": {
+"guess": "351_click_mid",
+"kind": "noise",
+"seconds": 0.12,
+"hz": 2646,
+"twin": ""
+},
+"song352.mp3": {
+"guess": "352_whoosh_mid_up_short",
+"kind": "noise",
+"seconds": 0.21,
+"hz": 3363,
+"twin": ""
+},
+"song353.mp3": {
+"guess": "353_hiss_high",
+"kind": "noise",
+"seconds": 0.64,
+"hz": 5141,
+"twin": ""
+},
+"song354.mp3": {
+"guess": "354_click_mid_up",
+"kind": "noise",
+"seconds": 0.11,
+"hz": 3449,
+"twin": ""
+},
+"song355.mp3": {
+"guess": "355_hiss_high_short",
+"kind": "noise",
+"seconds": 0.2,
+"hz": 5508,
+"twin": ""
+},
+"song356.mp3": {
+"guess": "356_burst_mid_short",
+"kind": "noise",
+"seconds": 0.16,
+"hz": 2948,
+"twin": ""
+},
+"song357.mp3": {
+"guess": "357_hiss_high_short",
+"kind": "noise",
+"seconds": 0.21,
+"hz": 4913,
+"twin": ""
+},
+"song358.mp3": {
+"guess": "358_boom_low_down",
+"kind": "noise",
+"seconds": 0.18,
+"hz": 2540,
+"twin": ""
+},
+"song359.mp3": {
+"guess": "359_whoosh_high_up_short",
+"kind": "noise",
+"seconds": 0.34,
+"hz": 3863,
+"twin": ""
+},
+"song360.mp3": {
+"guess": "360_burst_mid_short",
+"kind": "noise",
+"seconds": 0.37,
+"hz": 2497,
+"twin": ""
+},
+"song361.mp3": {
+"guess": "361_hiss_high_short",
+"kind": "noise",
+"seconds": 0.18,
+"hz": 4008,
+"twin": ""
+},
+"song362.mp3": {
+"guess": "362_beep_high",
+"kind": "tonal",
+"seconds": 0.32,
+"hz": 1658,
+"twin": ""
+},
+"song363.mp3": {
+"guess": "363_burst_mid",
+"kind": "noise",
+"seconds": 0.4,
+"hz": 3280,
+"twin": ""
+},
+"song366.mp3": {
+"guess": "366_hiss_high_short",
+"kind": "noise",
+"seconds": 0.25,
+"hz": 5512,
+"twin": ""
+},
+"song367.mp3": {
+"guess": "367_whoosh_high_short",
+"kind": "noise",
+"seconds": 0.39,
+"hz": 5131,
+"twin": ""
+},
+"song368.mp3": {
+"guess": "368_burst_mid_short",
+"kind": "noise",
+"seconds": 0.33,
+"hz": 2622,
+"twin": ""
+},
+"song370.mp3": {
+"guess": "370_whoosh_high_down_short",
+"kind": "noise",
+"seconds": 0.37,
+"hz": 4235,
+"twin": ""
+},
+"song371.mp3": {
+"guess": "371_smack_mid_long",
+"kind": "noise",
+"seconds": 3.03,
+"hz": 3774,
+"twin": ""
+},
+"song391.mp3": {
+"guess": "391_impact_mid_long",
+"kind": "mixed",
+"seconds": 1.22,
+"hz": 2182,
+"twin": ""
+},
+"song400.mp3": {
+"guess": "400_burst_mid_short",
+"kind": "noise",
+"seconds": 0.23,
+"hz": 3444,
+"twin": ""
+},
+"song401.mp3": {
+"guess": "401_burst_mid",
+"kind": "noise",
+"seconds": 0.61,
+"hz": 2668,
+"twin": ""
+},
+"song402.mp3": {
+"guess": "402_whoosh_high_short",
+"kind": "noise",
+"seconds": 0.37,
+"hz": 4089,
+"twin": ""
+},
+"song403.mp3": {
+"guess": "403_whoosh_mid",
+"kind": "noise",
+"seconds": 0.85,
+"hz": 3648,
+"twin": ""
+},
+"song404.mp3": {
+"guess": "404_boom_low",
+"kind": "noise",
+"seconds": 0.34,
+"hz": 2252,
+"twin": ""
+},
+"song405.mp3": {
+"guess": "405_tone_mid_long",
+"kind": "tonal",
+"seconds": 1.15,
+"hz": 1098,
+"twin": ""
+},
+"song406.mp3": {
+"guess": "406_tone_high",
+"kind": "tonal",
+"seconds": 0.57,
+"hz": 2239,
+"twin": ""
+},
+"song407.mp3": {
+"guess": "407_tone_low",
+"kind": "tonal",
+"seconds": 0.74,
+"hz": 172,
+"twin": ""
+},
+"song408.mp3": {
+"guess": "408_burst_mid",
+"kind": "noise",
+"seconds": 0.7,
+"hz": 3690,
+"twin": ""
+},
+"song409.mp3": {
+"guess": "409_smack_mid",
+"kind": "noise",
+"seconds": 0.45,
+"hz": 2724,
+"twin": ""
+},
+"song410.mp3": {
+"guess": "410_smack_mid",
+"kind": "noise",
+"seconds": 0.45,
+"hz": 2831,
+"twin": ""
+},
+"song412.mp3": {
+"guess": "412_whoosh_mid_up_short",
+"kind": "noise",
+"seconds": 0.25,
+"hz": 2846,
+"twin": ""
+},
+"song413.mp3": {
+"guess": "413_whoosh_mid_short",
+"kind": "noise",
+"seconds": 0.2,
+"hz": 1445,
+"twin": ""
+},
+"song414.mp3": {
+"guess": "414_snap_high",
+"kind": "noise",
+"seconds": 0.81,
+"hz": 6615,
+"twin": ""
+},
+"song415.mp3": {
+"guess": "415_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.5,
+"hz": 2326,
+"twin": ""
+},
+"song416.mp3": {
+"guess": "416_zap_mid_down",
+"kind": "mixed",
+"seconds": 0.35,
+"hz": 1547,
+"twin": ""
+},
+"song417.mp3": {
+"guess": "417_warble_mid_long",
+"kind": "tonal",
+"seconds": 1.7,
+"hz": 495,
+"twin": ""
+},
+"song418.mp3": {
+"guess": "418_rattle_high_up",
+"kind": "noise",
+"seconds": 0.55,
+"hz": 3959,
+"twin": ""
+},
+"song419.mp3": {
+"guess": "419_whoosh_mid_down_short",
+"kind": "noise",
+"seconds": 0.28,
+"hz": 2887,
+"twin": ""
+},
+"song420.mp3": {
+"guess": "420_thud_low",
+"kind": "noise",
+"seconds": 0.73,
+"hz": 2192,
+"twin": ""
+},
+"song421.mp3": {
+"guess": "421_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.67,
+"hz": 4265,
+"twin": ""
+},
+"song422.mp3": {
+"guess": "422_swoop_mid_up_long",
+"kind": "mixed",
+"seconds": 1.2,
+"hz": 1865,
+"twin": ""
+},
+"song423.mp3": {
+"guess": "423_fanfare_mid_long",
+"kind": "tonal",
+"seconds": 2.27,
+"hz": 753,
+"twin": ""
+},
+"song425.mp3": {
+"guess": "425_warble_low_long",
+"kind": "tonal",
+"seconds": 1.06,
+"hz": 107,
+"twin": ""
+},
+"song426.mp3": {
+"guess": "426_warble_mid_up_long",
+"kind": "tonal",
+"seconds": 1.25,
+"hz": 796,
+"twin": ""
+},
+"song450.mp3": {
+"guess": "450_whoosh_high_short",
+"kind": "noise",
+"seconds": 0.33,
+"hz": 5410,
+"twin": ""
+},
+"song451.mp3": {
+"guess": "451_hiss_high_short",
+"kind": "noise",
+"seconds": 0.34,
+"hz": 5426,
+"twin": ""
+},
+"song452.mp3": {
+"guess": "452_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.83,
+"hz": 4829,
+"twin": ""
+},
+"song453.mp3": {
+"guess": "453_burst_mid",
+"kind": "noise",
+"seconds": 0.83,
+"hz": 2701,
+"twin": ""
+},
+"song454.mp3": {
+"guess": "454_boom_low_up",
+"kind": "noise",
+"seconds": 0.42,
+"hz": 2330,
+"twin": ""
+},
+"song455.mp3": {
+"guess": "455_click_mid",
+"kind": "noise",
+"seconds": 0.14,
+"hz": 3495,
+"twin": ""
+},
+"song456.mp3": {
+"guess": "456_zap_mid_up",
+"kind": "mixed",
+"seconds": 0.39,
+"hz": 2045,
+"twin": ""
+},
+"song457.mp3": {
+"guess": "457_whoosh_mid_short",
+"kind": "noise",
+"seconds": 0.27,
+"hz": 2658,
+"twin": "song338.mp3"
+},
+"song458.mp3": {
+"guess": "458_click_mid_up",
+"kind": "noise",
+"seconds": 0.12,
+"hz": 2689,
+"twin": ""
+},
+"song459.mp3": {
+"guess": "459_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.85,
+"hz": 5121,
+"twin": ""
+},
+"song460.mp3": {
+"guess": "460_whoosh_mid_up_long",
+"kind": "noise",
+"seconds": 1.8,
+"hz": 2944,
+"twin": ""
+},
+"song461.mp3": {
+"guess": "461_sweep_mid_up",
+"kind": "tonal",
+"seconds": 0.4,
+"hz": 1184,
+"twin": ""
+},
+"song462.mp3": {
+"guess": "462_swell_mid",
+"kind": "mixed",
+"seconds": 0.29,
+"hz": 2823,
+"twin": ""
+},
+"song463.mp3": {
+"guess": "463_whoosh_mid_up_short",
+"kind": "noise",
+"seconds": 0.15,
+"hz": 3272,
+"twin": ""
+},
+"song464.mp3": {
+"guess": "464_blip_mid_up",
+"kind": "tonal",
+"seconds": 0.14,
+"hz": 581,
+"twin": ""
+},
+"song465.mp3": {
+"guess": "465_whoosh_mid_up_short",
+"kind": "noise",
+"seconds": 0.2,
+"hz": 3665,
+"twin": ""
+},
+"song466.mp3": {
+"guess": "466_sweep_mid_up",
+"kind": "tonal",
+"seconds": 0.56,
+"hz": 1055,
+"twin": ""
+},
+"song467.mp3": {
+"guess": "467_zap_mid_up",
+"kind": "mixed",
+"seconds": 0.28,
+"hz": 2645,
+"twin": ""
+},
+"song468.mp3": {
+"guess": "468_tap_high",
+"kind": "mixed",
+"seconds": 0.1,
+"hz": 3971,
+"twin": ""
+},
+"song469.mp3": {
+"guess": "469_whoosh_mid_short",
+"kind": "noise",
+"seconds": 0.32,
+"hz": 3287,
+"twin": ""
+},
+"song470.mp3": {
+"guess": "470_whoosh_high_down_short",
+"kind": "noise",
+"seconds": 0.31,
+"hz": 4467,
+"twin": ""
+},
+"song471.mp3": {
+"guess": "471_whoosh_mid_long",
+"kind": "noise",
+"seconds": 1.1,
+"hz": 2502,
+"twin": ""
+},
+"song472.mp3": {
+"guess": "472_burst_mid_short",
+"kind": "noise",
+"seconds": 0.35,
+"hz": 2509,
+"twin": ""
+},
+"song473.mp3": {
+"guess": "473_whoosh_high_up_short",
+"kind": "noise",
+"seconds": 0.28,
+"hz": 4089,
+"twin": ""
+},
+"song474.mp3": {
+"guess": "474_warble_mid_long",
+"kind": "tonal",
+"seconds": 1.12,
+"hz": 990,
+"twin": ""
+},
+"song475.mp3": {
+"guess": "475_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.47,
+"hz": 4146,
+"twin": ""
+},
+"song476.mp3": {
+"guess": "476_rumble_low_long",
+"kind": "noise",
+"seconds": 1.01,
+"hz": 1602,
+"twin": ""
+},
+"song477.mp3": {
+"guess": "477_hiss_high_long",
+"kind": "noise",
+"seconds": 1.8,
+"hz": 5687,
+"twin": ""
+},
+"song478.mp3": {
+"guess": "478_swoop_high_up",
+"kind": "mixed",
+"seconds": 0.56,
+"hz": 3337,
+"twin": ""
+},
+"song479.mp3": {
+"guess": "479_hiss_high",
+"kind": "noise",
+"seconds": 0.7,
+"hz": 4741,
+"twin": ""
+},
+"song480.mp3": {
+"guess": "480_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.44,
+"hz": 3664,
+"twin": ""
+},
+"song481.mp3": {
+"guess": "481_snap_high_long",
+"kind": "noise",
+"seconds": 1.12,
+"hz": 5738,
+"twin": ""
+},
+"song482.mp3": {
+"guess": "482_sweep_mid_down",
+"kind": "tonal",
+"seconds": 0.56,
+"hz": 689,
+"twin": ""
+},
+"song483.mp3": {
+"guess": "483_whoosh_mid_down",
+"kind": "noise",
+"seconds": 0.59,
+"hz": 3348,
+"twin": ""
+},
+"song484.mp3": {
+"guess": "484_hiss_high_long",
+"kind": "noise",
+"seconds": 1.25,
+"hz": 5851,
+"twin": ""
+},
+"song485.mp3": {
+"guess": "485_burst_mid_long",
+"kind": "noise",
+"seconds": 1.54,
+"hz": 3417,
+"twin": ""
+},
+"song486.mp3": {
+"guess": "486_whoosh_mid_down_short",
+"kind": "noise",
+"seconds": 0.37,
+"hz": 2560,
+"twin": ""
+},
+"song487.mp3": {
+"guess": "487_tone_mid",
+"kind": "tonal",
+"seconds": 0.78,
+"hz": 990,
+"twin": ""
+},
+"song488.mp3": {
+"guess": "488_swoop_high_down",
+"kind": "mixed",
+"seconds": 0.63,
+"hz": 4012,
+"twin": ""
+},
+"song489.mp3": {
+"guess": "489_rattle_high_long",
+"kind": "noise",
+"seconds": 6.34,
+"hz": 5195,
+"twin": ""
+},
+"song490.mp3": {
+"guess": "490_whoosh_high_down",
+"kind": "noise",
+"seconds": 0.44,
+"hz": 5186,
+"twin": ""
+},
+"song491.mp3": {
+"guess": "491_whoosh_mid_long",
+"kind": "noise",
+"seconds": 2.54,
+"hz": 3621,
+"twin": ""
+},
+"song492.mp3": {
+"guess": "492_effect_mid_long",
+"kind": "mixed",
+"seconds": 1.75,
+"hz": 1512,
+"twin": ""
+},
+"song493.mp3": {
+"guess": "493_snap_high",
+"kind": "noise",
+"seconds": 0.31,
+"hz": 5387,
+"twin": ""
+},
+"song494.mp3": {
+"guess": "494_snap_high",
+"kind": "noise",
+"seconds": 0.89,
+"hz": 5584,
+"twin": ""
+},
+"song495.mp3": {
+"guess": "495_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.57,
+"hz": 4356,
+"twin": ""
+},
+"song497.mp3": {
+"guess": "497_smack_mid",
+"kind": "noise",
+"seconds": 0.41,
+"hz": 3780,
+"twin": ""
+},
+"song498.mp3": {
+"guess": "498_burst_mid",
+"kind": "noise",
+"seconds": 0.5,
+"hz": 2717,
+"twin": ""
+},
+"song499.mp3": {
+"guess": "499_whoosh_high_long",
+"kind": "noise",
+"seconds": 2.81,
+"hz": 5416,
+"twin": ""
+},
+"song500.mp3": {
+"guess": "500_flurry_mid_up_long",
+"kind": "mixed",
+"seconds": 7.85,
+"hz": 1587,
+"twin": ""
+},
+"song501.mp3": {
+"guess": "501_click_mid",
+"kind": "noise",
+"seconds": 0.11,
+"hz": 2826,
+"twin": ""
+},
+"song502.mp3": {
+"guess": "502_snap_high",
+"kind": "noise",
+"seconds": 0.63,
+"hz": 5337,
+"twin": ""
+},
+"song503.mp3": {
+"guess": "503_rumble_low_long",
+"kind": "noise",
+"seconds": 1.37,
+"hz": 1399,
+"twin": ""
+},
+"song504.mp3": {
+"guess": "504_sweep_low_down",
+"kind": "tonal",
+"seconds": 0.89,
+"hz": 129,
+"twin": ""
+},
+"song505.mp3": {
+"guess": "505_bong_low",
+"kind": "tonal",
+"seconds": 0.77,
+"hz": 204,
+"twin": ""
+},
+"song506.mp3": {
+"guess": "506_hiss_high_long",
+"kind": "noise",
+"seconds": 2.65,
+"hz": 5432,
+"twin": ""
+},
+"song507.mp3": {
+"guess": "507_snap_high_long",
+"kind": "noise",
+"seconds": 2.96,
+"hz": 5690,
+"twin": ""
+},
+"song508.mp3": {
+"guess": "508_warble_mid_long",
+"kind": "tonal",
+"seconds": 2.83,
+"hz": 430,
+"twin": ""
+},
+"song509.mp3": {
+"guess": "509_swoop_high_down",
+"kind": "mixed",
+"seconds": 0.43,
+"hz": 3820,
+"twin": ""
+},
+"song510.mp3": {
+"guess": "510_zap_mid_up",
+"kind": "mixed",
+"seconds": 0.25,
+"hz": 2441,
+"twin": ""
+},
+"song511.mp3": {
+"guess": "511_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.55,
+"hz": 3021,
+"twin": ""
+},
+"song512.mp3": {
+"guess": "512_burst_mid_long",
+"kind": "noise",
+"seconds": 1.34,
+"hz": 2465,
+"twin": ""
+},
+"song513.mp3": {
+"guess": "513_rattle_mid_up_long",
+"kind": "noise",
+"seconds": 12.07,
+"hz": 3012,
+"twin": ""
+},
+"song514.mp3": {
+"guess": "514_impact_high",
+"kind": "mixed",
+"seconds": 0.78,
+"hz": 4287,
+"twin": ""
+},
+"song515.mp3": {
+"guess": "515_burst_mid",
+"kind": "noise",
+"seconds": 0.75,
+"hz": 2626,
+"twin": ""
+},
+"song516.mp3": {
+"guess": "516_hiss_high_short",
+"kind": "noise",
+"seconds": 0.17,
+"hz": 4613,
+"twin": ""
+},
+"song517.mp3": {
+"guess": "517_whoosh_mid_up_long",
+"kind": "noise",
+"seconds": 2.12,
+"hz": 3362,
+"twin": ""
+},
+"song518.mp3": {
+"guess": "518_hiss_high_long",
+"kind": "noise",
+"seconds": 2.47,
+"hz": 5250,
+"twin": ""
+},
+"song600.mp3": {
+"guess": "600_sweep_mid_up",
+"kind": "tonal",
+"seconds": 0.61,
+"hz": 516,
+"twin": ""
+},
+"song601.mp3": {
+"guess": "601_burst_mid",
+"kind": "noise",
+"seconds": 0.65,
+"hz": 3510,
+"twin": ""
+},
+"song602.mp3": {
+"guess": "602_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.52,
+"hz": 3262,
+"twin": ""
+},
+"song603.mp3": {
+"guess": "603_snap_high",
+"kind": "noise",
+"seconds": 0.63,
+"hz": 3812,
+"twin": ""
+},
+"song604.mp3": {
+"guess": "604_snap_high",
+"kind": "noise",
+"seconds": 0.7,
+"hz": 4692,
+"twin": "song479.mp3"
+},
+"song605.mp3": {
+"guess": "605_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.59,
+"hz": 3509,
+"twin": ""
+},
+"song606.mp3": {
+"guess": "606_swoop_mid_up_long",
+"kind": "mixed",
+"seconds": 1.12,
+"hz": 2546,
+"twin": ""
+},
+"song607.mp3": {
+"guess": "607_whoosh_high_up_short",
+"kind": "noise",
+"seconds": 0.2,
+"hz": 4448,
+"twin": ""
+},
+"song608.mp3": {
+"guess": "608_hiss_high_short",
+"kind": "noise",
+"seconds": 0.28,
+"hz": 5232,
+"twin": ""
+},
+"song609.mp3": {
+"guess": "609_whoosh_high_up_short",
+"kind": "noise",
+"seconds": 0.22,
+"hz": 4833,
+"twin": ""
+},
+"song610.mp3": {
+"guess": "610_burst_mid_short",
+"kind": "noise",
+"seconds": 0.35,
+"hz": 3690,
+"twin": ""
+},
+"song611.mp3": {
+"guess": "611_whoosh_mid_long",
+"kind": "noise",
+"seconds": 1.37,
+"hz": 3489,
+"twin": ""
+},
+"song612.mp3": {
+"guess": "612_flurry_mid",
+"kind": "mixed",
+"seconds": 0.79,
+"hz": 2398,
+"twin": ""
+},
+"song613.mp3": {
+"guess": "613_flurry_mid",
+"kind": "mixed",
+"seconds": 0.75,
+"hz": 2409,
+"twin": ""
+},
+"song614.mp3": {
+"guess": "614_tone_high",
+"kind": "tonal",
+"seconds": 0.69,
+"hz": 1959,
+"twin": ""
+},
+"song615.mp3": {
+"guess": "615_hiss_high_long",
+"kind": "noise",
+"seconds": 2.13,
+"hz": 5381,
+"twin": ""
+},
+"song616.mp3": {
+"guess": "616_warble_mid_long",
+"kind": "tonal",
+"seconds": 1.27,
+"hz": 882,
+"twin": ""
+},
+"song617.mp3": {
+"guess": "617_flurry_mid_up_long",
+"kind": "mixed",
+"seconds": 1.03,
+"hz": 2740,
+"twin": ""
+},
+"song618.mp3": {
+"guess": "618_swoop_mid_down_long",
+"kind": "mixed",
+"seconds": 1.03,
+"hz": 2898,
+"twin": ""
+},
+"song619.mp3": {
+"guess": "619_warble_high_up_long",
+"kind": "tonal",
+"seconds": 2.11,
+"hz": 3962,
+"twin": ""
+},
+"song620.mp3": {
+"guess": "620_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.46,
+"hz": 3959,
+"twin": ""
+},
+"song621.mp3": {
+"guess": "621_zap_mid_down",
+"kind": "mixed",
+"seconds": 0.35,
+"hz": 1639,
+"twin": ""
+},
+"song622.mp3": {
+"guess": "622_chirp_mid_down",
+"kind": "tonal",
+"seconds": 0.29,
+"hz": 430,
+"twin": ""
+},
+"song623.mp3": {
+"guess": "623_burst_mid",
+"kind": "noise",
+"seconds": 0.71,
+"hz": 3540,
+"twin": ""
+},
+"song624.mp3": {
+"guess": "624_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.85,
+"hz": 2089,
+"twin": ""
+},
+"song625.mp3": {
+"guess": "625_swell_mid_up_long",
+"kind": "mixed",
+"seconds": 1.06,
+"hz": 1951,
+"twin": ""
+},
+"song626.mp3": {
+"guess": "626_hiss_high",
+"kind": "noise",
+"seconds": 0.68,
+"hz": 5527,
+"twin": ""
+},
+"song627.mp3": {
+"guess": "627_jingle_mid",
+"kind": "tonal",
+"seconds": 0.95,
+"hz": 732,
+"twin": ""
+},
+"song628.mp3": {
+"guess": "628_beep_mid",
+"kind": "tonal",
+"seconds": 0.3,
+"hz": 732,
+"twin": ""
+},
+"song629.mp3": {
+"guess": "629_rattle_mid_long",
+"kind": "noise",
+"seconds": 2.16,
+"hz": 1879,
+"twin": ""
+},
+"song630.mp3": {
+"guess": "630_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.98,
+"hz": 6699,
+"twin": ""
+},
+"song631.mp3": {
+"guess": "631_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.43,
+"hz": 4510,
+"twin": ""
+},
+"song636.mp3": {
+"guess": "636_hiss_high",
+"kind": "noise",
+"seconds": 0.54,
+"hz": 5351,
+"twin": ""
+},
+"song638.mp3": {
+"guess": "638_snap_high",
+"kind": "noise",
+"seconds": 0.81,
+"hz": 4834,
+"twin": ""
+},
+"song639.mp3": {
+"guess": "639_smack_mid",
+"kind": "noise",
+"seconds": 0.17,
+"hz": 1236,
+"twin": ""
+},
+"song640.mp3": {
+"guess": "640_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.43,
+"hz": 5371,
+"twin": ""
+},
+"song641.mp3": {
+"guess": "641_swoop_mid_down",
+"kind": "mixed",
+"seconds": 0.59,
+"hz": 1150,
+"twin": ""
+},
+"song642.mp3": {
+"guess": "642_whoosh_mid_down_long",
+"kind": "noise",
+"seconds": 1.62,
+"hz": 2043,
+"twin": ""
+},
+"song643.mp3": {
+"guess": "643_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.44,
+"hz": 3654,
+"twin": "song480.mp3"
+},
+"song644.mp3": {
+"guess": "644_swoop_mid_down",
+"kind": "mixed",
+"seconds": 0.69,
+"hz": 1848,
+"twin": ""
+},
+"song645.mp3": {
+"guess": "645_sweep_mid_up",
+"kind": "tonal",
+"seconds": 0.45,
+"hz": 861,
+"twin": ""
+},
+"song646.mp3": {
+"guess": "646_whoosh_mid_down",
+"kind": "noise",
+"seconds": 0.45,
+"hz": 2717,
+"twin": ""
+},
+"song647.mp3": {
+"guess": "647_whoosh_mid_down_short",
+"kind": "noise",
+"seconds": 0.24,
+"hz": 3062,
+"twin": ""
+},
+"song648.mp3": {
+"guess": "648_sweep_mid_down_long",
+"kind": "tonal",
+"seconds": 1.47,
+"hz": 387,
+"twin": ""
+},
+"song649.mp3": {
+"guess": "649_burst_mid",
+"kind": "noise",
+"seconds": 0.52,
+"hz": 3340,
+"twin": ""
+},
+"song650.mp3": {
+"guess": "650_swell_mid_up",
+"kind": "mixed",
+"seconds": 0.68,
+"hz": 1968,
+"twin": ""
+},
+"song651.mp3": {
+"guess": "651_effect_mid",
+"kind": "mixed",
+"seconds": 0.87,
+"hz": 1835,
+"twin": ""
+},
+"song652.mp3": {
+"guess": "652_thud_low_up",
+"kind": "noise",
+"seconds": 0.45,
+"hz": 1970,
+"twin": ""
+},
+"song653.mp3": {
+"guess": "653_warble_low_down_long",
+"kind": "tonal",
+"seconds": 1.12,
+"hz": 107,
+"twin": ""
+},
+"song654.mp3": {
+"guess": "654_snap_high",
+"kind": "noise",
+"seconds": 0.6,
+"hz": 4409,
+"twin": ""
+},
+"song655.mp3": {
+"guess": "655_effect_mid",
+"kind": "mixed",
+"seconds": 0.69,
+"hz": 1857,
+"twin": ""
+},
+"song656.mp3": {
+"guess": "656_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.6,
+"hz": 3948,
+"twin": ""
+},
+"song657.mp3": {
+"guess": "657_whoosh_mid_up_long",
+"kind": "noise",
+"seconds": 1.0,
+"hz": 2136,
+"twin": ""
+},
+"song658.mp3": {
+"guess": "658_tone_mid",
+"kind": "tonal",
+"seconds": 0.82,
+"hz": 753,
+"twin": ""
+},
+"song659.mp3": {
+"guess": "659_sweep_mid_up",
+"kind": "tonal",
+"seconds": 0.44,
+"hz": 1248,
+"twin": ""
+},
+"song660.mp3": {
+"guess": "660_swoop_mid_up",
+"kind": "mixed",
+"seconds": 0.62,
+"hz": 2060,
+"twin": ""
+},
+"song662.mp3": {
+"guess": "662_impact_mid",
+"kind": "mixed",
+"seconds": 0.87,
+"hz": 1414,
+"twin": ""
+},
+"song663.mp3": {
+"guess": "663_swoop_mid_up",
+"kind": "mixed",
+"seconds": 0.88,
+"hz": 2697,
+"twin": ""
+},
+"song664.mp3": {
+"guess": "664_swoop_mid_up_long",
+"kind": "mixed",
+"seconds": 1.41,
+"hz": 2842,
+"twin": ""
+},
+"song665.mp3": {
+"guess": "665_whoosh_mid_down_short",
+"kind": "noise",
+"seconds": 0.35,
+"hz": 1958,
+"twin": ""
+},
+"song666.mp3": {
+"guess": "666_whoosh_high_up_long",
+"kind": "noise",
+"seconds": 1.21,
+"hz": 6816,
+"twin": ""
+},
+"song667.mp3": {
+"guess": "667_swoop_mid_up",
+"kind": "mixed",
+"seconds": 0.41,
+"hz": 2804,
+"twin": ""
+},
+"song668.mp3": {
+"guess": "668_hiss_high",
+"kind": "noise",
+"seconds": 0.46,
+"hz": 4851,
+"twin": ""
+},
+"song669.mp3": {
+"guess": "669_boom_low",
+"kind": "noise",
+"seconds": 0.58,
+"hz": 2424,
+"twin": ""
+},
+"song670.mp3": {
+"guess": "670_fanfare_high_up_long",
+"kind": "tonal",
+"seconds": 1.68,
+"hz": 1464,
+"twin": ""
+},
+"song671.mp3": {
+"guess": "671_boom_low",
+"kind": "noise",
+"seconds": 0.57,
+"hz": 2567,
+"twin": ""
+},
+"song674.mp3": {
+"guess": "674_thud_low",
+"kind": "noise",
+"seconds": 0.53,
+"hz": 2743,
+"twin": ""
+},
+"song675.mp3": {
+"guess": "675_sweep_high_up",
+"kind": "tonal",
+"seconds": 0.57,
+"hz": 3660,
+"twin": ""
+},
+"song676.mp3": {
+"guess": "676_whoosh_high_short",
+"kind": "noise",
+"seconds": 0.39,
+"hz": 4117,
+"twin": ""
+},
+"song677.mp3": {
+"guess": "677_rattle_high",
+"kind": "noise",
+"seconds": 0.72,
+"hz": 4666,
+"twin": ""
+},
+"song678.mp3": {
+"guess": "678_whoosh_mid_up_long",
+"kind": "noise",
+"seconds": 1.01,
+"hz": 2758,
+"twin": ""
+},
+"song679.mp3": {
+"guess": "679_hiss_high_short",
+"kind": "noise",
+"seconds": 0.22,
+"hz": 5442,
+"twin": ""
+},
+"song680.mp3": {
+"guess": "680_hiss_high",
+"kind": "noise",
+"seconds": 0.64,
+"hz": 5714,
+"twin": ""
+},
+"song681.mp3": {
+"guess": "681_rattle_high_up",
+"kind": "noise",
+"seconds": 0.63,
+"hz": 6960,
+"twin": ""
+},
+"song682.mp3": {
+"guess": "682_chirp_low_down",
+"kind": "tonal",
+"seconds": 0.32,
+"hz": 43,
+"twin": ""
+},
+"song683.mp3": {
+"guess": "683_whoosh_high_up_short",
+"kind": "noise",
+"seconds": 0.37,
+"hz": 4696,
+"twin": ""
+},
+"song684.mp3": {
+"guess": "684_whoosh_high_up_short",
+"kind": "noise",
+"seconds": 0.2,
+"hz": 4783,
+"twin": ""
+},
+"song685.mp3": {
+"guess": "685_hiss_high",
+"kind": "noise",
+"seconds": 0.45,
+"hz": 5571,
+"twin": ""
+},
+"song686.mp3": {
+"guess": "686_hiss_high_short",
+"kind": "noise",
+"seconds": 0.29,
+"hz": 5074,
+"twin": ""
+},
+"song687.mp3": {
+"guess": "687_swoop_mid_down",
+"kind": "mixed",
+"seconds": 0.67,
+"hz": 1902,
+"twin": ""
+},
+"song688.mp3": {
+"guess": "688_whoosh_high_up_short",
+"kind": "noise",
+"seconds": 0.37,
+"hz": 4059,
+"twin": ""
+},
+"song689.mp3": {
+"guess": "689_whoosh_mid_up_short",
+"kind": "noise",
+"seconds": 0.39,
+"hz": 3325,
+"twin": ""
+},
+"song690.mp3": {
+"guess": "690_burst_mid",
+"kind": "noise",
+"seconds": 0.58,
+"hz": 3036,
+"twin": ""
+},
+"song691.mp3": {
+"guess": "691_smack_mid",
+"kind": "noise",
+"seconds": 0.25,
+"hz": 3683,
+"twin": ""
+},
+"song692.mp3": {
+"guess": "692_shimmer_high",
+"kind": "mixed",
+"seconds": 0.95,
+"hz": 3719,
+"twin": ""
+},
+"song693.mp3": {
+"guess": "693_sweep_high_up_long",
+"kind": "tonal",
+"seconds": 1.08,
+"hz": 2142,
+"twin": ""
+},
+"song694.mp3": {
+"guess": "694_burst_mid_short",
+"kind": "noise",
+"seconds": 0.25,
+"hz": 2485,
+"twin": ""
+},
+"song695.mp3": {
+"guess": "695_hiss_high",
+"kind": "noise",
+"seconds": 0.55,
+"hz": 4487,
+"twin": ""
+},
+"song696.mp3": {
+"guess": "696_swoop_mid_up_long",
+"kind": "mixed",
+"seconds": 1.21,
+"hz": 2730,
+"twin": ""
+},
+"song697.mp3": {
+"guess": "697_whoosh_high",
+"kind": "noise",
+"seconds": 0.66,
+"hz": 3864,
+"twin": ""
+},
+"song698.mp3": {
+"guess": "698_whoosh_mid_down_short",
+"kind": "noise",
+"seconds": 0.22,
+"hz": 1773,
+"twin": ""
+},
+"song699.mp3": {
+"guess": "699_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.5,
+"hz": 2854,
+"twin": ""
+},
+"song700.mp3": {
+"guess": "700_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.72,
+"hz": 2784,
+"twin": ""
+},
+"song701.mp3": {
+"guess": "701_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.55,
+"hz": 4283,
+"twin": ""
+},
+"song702.mp3": {
+"guess": "702_burst_mid_short",
+"kind": "noise",
+"seconds": 0.3,
+"hz": 2292,
+"twin": ""
+},
+"song703.mp3": {
+"guess": "703_whoosh_mid_down_long",
+"kind": "noise",
+"seconds": 1.09,
+"hz": 1485,
+"twin": ""
+},
+"song704.mp3": {
+"guess": "704_fanfare_mid_down_long",
+"kind": "tonal",
+"seconds": 1.66,
+"hz": 581,
+"twin": ""
+},
+"song705.mp3": {
+"guess": "705_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.68,
+"hz": 5028,
+"twin": ""
+},
+"song706.mp3": {
+"guess": "706_snap_high",
+"kind": "noise",
+"seconds": 0.24,
+"hz": 4286,
+"twin": ""
+},
+"song707.mp3": {
+"guess": "707_swell_high_down",
+"kind": "mixed",
+"seconds": 0.97,
+"hz": 4246,
+"twin": ""
+},
+"song708.mp3": {
+"guess": "708_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.92,
+"hz": 3821,
+"twin": ""
+},
+"song709.mp3": {
+"guess": "709_hiss_high",
+"kind": "noise",
+"seconds": 0.51,
+"hz": 6984,
+"twin": ""
+},
+"song710.mp3": {
+"guess": "710_whoosh_mid_down_short",
+"kind": "noise",
+"seconds": 0.22,
+"hz": 2361,
+"twin": ""
+},
+"song711.mp3": {
+"guess": "711_whoosh_mid_down_short",
+"kind": "noise",
+"seconds": 0.29,
+"hz": 2290,
+"twin": ""
+},
+"song712.mp3": {
+"guess": "712_sweep_low_down",
+"kind": "tonal",
+"seconds": 0.64,
+"hz": 64,
+"twin": ""
+},
+"song713.mp3": {
+"guess": "713_burst_mid",
+"kind": "noise",
+"seconds": 0.67,
+"hz": 3711,
+"twin": ""
+},
+"song714.mp3": {
+"guess": "714_tone_mid",
+"kind": "tonal",
+"seconds": 0.85,
+"hz": 559,
+"twin": ""
+},
+"song715.mp3": {
+"guess": "715_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.43,
+"hz": 5159,
+"twin": ""
+},
+"song716.mp3": {
+"guess": "716_boom_low",
+"kind": "noise",
+"seconds": 0.25,
+"hz": 2634,
+"twin": ""
+},
+"song717.mp3": {
+"guess": "717_snap_high",
+"kind": "noise",
+"seconds": 0.7,
+"hz": 4374,
+"twin": ""
+},
+"song718.mp3": {
+"guess": "718_impact_high",
+"kind": "mixed",
+"seconds": 0.67,
+"hz": 4152,
+"twin": ""
+},
+"song719.mp3": {
+"guess": "719_sweep_mid_up",
+"kind": "tonal",
+"seconds": 0.44,
+"hz": 473,
+"twin": ""
+},
+"song720.mp3": {
+"guess": "720_zap_mid_down",
+"kind": "mixed",
+"seconds": 0.22,
+"hz": 1371,
+"twin": ""
+},
+"song721.mp3": {
+"guess": "721_swoop_high_up",
+"kind": "mixed",
+"seconds": 0.83,
+"hz": 4472,
+"twin": ""
+},
+"song722.mp3": {
+"guess": "722_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.67,
+"hz": 4388,
+"twin": ""
+},
+"song723.mp3": {
+"guess": "723_whoosh_high_up_short",
+"kind": "noise",
+"seconds": 0.26,
+"hz": 5107,
+"twin": ""
+},
+"song724.mp3": {
+"guess": "724_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.4,
+"hz": 5921,
+"twin": ""
+},
+"song725.mp3": {
+"guess": "725_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.54,
+"hz": 1969,
+"twin": ""
+},
+"song726.mp3": {
+"guess": "726_snap_high",
+"kind": "noise",
+"seconds": 0.21,
+"hz": 5301,
+"twin": ""
+},
+"song727.mp3": {
+"guess": "727_hiss_high_short",
+"kind": "noise",
+"seconds": 0.22,
+"hz": 3954,
+"twin": ""
+},
+"song728.mp3": {
+"guess": "728_boom_low",
+"kind": "noise",
+"seconds": 0.35,
+"hz": 2239,
+"twin": ""
+},
+"song729.mp3": {
+"guess": "729_whoosh_mid_down",
+"kind": "noise",
+"seconds": 0.61,
+"hz": 2092,
+"twin": ""
+},
+"song731.mp3": {
+"guess": "731_whoosh_high_short",
+"kind": "noise",
+"seconds": 0.24,
+"hz": 5776,
+"twin": ""
+},
+"song732.mp3": {
+"guess": "732_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.46,
+"hz": 4609,
+"twin": ""
+},
+"song733.mp3": {
+"guess": "733_whoosh_high_down",
+"kind": "noise",
+"seconds": 0.56,
+"hz": 4290,
+"twin": ""
+},
+"song735.mp3": {
+"guess": "735_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.62,
+"hz": 5025,
+"twin": ""
+},
+"song736.mp3": {
+"guess": "736_bong_low",
+"kind": "tonal",
+"seconds": 0.76,
+"hz": 215,
+"twin": ""
+},
+"song737.mp3": {
+"guess": "737_whoosh_mid_up_short",
+"kind": "noise",
+"seconds": 0.27,
+"hz": 3757,
+"twin": ""
+},
+"song738.mp3": {
+"guess": "738_burst_mid",
+"kind": "noise",
+"seconds": 0.83,
+"hz": 3798,
+"twin": ""
+},
+"song739.mp3": {
+"guess": "739_rattle_mid",
+"kind": "noise",
+"seconds": 0.62,
+"hz": 2853,
+"twin": ""
+},
+"song740.mp3": {
+"guess": "740_whoosh_high_up_short",
+"kind": "noise",
+"seconds": 0.26,
+"hz": 6728,
+"twin": ""
+},
+"song741.mp3": {
+"guess": "741_hiss_high_short",
+"kind": "noise",
+"seconds": 0.32,
+"hz": 5784,
+"twin": ""
+},
+"song742.mp3": {
+"guess": "742_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.44,
+"hz": 4314,
+"twin": ""
+},
+"song744.mp3": {
+"guess": "744_hiss_high_long",
+"kind": "noise",
+"seconds": 1.15,
+"hz": 6332,
+"twin": ""
+},
+"song745.mp3": {
+"guess": "745_whoosh_high_up_short",
+"kind": "noise",
+"seconds": 0.31,
+"hz": 5206,
+"twin": ""
+},
+"song746.mp3": {
+"guess": "746_tone_high",
+"kind": "tonal",
+"seconds": 0.46,
+"hz": 2347,
+"twin": ""
+},
+"song747.mp3": {
+"guess": "747_burst_mid_short",
+"kind": "noise",
+"seconds": 0.17,
+"hz": 2774,
+"twin": ""
+},
+"song748.mp3": {
+"guess": "748_whoosh_mid_up_short",
+"kind": "noise",
+"seconds": 0.19,
+"hz": 3075,
+"twin": ""
+},
+"song749.mp3": {
+"guess": "749_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.72,
+"hz": 4539,
+"twin": ""
+},
+"song750.mp3": {
+"guess": "750_zap_low_up",
+"kind": "mixed",
+"seconds": 0.39,
+"hz": 1008,
+"twin": ""
+},
+"song751.mp3": {
+"guess": "751_fanfare_low_up_long",
+"kind": "tonal",
+"seconds": 1.31,
+"hz": 86,
+"twin": ""
+},
+"song752.mp3": {
+"guess": "752_sweep_low_up",
+"kind": "tonal",
+"seconds": 0.82,
+"hz": 107,
+"twin": ""
+},
+"song753.mp3": {
+"guess": "753_whoosh_high_short",
+"kind": "noise",
+"seconds": 0.24,
+"hz": 4945,
+"twin": ""
+},
+"song754.mp3": {
+"guess": "754_burst_mid_long",
+"kind": "noise",
+"seconds": 1.36,
+"hz": 2115,
+"twin": ""
+},
+"song755.mp3": {
+"guess": "755_snap_high_long",
+"kind": "noise",
+"seconds": 1.35,
+"hz": 4078,
+"twin": ""
+},
+"song756.mp3": {
+"guess": "756_whoosh_mid",
+"kind": "noise",
+"seconds": 0.73,
+"hz": 1919,
+"twin": ""
+},
+"song757.mp3": {
+"guess": "757_flurry_high",
+"kind": "mixed",
+"seconds": 0.7,
+"hz": 3830,
+"twin": ""
+},
+"song758.mp3": {
+"guess": "758_rattle_high_up",
+"kind": "noise",
+"seconds": 0.77,
+"hz": 3851,
+"twin": ""
+},
+"song759.mp3": {
+"guess": "759_sweep_low_up",
+"kind": "tonal",
+"seconds": 0.43,
+"hz": 161,
+"twin": ""
+},
+"song760.mp3": {
+"guess": "760_sweep_mid_up",
+"kind": "tonal",
+"seconds": 0.67,
+"hz": 516,
+"twin": ""
+},
+"song761.mp3": {
+"guess": "761_snap_high",
+"kind": "noise",
+"seconds": 0.8,
+"hz": 5371,
+"twin": ""
+},
+"song762.mp3": {
+"guess": "762_whoosh_high_up_short",
+"kind": "noise",
+"seconds": 0.29,
+"hz": 3972,
+"twin": ""
+},
+"song763.mp3": {
+"guess": "763_whoosh_high_up_short",
+"kind": "noise",
+"seconds": 0.36,
+"hz": 4250,
+"twin": ""
+},
+"song764.mp3": {
+"guess": "764_impact_mid",
+"kind": "mixed",
+"seconds": 0.36,
+"hz": 3172,
+"twin": ""
+},
+"song765.mp3": {
+"guess": "765_snap_high",
+"kind": "noise",
+"seconds": 0.35,
+"hz": 5022,
+"twin": ""
+},
+"song766.mp3": {
+"guess": "766_sweep_high_down_long",
+"kind": "tonal",
+"seconds": 1.51,
+"hz": 3725,
+"twin": ""
+},
+"song768.mp3": {
+"guess": "768_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.54,
+"hz": 2652,
+"twin": ""
+},
+"song769.mp3": {
+"guess": "769_boom_low",
+"kind": "noise",
+"seconds": 0.73,
+"hz": 2301,
+"twin": ""
+},
+"song770.mp3": {
+"guess": "770_impact_mid_long",
+"kind": "mixed",
+"seconds": 1.28,
+"hz": 2150,
+"twin": ""
+},
+"song771.mp3": {
+"guess": "771_tone_high",
+"kind": "tonal",
+"seconds": 0.67,
+"hz": 1571,
+"twin": ""
+},
+"song772.mp3": {
+"guess": "772_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.43,
+"hz": 2545,
+"twin": ""
+},
+"song773.mp3": {
+"guess": "773_swoop_mid_up",
+"kind": "mixed",
+"seconds": 0.48,
+"hz": 2777,
+"twin": ""
+},
+"song774.mp3": {
+"guess": "774_hiss_high",
+"kind": "noise",
+"seconds": 0.6,
+"hz": 5571,
+"twin": ""
+},
+"song775.mp3": {
+"guess": "775_whoosh_mid_down",
+"kind": "noise",
+"seconds": 0.43,
+"hz": 2370,
+"twin": ""
+},
+"song776.mp3": {
+"guess": "776_swoop_mid_up",
+"kind": "mixed",
+"seconds": 0.79,
+"hz": 2574,
+"twin": ""
+},
+"song777.mp3": {
+"guess": "777_smack_mid_long",
+"kind": "noise",
+"seconds": 1.31,
+"hz": 3348,
+"twin": ""
+},
+"song778.mp3": {
+"guess": "778_whoosh_mid_up_short",
+"kind": "noise",
+"seconds": 0.29,
+"hz": 2975,
+"twin": ""
+},
+"song779.mp3": {
+"guess": "779_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.85,
+"hz": 5089,
+"twin": ""
+},
+"song780.mp3": {
+"guess": "780_sweep_low_up",
+"kind": "tonal",
+"seconds": 0.59,
+"hz": 129,
+"twin": ""
+},
+"song781.mp3": {
+"guess": "781_boom_low_down",
+"kind": "noise",
+"seconds": 0.59,
+"hz": 2901,
+"twin": ""
+},
+"song782.mp3": {
+"guess": "782_whoosh_mid_down",
+"kind": "noise",
+"seconds": 0.59,
+"hz": 2854,
+"twin": ""
+},
+"song783.mp3": {
+"guess": "783_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.67,
+"hz": 3558,
+"twin": ""
+},
+"song784.mp3": {
+"guess": "784_whoosh_high_up_short",
+"kind": "noise",
+"seconds": 0.39,
+"hz": 4521,
+"twin": ""
+},
+"song785.mp3": {
+"guess": "785_whoosh_high_up_long",
+"kind": "noise",
+"seconds": 1.1,
+"hz": 4946,
+"twin": ""
+},
+"song786.mp3": {
+"guess": "786_swoop_mid_up",
+"kind": "mixed",
+"seconds": 0.74,
+"hz": 1636,
+"twin": ""
+},
+"song787.mp3": {
+"guess": "787_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.76,
+"hz": 2066,
+"twin": ""
+},
+"song788.mp3": {
+"guess": "788_whoosh_high_up_long",
+"kind": "noise",
+"seconds": 1.03,
+"hz": 4646,
+"twin": ""
+},
+"song789.mp3": {
+"guess": "789_tone_high",
+"kind": "tonal",
+"seconds": 0.67,
+"hz": 6093,
+"twin": ""
+},
+"song790.mp3": {
+"guess": "790_whoosh_mid_down",
+"kind": "noise",
+"seconds": 0.61,
+"hz": 3213,
+"twin": ""
+},
+"song791.mp3": {
+"guess": "791_whoosh_mid_down_short",
+"kind": "noise",
+"seconds": 0.25,
+"hz": 3347,
+"twin": ""
+},
+"song792.mp3": {
+"guess": "792_swoop_mid_up_long",
+"kind": "mixed",
+"seconds": 1.12,
+"hz": 1134,
+"twin": ""
+},
+"song793.mp3": {
+"guess": "793_burst_mid",
+"kind": "noise",
+"seconds": 0.91,
+"hz": 2356,
+"twin": ""
+},
+"song794.mp3": {
+"guess": "794_sweep_mid_down",
+"kind": "tonal",
+"seconds": 0.45,
+"hz": 581,
+"twin": ""
+},
+"song797.mp3": {
+"guess": "797_rattle_high",
+"kind": "noise",
+"seconds": 0.91,
+"hz": 5895,
+"twin": ""
+},
+"song798.mp3": {
+"guess": "798_hiss_high",
+"kind": "noise",
+"seconds": 0.44,
+"hz": 4405,
+"twin": ""
+},
+"song799.mp3": {
+"guess": "799_hiss_high",
+"kind": "noise",
+"seconds": 0.67,
+"hz": 4760,
+"twin": ""
+},
+"song800.mp3": {
+"guess": "800_rattle_high_up",
+"kind": "noise",
+"seconds": 0.51,
+"hz": 3864,
+"twin": ""
+},
+"song801.mp3": {
+"guess": "801_sweep_low_down",
+"kind": "tonal",
+"seconds": 0.52,
+"hz": 150,
+"twin": ""
+},
+"song802.mp3": {
+"guess": "802_boom_low",
+"kind": "noise",
+"seconds": 0.57,
+"hz": 2729,
+"twin": ""
+},
+"song803.mp3": {
+"guess": "803_whoosh_mid_down",
+"kind": "noise",
+"seconds": 0.59,
+"hz": 2181,
+"twin": ""
+},
+"song805.mp3": {
+"guess": "805_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.54,
+"hz": 1338,
+"twin": ""
+},
+"song807.mp3": {
+"guess": "807_click_high",
+"kind": "noise",
+"seconds": 0.12,
+"hz": 5956,
+"twin": ""
+},
+"song808.mp3": {
+"guess": "808_jingle_high",
+"kind": "tonal",
+"seconds": 0.5,
+"hz": 4909,
+"twin": ""
+},
+"song809.mp3": {
+"guess": "809_swoop_mid_down",
+"kind": "mixed",
+"seconds": 0.63,
+"hz": 2027,
+"twin": ""
+},
+"song810.mp3": {
+"guess": "810_sweep_mid_up",
+"kind": "tonal",
+"seconds": 0.61,
+"hz": 387,
+"twin": ""
+},
+"song811.mp3": {
+"guess": "811_sweep_high_up",
+"kind": "tonal",
+"seconds": 0.6,
+"hz": 2497,
+"twin": ""
+},
+"song812.mp3": {
+"guess": "812_whoosh_mid",
+"kind": "noise",
+"seconds": 0.48,
+"hz": 3641,
+"twin": ""
+},
+"song813.mp3": {
+"guess": "813_zap_low_down",
+"kind": "mixed",
+"seconds": 0.3,
+"hz": 1590,
+"twin": ""
+},
+"song814.mp3": {
+"guess": "814_burst_mid",
+"kind": "noise",
+"seconds": 0.44,
+"hz": 3178,
+"twin": ""
+},
+"song815.mp3": {
+"guess": "815_whoosh_mid_down",
+"kind": "noise",
+"seconds": 0.59,
+"hz": 2318,
+"twin": ""
+},
+"song817.mp3": {
+"guess": "817_hiss_high_short",
+"kind": "noise",
+"seconds": 0.25,
+"hz": 5010,
+"twin": ""
+},
+"song818.mp3": {
+"guess": "818_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.77,
+"hz": 2435,
+"twin": ""
+},
+"song819.mp3": {
+"guess": "819_hiss_high_short",
+"kind": "noise",
+"seconds": 0.29,
+"hz": 4619,
+"twin": ""
+},
+"song820.mp3": {
+"guess": "820_effect_mid_long",
+"kind": "mixed",
+"seconds": 1.18,
+"hz": 2096,
+"twin": ""
+},
+"song821.mp3": {
+"guess": "821_tone_high",
+"kind": "tonal",
+"seconds": 0.62,
+"hz": 1485,
+"twin": ""
+},
+"song822.mp3": {
+"guess": "822_whoosh_high",
+"kind": "noise",
+"seconds": 0.86,
+"hz": 5598,
+"twin": ""
+},
+"song823.mp3": {
+"guess": "823_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.87,
+"hz": 4116,
+"twin": ""
+},
+"song824.mp3": {
+"guess": "824_hiss_high",
+"kind": "noise",
+"seconds": 0.64,
+"hz": 5645,
+"twin": "song680.mp3"
+},
+"song826.mp3": {
+"guess": "826_tone_low_long",
+"kind": "tonal",
+"seconds": 1.17,
+"hz": 236,
+"twin": ""
+},
+"song827.mp3": {
+"guess": "827_hiss_high",
+"kind": "noise",
+"seconds": 0.4,
+"hz": 5449,
+"twin": ""
+},
+"song828.mp3": {
+"guess": "828_hiss_high_short",
+"kind": "noise",
+"seconds": 0.29,
+"hz": 5268,
+"twin": ""
+},
+"song829.mp3": {
+"guess": "829_chirp_mid_up",
+"kind": "tonal",
+"seconds": 0.29,
+"hz": 936,
+"twin": ""
+},
+"song830.mp3": {
+"guess": "830_sweep_mid_down",
+"kind": "tonal",
+"seconds": 0.51,
+"hz": 602,
+"twin": ""
+},
+"song831.mp3": {
+"guess": "831_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.54,
+"hz": 3006,
+"twin": ""
+},
+"song832.mp3": {
+"guess": "832_whoosh_mid_down_long",
+"kind": "noise",
+"seconds": 1.16,
+"hz": 3524,
+"twin": ""
+},
+"song833.mp3": {
+"guess": "833_swoop_mid_down",
+"kind": "mixed",
+"seconds": 0.87,
+"hz": 2211,
+"twin": ""
+},
+"song834.mp3": {
+"guess": "834_swoop_mid_up_long",
+"kind": "mixed",
+"seconds": 1.12,
+"hz": 2670,
+"twin": ""
+},
+"song835.mp3": {
+"guess": "835_effect_mid",
+"kind": "mixed",
+"seconds": 0.46,
+"hz": 1811,
+"twin": ""
+},
+"song836.mp3": {
+"guess": "836_fanfare_mid_up_long",
+"kind": "tonal",
+"seconds": 1.06,
+"hz": 882,
+"twin": ""
+},
+"song839.mp3": {
+"guess": "839_snap_high",
+"kind": "noise",
+"seconds": 0.27,
+"hz": 4562,
+"twin": ""
+},
+"song840.mp3": {
+"guess": "840_sweep_low_down",
+"kind": "tonal",
+"seconds": 0.7,
+"hz": 150,
+"twin": ""
+},
+"song841.mp3": {
+"guess": "841_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.47,
+"hz": 3754,
+"twin": ""
+},
+"song842.mp3": {
+"guess": "842_warble_mid_up_long",
+"kind": "tonal",
+"seconds": 1.18,
+"hz": 1205,
+"twin": ""
+},
+"song843.mp3": {
+"guess": "843_whoosh_mid_up_short",
+"kind": "noise",
+"seconds": 0.29,
+"hz": 2928,
+"twin": ""
+},
+"song844.mp3": {
+"guess": "844_buzz_low_long",
+"kind": "mixed",
+"seconds": 1.18,
+"hz": 1191,
+"twin": ""
+},
+"song845.mp3": {
+"guess": "845_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.53,
+"hz": 5301,
+"twin": ""
+},
+"song846.mp3": {
+"guess": "846_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.61,
+"hz": 1586,
+"twin": ""
+},
+"song847.mp3": {
+"guess": "847_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.84,
+"hz": 4366,
+"twin": ""
+},
+"song848.mp3": {
+"guess": "848_boom_low",
+"kind": "noise",
+"seconds": 0.83,
+"hz": 2688,
+"twin": ""
+},
+"song849.mp3": {
+"guess": "849_boom_low",
+"kind": "noise",
+"seconds": 0.41,
+"hz": 2652,
+"twin": ""
+},
+"song850.mp3": {
+"guess": "850_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.53,
+"hz": 7876,
+"twin": ""
+},
+"song851.mp3": {
+"guess": "851_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.53,
+"hz": 6161,
+"twin": ""
+},
+"song852.mp3": {
+"guess": "852_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.52,
+"hz": 6944,
+"twin": ""
+},
+"song853.mp3": {
+"guess": "853_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.53,
+"hz": 4654,
+"twin": ""
+},
+"song854.mp3": {
+"guess": "854_zap_mid_up",
+"kind": "mixed",
+"seconds": 0.38,
+"hz": 1344,
+"twin": ""
+},
+"song855.mp3": {
+"guess": "855_whoosh_mid_up_short",
+"kind": "noise",
+"seconds": 0.25,
+"hz": 2833,
+"twin": "song412.mp3"
+},
+"song856.mp3": {
+"guess": "856_tone_low",
+"kind": "tonal",
+"seconds": 0.93,
+"hz": 129,
+"twin": ""
+},
+"song857.mp3": {
+"guess": "857_sweep_mid_up",
+"kind": "tonal",
+"seconds": 0.72,
+"hz": 667,
+"twin": ""
+},
+"song858.mp3": {
+"guess": "858_smack_mid_long",
+"kind": "noise",
+"seconds": 1.25,
+"hz": 3371,
+"twin": ""
+},
+"song859.mp3": {
+"guess": "859_hiss_high",
+"kind": "noise",
+"seconds": 0.44,
+"hz": 4268,
+"twin": ""
+},
+"song860.mp3": {
+"guess": "860_snap_high",
+"kind": "noise",
+"seconds": 0.43,
+"hz": 4853,
+"twin": ""
+},
+"song861.mp3": {
+"guess": "861_hiss_high",
+"kind": "noise",
+"seconds": 0.44,
+"hz": 4260,
+"twin": "song859.mp3"
+},
+"song862.mp3": {
+"guess": "862_burst_mid",
+"kind": "noise",
+"seconds": 0.44,
+"hz": 3372,
+"twin": ""
+},
+"song863.mp3": {
+"guess": "863_snap_high",
+"kind": "noise",
+"seconds": 0.32,
+"hz": 4549,
+"twin": ""
+},
+"song864.mp3": {
+"guess": "864_hiss_high",
+"kind": "noise",
+"seconds": 0.95,
+"hz": 4787,
+"twin": ""
+},
+"song865.mp3": {
+"guess": "865_jingle_mid",
+"kind": "tonal",
+"seconds": 0.95,
+"hz": 732,
+"twin": "song627.mp3"
+},
+"song866.mp3": {
+"guess": "866_hiss_high_short",
+"kind": "noise",
+"seconds": 0.27,
+"hz": 6758,
+"twin": "song740.mp3"
+},
+"song867.mp3": {
+"guess": "867_effect_mid",
+"kind": "mixed",
+"seconds": 0.85,
+"hz": 2613,
+"twin": ""
+},
+"song868.mp3": {
+"guess": "868_warble_mid_down_long",
+"kind": "tonal",
+"seconds": 1.04,
+"hz": 925,
+"twin": ""
+},
+"song869.mp3": {
+"guess": "869_burst_mid",
+"kind": "noise",
+"seconds": 0.61,
+"hz": 1271,
+"twin": ""
+},
+"song870.mp3": {
+"guess": "870_burst_mid",
+"kind": "noise",
+"seconds": 0.5,
+"hz": 2384,
+"twin": ""
+},
+"song871.mp3": {
+"guess": "871_jingle_high_up",
+"kind": "tonal",
+"seconds": 0.6,
+"hz": 2260,
+"twin": ""
+},
+"song872.mp3": {
+"guess": "872_whoosh_high",
+"kind": "noise",
+"seconds": 0.8,
+"hz": 5470,
+"twin": ""
+},
+"song873.mp3": {
+"guess": "873_smack_mid",
+"kind": "noise",
+"seconds": 0.77,
+"hz": 2512,
+"twin": ""
+},
+"song874.mp3": {
+"guess": "874_whoosh_high_down",
+"kind": "noise",
+"seconds": 0.81,
+"hz": 6625,
+"twin": ""
+},
+"song875.mp3": {
+"guess": "875_swoop_mid_up",
+"kind": "mixed",
+"seconds": 0.91,
+"hz": 2286,
+"twin": ""
+},
+"song876.mp3": {
+"guess": "876_jingle_mid",
+"kind": "tonal",
+"seconds": 0.95,
+"hz": 732,
+"twin": "song627.mp3"
+},
+"song877.mp3": {
+"guess": "877_burst_mid_long",
+"kind": "noise",
+"seconds": 1.19,
+"hz": 2817,
+"twin": ""
+},
+"song879.mp3": {
+"guess": "879_hiss_high",
+"kind": "noise",
+"seconds": 0.54,
+"hz": 4373,
+"twin": ""
+},
+"song880.mp3": {
+"guess": "880_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.54,
+"hz": 4240,
+"twin": ""
+},
+"song881.mp3": {
+"guess": "881_hiss_high",
+"kind": "noise",
+"seconds": 0.69,
+"hz": 4383,
+"twin": ""
+},
+"song882.mp3": {
+"guess": "882_sweep_high_up",
+"kind": "tonal",
+"seconds": 0.44,
+"hz": 2368,
+"twin": ""
+},
+"song883.mp3": {
+"guess": "883_jingle_mid",
+"kind": "tonal",
+"seconds": 0.77,
+"hz": 667,
+"twin": ""
+},
+"song884.mp3": {
+"guess": "884_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.7,
+"hz": 2596,
+"twin": ""
+},
+"song885.mp3": {
+"guess": "885_snap_high",
+"kind": "noise",
+"seconds": 0.81,
+"hz": 6630,
+"twin": "song414.mp3"
+},
+"song886.mp3": {
+"guess": "886_smack_mid_long",
+"kind": "noise",
+"seconds": 1.04,
+"hz": 3656,
+"twin": ""
+},
+"song887.mp3": {
+"guess": "887_burst_mid",
+"kind": "noise",
+"seconds": 0.92,
+"hz": 3511,
+"twin": ""
+},
+"song888.mp3": {
+"guess": "888_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.51,
+"hz": 2339,
+"twin": "song415.mp3"
+},
+"song889.mp3": {
+"guess": "889_hiss_high",
+"kind": "noise",
+"seconds": 0.7,
+"hz": 4123,
+"twin": ""
+},
+"song890.mp3": {
+"guess": "890_click_mid_down",
+"kind": "noise",
+"seconds": 0.14,
+"hz": 2791,
+"twin": ""
+},
+"song891.mp3": {
+"guess": "891_burst_mid",
+"kind": "noise",
+"seconds": 0.59,
+"hz": 2724,
+"twin": ""
+},
+"song892.mp3": {
+"guess": "892_sweep_mid_up",
+"kind": "tonal",
+"seconds": 0.78,
+"hz": 473,
+"twin": ""
+},
+"song893.mp3": {
+"guess": "893_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.57,
+"hz": 5292,
+"twin": ""
+},
+"song895.mp3": {
+"guess": "895_sweep_mid_up",
+"kind": "tonal",
+"seconds": 0.57,
+"hz": 635,
+"twin": ""
+},
+"song896.mp3": {
+"guess": "896_impact_mid_long",
+"kind": "mixed",
+"seconds": 1.0,
+"hz": 2155,
+"twin": ""
+},
+"song897.mp3": {
+"guess": "897_smack_mid",
+"kind": "noise",
+"seconds": 0.72,
+"hz": 1460,
+"twin": ""
+},
+"song898.mp3": {
+"guess": "898_burst_mid",
+"kind": "noise",
+"seconds": 0.87,
+"hz": 3510,
+"twin": ""
+},
+"song899.mp3": {
+"guess": "899_hiss_high",
+"kind": "noise",
+"seconds": 0.43,
+"hz": 4098,
+"twin": ""
+},
+"song900.mp3": {
+"guess": "900_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.58,
+"hz": 2369,
+"twin": ""
+},
+"song901.mp3": {
+"guess": "901_whoosh_mid_down",
+"kind": "noise",
+"seconds": 0.66,
+"hz": 2411,
+"twin": ""
+},
+"song902.mp3": {
+"guess": "902_whoosh_mid_up",
+"kind": "noise",
+"seconds": 0.64,
+"hz": 2534,
+"twin": ""
+},
+"song903.mp3": {
+"guess": "903_swoop_low_up",
+"kind": "mixed",
+"seconds": 0.66,
+"hz": 3105,
+"twin": ""
+},
+"song904.mp3": {
+"guess": "904_whoosh_mid_down_short",
+"kind": "noise",
+"seconds": 0.27,
+"hz": 2631,
+"twin": ""
+},
+"song905.mp3": {
+"guess": "905_swoop_low_up",
+"kind": "mixed",
+"seconds": 0.66,
+"hz": 3497,
+"twin": ""
+},
+"song906.mp3": {
+"guess": "906_whoosh_mid_down_short",
+"kind": "noise",
+"seconds": 0.27,
+"hz": 2634,
+"twin": ""
+},
+"song907.mp3": {
+"guess": "907_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.44,
+"hz": 4123,
+"twin": ""
+},
+"song908.mp3": {
+"guess": "908_whoosh_high_down_short",
+"kind": "noise",
+"seconds": 0.3,
+"hz": 5382,
+"twin": ""
+},
+"song909.mp3": {
+"guess": "909_swoop_low_up",
+"kind": "mixed",
+"seconds": 0.68,
+"hz": 3119,
+"twin": ""
+},
+"song910.mp3": {
+"guess": "910_whoosh_mid_down_short",
+"kind": "noise",
+"seconds": 0.29,
+"hz": 2886,
+"twin": ""
+},
+"song911.mp3": {
+"guess": "911_whoosh_high_down_short",
+"kind": "noise",
+"seconds": 0.39,
+"hz": 3887,
+"twin": ""
+},
+"song912.mp3": {
+"guess": "912_hiss_high_short",
+"kind": "noise",
+"seconds": 0.24,
+"hz": 4676,
+"twin": ""
+},
+"song913.mp3": {
+"guess": "913_chirp_high_down",
+"kind": "tonal",
+"seconds": 0.29,
+"hz": 1668,
+"twin": ""
+},
+"song914.mp3": {
+"guess": "914_hiss_high_short",
+"kind": "noise",
+"seconds": 0.25,
+"hz": 5672,
+"twin": ""
+},
+"song915.mp3": {
+"guess": "915_chirp_mid_up",
+"kind": "tonal",
+"seconds": 0.3,
+"hz": 409,
+"twin": ""
+},
+"song918.mp3": {
+"guess": "918_effect_mid",
+"kind": "mixed",
+"seconds": 0.43,
+"hz": 2118,
+"twin": ""
+},
+"song919.mp3": {
+"guess": "919_effect_mid",
+"kind": "mixed",
+"seconds": 0.43,
+"hz": 2105,
+"twin": ""
+},
+"song920.mp3": {
+"guess": "920_snap_high",
+"kind": "noise",
+"seconds": 0.7,
+"hz": 5368,
+"twin": ""
+},
+"song921.mp3": {
+"guess": "921_rattle_mid_long",
+"kind": "noise",
+"seconds": 1.39,
+"hz": 2961,
+"twin": ""
+},
+"song922.mp3": {
+"guess": "922_thud_low",
+"kind": "noise",
+"seconds": 0.44,
+"hz": 3422,
+"twin": ""
+},
+"song924.mp3": {
+"guess": "924_smack_mid",
+"kind": "noise",
+"seconds": 0.45,
+"hz": 2810,
+"twin": ""
+},
+"song925.mp3": {
+"guess": "925_whoosh_high_down",
+"kind": "noise",
+"seconds": 0.87,
+"hz": 4074,
+"twin": ""
+},
+"song926.mp3": {
+"guess": "926_burst_mid",
+"kind": "noise",
+"seconds": 0.61,
+"hz": 3570,
+"twin": ""
+},
+"song927.mp3": {
+"guess": "927_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.54,
+"hz": 4169,
+"twin": ""
+},
+"song928.mp3": {
+"guess": "928_whoosh_high_down",
+"kind": "noise",
+"seconds": 0.48,
+"hz": 5523,
+"twin": ""
+},
+"song929.mp3": {
+"guess": "929_swoop_low_up",
+"kind": "mixed",
+"seconds": 0.62,
+"hz": 2189,
+"twin": ""
+},
+"song930.mp3": {
+"guess": "930_whoosh_mid_down_short",
+"kind": "noise",
+"seconds": 0.29,
+"hz": 3273,
+"twin": ""
+},
+"song931.mp3": {
+"guess": "931_swell_high_down",
+"kind": "mixed",
+"seconds": 0.4,
+"hz": 3993,
+"twin": ""
+},
+"song932.mp3": {
+"guess": "932_whoosh_high_down",
+"kind": "noise",
+"seconds": 0.45,
+"hz": 3830,
+"twin": ""
+},
+"song933.mp3": {
+"guess": "933_click_high_up",
+"kind": "noise",
+"seconds": 0.09,
+"hz": 5917,
+"twin": ""
+},
+"song934.mp3": {
+"guess": "934_swoop_low_up",
+"kind": "mixed",
+"seconds": 0.57,
+"hz": 3284,
+"twin": ""
+},
+"song935.mp3": {
+"guess": "935_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.43,
+"hz": 4698,
+"twin": ""
+},
+"song936.mp3": {
+"guess": "936_thud_low_down",
+"kind": "noise",
+"seconds": 0.67,
+"hz": 2482,
+"twin": ""
+},
+"song937.mp3": {
+"guess": "937_effect_mid_short",
+"kind": "mixed",
+"seconds": 0.37,
+"hz": 2624,
+"twin": ""
+},
+"song938.mp3": {
+"guess": "938_hiss_high_short",
+"kind": "noise",
+"seconds": 0.35,
+"hz": 4454,
+"twin": ""
+},
+"song939.mp3": {
+"guess": "939_whoosh_high_up",
+"kind": "noise",
+"seconds": 0.57,
+"hz": 5506,
+"twin": ""
+},
+"splash.mp3": {
+"guess": "",
+"kind": "noise",
+"seconds": 1.75,
+"hz": 2261,
+"twin": ""
+},
+"take_hit.mp3": {
+"guess": "",
+"kind": "noise",
+"seconds": 0.38,
+"hz": 3271,
+"twin": ""
+},
+"take_hit_heavy.mp3": {
+"guess": "",
+"kind": "noise",
+"seconds": 0.53,
+"hz": 2765,
+"twin": ""
+},
+"thunder.mp3": {
+"guess": "",
+"kind": "noise",
+"seconds": 0.74,
+"hz": 1785,
+"twin": ""
+},
+"wind.mp3": {
+"guess": "",
+"kind": "mixed",
+"seconds": 2.91,
+"hz": 2373,
+"twin": ""
+},
+"wind_short.mp3": {
+"guess": "",
+"kind": "noise",
+"seconds": 0.96,
+"hz": 2609,
+"twin": ""
+}
+}

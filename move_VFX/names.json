@@ -1,4 +1,28 @@
 {
+ "5016": {
+  "name": "emerald_016",
+  "notes": "use for spikes"
+ },
+ "6043": {
+  "name": "ice pillar",
+  "notes": ""
+ },
+ "6060": {
+  "name": "fireball",
+  "notes": ""
+ },
+ "7020": {
+  "name": "fire_impact",
+  "notes": ""
+ },
+ "7023": {
+  "name": "succes_parry",
+  "notes": ""
+ },
+ "8006": {
+  "name": "shine_shatter",
+  "notes": ""
+ },
  "0045": {
   "name": "white_wings",
   "notes": ""

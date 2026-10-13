@@ -5,7 +5,7 @@ import { MOVES } from './moves.js';
 
 const $ = (id) => document.getElementById(id);
 const READ_ONLY = !import.meta.env.DEV;
-const { effects, names: saved } = await (await fetch(READ_ONLY ? '/vfx.json' : '/api/vfx')).json();
+const { effects, names: saved, sections } = await (await fetch(READ_ONLY ? '/vfx.json' : '/api/vfx')).json();
 
 // which in-game moves already use each effect
 const usedBy = {};
@@ -23,13 +23,13 @@ for (const e of effects) {
       const t = parseInt(f, 10), next = i + 1 < s.files.length ? parseInt(s.files[i + 1], 10) : t + 1;
       for (let n = t; n < next; n++) s.ticks.push(i);
     });
-    s.url = (i) => `/move_VFX/${e.folder}/${s.seq}/${s.files[i]}`;
+    s.url = (i) => `${e.base}/${e.folder}/${s.seq}/${s.files[i]}`;
   }
   e.main = e.seqs.reduce((a, b) => (b.files.length * b.w * b.h > a.files.length * a.w * a.h ? b : a), e.seqs[0]);
 }
 const edited = (e) => e.name !== e.original;
 
-const state = { sel: null, seq: null, filter: 'all', q: '', playing: true, fps: 30, zoom: 4, tick: 0, acc: 0 };
+const state = { sel: null, seq: null, section: 'pmd', filter: 'all', q: '', playing: true, fps: 30, zoom: 4, tick: 0, acc: 0 };
 
 // ---- saving ----
 let saveTimer = 0;
@@ -69,11 +69,17 @@ $('exp-csv').onclick = () => {
 const visible = () => {
   const q = state.q.toLowerCase();
   return effects.filter((e) => {
+    if (e.section !== state.section) return false;
     if (state.filter === 'edited' && !edited(e)) return false;
     if (state.filter === 'todo' && edited(e)) return false;
     if (state.filter === 'used' && !e.used.length) return false;
     return !q || `${e.id} ${e.name} ${e.original} ${e.notes} ${e.used.join(' ')}`.toLowerCase().includes(q);
   });
+};
+
+const countText = (shown) => {
+  const mine = effects.filter((e) => e.section === state.section);
+  return `${shown} shown · ${mine.filter(edited).length} of ${mine.length} renamed`;
 };
 
 function renderList() {
@@ -91,7 +97,7 @@ function renderList() {
     row.onclick = () => select(e);
     list.appendChild(row);
   }
-  $('count').textContent = `${vis.length} shown · ${effects.filter(edited).length} of ${effects.length} renamed`;
+  $('count').textContent = countText(vis.length);
 }
 
 function refreshRow(e) {
@@ -100,7 +106,7 @@ function refreshRow(e) {
     row.classList.toggle('edited', edited(e));
     row.querySelector('.nm').textContent = e.name;
   }
-  $('count').textContent = `${visible().length} shown · ${effects.filter(edited).length} of ${effects.length} renamed`;
+  $('count').textContent = countText(visible().length);
 }
 
 // ---- selection and playback ----
@@ -225,6 +231,23 @@ $('reset').onclick = () => {
   save();
 };
 $('q').oninput = () => { state.q = $('q').value; renderList(); };
+// the sections: the game's own effects, and sheets brought in from elsewhere
+$('sections').replaceChildren(...sections.map(({ id, label }) => {
+  const b = document.createElement('button');
+  b.dataset.s = id;
+  b.textContent = `${label} ${effects.filter((e) => e.section === id).length}`;
+  b.className = id === state.section ? 'on' : '';
+  return b;
+}));
+for (const b of $('sections').children) {
+  b.onclick = () => {
+    state.section = b.dataset.s;
+    for (const o of $('sections').children) o.classList.toggle('on', o === b);
+    renderList();
+    const first = visible()[0];
+    if (first) select(first);
+  };
+}
 for (const b of $('filters').children) {
   b.onclick = () => {
     state.filter = b.dataset.f;
