@@ -3,6 +3,13 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.22
+
+**Moves**
+- Night Daze deals 25 damage (was 19) and slows everything it hits to 60% speed for 3 seconds.
+- Stun Spore and Sleep Powder are point and click: the powder lands on the aimed spot up to 150 px away, instead of
+  drifting out as a cloud. Gusts no longer blow them back.
+
 ## alpha 0.5.21
 
 **Moves**
