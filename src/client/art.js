@@ -29,6 +29,7 @@ const ICONS = {
   lock: [112, 112, 16, 16], unlocked: [160, 96, 16, 16], // the padlock on anything not yet earned, and the one that has sprung open
   new: [96, 112, 16, 16], // on a move that has just opened and has not been taken yet
   chest: [208, 0, 16, 16], // what a TM comes out of in Survivor
+  coin: [0, 112, 16, 16], // the P coin: Survivor's money
   tm: [208, 16, 16, 16], // the disc a taught move is marked with (the silver one, so it takes the tint of the move's type)
   caretR: [112, 208, 16, 16], caretDown: [64, 208, 16, 16], caretUp: [80, 208, 16, 16],
 };

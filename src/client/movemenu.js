@@ -8,35 +8,31 @@ import { describe, typeOf, METERS, litNotches, TYPE_TINT, DELIVERY_LABEL } from 
 import { tapActs } from './touch.js';
 import { DEPTH, INK, Group, Meter, text, icon, typeIcon, panel, shade } from './ui.js';
 
-const ROWS = 10, ROW_H = 15, WHEEL_ROW = 50;
-const LIST = { x: 6, y: 5, w: 150, h: 24 + ROWS * ROW_H + 5 };
+export const ROWS = 10, ROW_H = 15;
+const WHEEL_ROW = 50;
+export const LIST = { x: 6, y: 5, w: 150, h: 24 + ROWS * ROW_H + 5 };
 const INFO = { x: 160, y: 5, w: 218, h: 128 };
-const SLOTS = { x: 160, y: 136, w: 218, h: 52 };
+export const SLOTS = { x: 160, y: 136, w: 218, h: 52 };
 // the stat rows of the info panel: glyph, name, notched bar
 const STAT_ROWS = [['power', 'statPower', 'Power'], ['stamina', 'statStamina', 'Energy'], ['speed', 'statSpeed', 'Speed']];
 const PREVIEW = 46;
 // A TM's disc takes a little of the colour of its move's type.
-const tmTint = (id) => { const c = TYPE_TINT[typeOf(id)] ?? 0xffffff, mix = (sh) => Math.round(((c >> sh) & 255) * 0.6 + 255 * 0.4); return (mix(16) << 16) | (mix(8) << 8) | mix(0); };
+export const tmTint = (id) => { const c = TYPE_TINT[typeOf(id)] ?? 0xffffff, mix = (sh) => Math.round(((c >> sh) & 255) * 0.6 + 255 * 0.4); return (mix(16) << 16) | (mix(8) << 8) | mix(0); };
 
 // Full-screen move picker. On the left, everything the mon can use: first the moves it learns by itself (the ones
 // its level has not opened yet padlocked, with the level that will); then, under a rule, the ones it has to be taught,
 // each marked with a TM disc and padlocked until that TM has been found; and last, greyed out, the TMs that teach it
 // nothing because it learns that move by itself (finding one of those does open the move early). On the right is what the highlighted move does on the right, and the four slots it takes to battle
 // underneath. Slot order is button order in battle: left click, right click, Q, E.
+// (The Survivor shop, shopmenu.js, is this menu with its own list: it overrides list, drawRow, toggle and close.)
 export class MoveMenu {
-  constructor(scene, actions, { species, onClose }) {
-    Object.assign(this, { scene, actions, species, onClose, group: new Group() });
+  constructor(scene, actions, opts) {
+    Object.assign(this, { scene, actions, ...opts, group: new Group() });
+    const { species } = opts;
     this.level = levelOf(species);
     this.needs = Object.fromEntries(unlockPlan(species, branchOf(species)).map((m) => [m.id, m.level])); // move id -> level that opens it
-    const own = Object.keys(this.needs), taught = tmsFor(species, branchOf(species)), every = allTMs();
-    this.tm = Object.fromEntries(taught.map((id) => [id, true]));
-    // found TMs first, the rest by name
-    taught.sort((x, y) => ownsTM(y) - ownsTM(x) || MOVES[x].name.localeCompare(MOVES[y].name));
-    this.spare = own.filter((id) => every.includes(id)); // TMs for moves it learns anyway
-    this.moves = [...own, ...taught, ...this.spare];
-    this.firstTM = taught.length ? own.length : -1;
-    this.firstSpare = own.length + taught.length; // rows from here on are only for show
-    this.picked = loadoutOf(species);
+    this.tm = Object.fromEntries(tmsFor(species, branchOf(species)).map((id) => [id, true]));
+    this.list();
     this.index = 0;
     this.scroll = 0;
     this.clock = 0;
@@ -46,7 +42,7 @@ export class MoveMenu {
 
     // the list
     add(panel(scene, LIST.x, LIST.y, LIST.w, LIST.h));
-    add(text(scene, LIST.x + 8, LIST.y + 6, `${SPECIES[formOf(species)].name}  Lv ${this.level}`, INK.gold));
+    this.head = add(text(scene, LIST.x + 8, LIST.y + 6, `${SPECIES[formOf(species)].name}  Lv ${this.level}`, INK.gold));
     this.count = add(text(scene, LIST.x + LIST.w - 8, LIST.y + 6, '', INK.mint).setOrigin(1, 0));
     this.bar = add(shade(scene, LIST.x + 4, 0, LIST.w - 8, ROW_H, 0x8fdcff, 0.28).setDepth(DEPTH + 1));
     this.rule = add(shade(scene, LIST.x + 6, 0, LIST.w - 12, 1, 0xffe45c, 0.7).setDepth(DEPTH + 2)); // between its own moves and the TMs
@@ -141,6 +137,18 @@ export class MoveMenu {
     this.refresh();
   }
 
+  // The rows of the list: its own moves, the TMs, and the TMs it has no use for.
+  list() {
+    const { species } = this, own = Object.keys(this.needs), taught = Object.keys(this.tm), every = allTMs();
+    // found TMs first, the rest by name
+    taught.sort((x, y) => ownsTM(y) - ownsTM(x) || MOVES[x].name.localeCompare(MOVES[y].name));
+    this.spare = own.filter((id) => every.includes(id)); // TMs for moves it learns anyway
+    this.moves = [...own, ...taught, ...this.spare];
+    this.firstTM = taught.length ? own.length : -1;
+    this.firstSpare = own.length + taught.length; // rows from here on are only for show
+    this.picked = loadoutOf(species);
+  }
+
   // the bar's buttons while this menu is up
   get hints() {
     return [
@@ -195,19 +203,9 @@ export class MoveMenu {
     const { moves, picked } = this;
     this.scroll = Math.max(Math.min(this.scroll, this.index), this.index - ROWS + 1);
     this.rows.forEach((row, r) => {
-      const id = moves[this.scroll + r], on = id !== undefined;
+      const i = this.scroll + r, on = moves[i] !== undefined;
       for (const o of [row.slot, row.type, row.name, row.lock, row.needs, row.tm, row.fresh]) o.setVisible(on);
-      if (!on) return;
-      const spare = this.spareAt(this.scroll + r), disc = this.tm[id] || spare;
-      const at = spare ? -1 : picked.indexOf(id), locked = spare || this.locked(id);
-      row.tm.setVisible(disc).setAlpha(locked ? 0.45 : 1).setTint(spare ? 0x8a94a3 : tmTint(id));
-      row.name.x = LIST.x + (disc ? 50 : 37);
-      row.slot.setText(at >= 0 ? String(at + 1) : '');
-      row.fresh.setVisible(!locked && at < 0 && session.news.includes(id));
-      row.lock.setVisible(locked && !spare);
-      row.needs.setText(spare ? 'own' : locked && !this.tm[id] ? `Lv ${this.needs[id]}` : '');
-      row.type.setTexture('art-types', typeOf(id)).setAlpha(locked ? 0.45 : 1);
-      row.name.setText(MOVES[id].name).setTint(locked ? INK.off : at >= 0 ? INK.mint : INK.white);
+      if (on) this.drawRow(row, i);
     });
     this.bar.y = LIST.y + 22 + (this.index - this.scroll) * ROW_H;
     const cut = this.firstTM - this.scroll;
@@ -218,7 +216,32 @@ export class MoveMenu {
     this.moreDown.setVisible(this.scroll + ROWS < moves.length);
     this.count.setText(`${picked.length}/${LOADOUT_SIZE}`).setTint(picked.length === LOADOUT_SIZE ? INK.mint : INK.rose);
 
-    const id = moves[this.index], info = describe(id);
+    this.slots.forEach((s, i) => {
+      const m = picked[i];
+      s.type.setVisible(!!m);
+      if (m) s.type.setTexture('art-types', typeOf(m));
+      s.name.setText(m ? MOVES[m].name : '- empty -').setTint(m ? INK.white : INK.off);
+    });
+    if (MOVES[moves[this.index]]) this.showInfo(moves[this.index]); // (a row that is not a move leaves the last one up)
+    this.onChange?.();
+  }
+
+  drawRow(row, i) {
+    const id = this.moves[i], spare = this.spareAt(i), disc = this.tm[id] || spare;
+    const at = spare ? -1 : this.picked.indexOf(id), locked = spare || this.locked(id);
+    row.tm.setVisible(disc).setAlpha(locked ? 0.45 : 1).setTint(spare ? 0x8a94a3 : tmTint(id));
+    row.name.x = LIST.x + (disc ? 50 : 37);
+    row.slot.setText(at >= 0 ? String(at + 1) : '');
+    row.fresh.setVisible(!locked && at < 0 && session.news.includes(id));
+    row.lock.setVisible(locked && !spare);
+    row.needs.setText(spare ? 'own' : locked && !this.tm[id] ? `Lv ${this.needs[id]}` : '');
+    row.type.setTexture('art-types', typeOf(id)).setAlpha(locked ? 0.45 : 1);
+    row.name.setText(MOVES[id].name).setTint(locked ? INK.off : at >= 0 ? INK.mint : INK.white);
+  }
+
+  // what the highlighted move does, in the panel on the right
+  showInfo(id) {
+    const info = describe(id);
     this.infoType.setTexture('art-types', info.type);
     this.infoName.setText(MOVES[id].name);
     // each picture with the word for it beside it; the TM disc sits after the name
@@ -251,19 +274,12 @@ export class MoveMenu {
     const lines = info.notes.length ? [...info.notes] : [info.how];
     const fits = () => this.infoBody.setText(lines.join('\n')).getTextBounds().wrappedText.split('\n').length <= 4;
     while (!fits() && lines.length > 1) lines.pop(); // the panel holds four lines: the last notes give way
-
-    this.slots.forEach((s, i) => {
-      const m = picked[i];
-      s.type.setVisible(!!m);
-      if (m) s.type.setTexture('art-types', typeOf(m));
-      s.name.setText(m ? MOVES[m].name : '- empty -').setTint(m ? INK.white : INK.off);
-    });
-    this.onChange?.();
   }
 
   // Loops the highlighted move's effect in the preview box.
   update(dt) {
     const mv = MOVES[this.moves[this.index]];
+    if (!mv) return; // (a row that is not a move: the last preview stays as it was)
     if (!ensureMove(this.scene, mv)) return this.preview.setVisible(false); // its art is on the way: shown as soon as it is in
     grayFrames(this.scene, mv);
     const frames = mv.frames ?? [];
@@ -278,6 +294,10 @@ export class MoveMenu {
 
   close() {
     setLoadout(this.species, this.picked);
+    this.teardown();
+  }
+
+  teardown() {
     this.toastTimer?.remove();
     this.scene.input.off('wheel', this.onWheel);
     this.actions.pop(this.handler);
