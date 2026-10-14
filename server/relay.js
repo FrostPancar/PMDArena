@@ -10,7 +10,15 @@ import { WebSocketServer } from 'ws';
 //             name, flag, face }
 //   party.open / party.close / party.leave             party { code, open, leader, members: [{ id, ...profile }] }
 //   party.join { code }                                error { msg }
-//   hub { d }            (to the rest of the party)    hub { from, d }
+//   presence { a, x, y, d, w }  (to everyone else)     presence { from, d, who: { species, form, name } }
+//                                                      gone { id }            (someone's connection closed)
+//                                                      crowd { n }            (how many are connected)
+//   party.invite { to }                                invite { from, name }  (to the one invited)
+//   party.accept { from } / party.decline { from }     party ... / error { msg }  (to the one who invited)
+//   note.hello { key }
+//   note.leave { key, text }                           pool { n, mine }       (how many notes float in the pool, and whether
+//   note.read { key }                                                          one of them is yours; sent when it changes)
+//                                                      note { name, text }    (the one you took out; null if none)
 //   queue { mode: '1v1' | '2v2' | '3v3', cpu }         queued { mode } / queue.cancelled
 //   queue.cancel                                       match { battle }
 //   start { mode: 'duel' | 'crew' | 'cpu', cpus }      go
@@ -29,6 +37,7 @@ export function createRelay() {
   const clients = new Map();
   const codes = new Map(); // room code -> party
   const queues = { '1v1': [], '2v2': [], '3v3': [] }; // waiting { party, team }
+  const notes = []; // floating in the pool of the bluff: { key, name, text }; kept until someone else reads one
   let nextId = 1;
 
   const send = (c, msg) => { if (c.ws.readyState === 1) c.ws.send(JSON.stringify(msg)); };
@@ -41,6 +50,13 @@ export function createRelay() {
     };
     for (const m of members(party)) send(m, msg);
   };
+
+  // who is here: lets clients skip their presence messages while they are the only one connected
+  const tellCrowd = () => { for (const c of clients.values()) send(c, { t: 'crowd', n: clients.size }); };
+
+  // each client hears how many notes there are, and whether one is its own (a note's author is its `key`, which stays secret)
+  const tellPool = (c) => send(c, { t: 'pool', n: notes.length, mine: c.noteKey ? notes.some((n) => n.key === c.noteKey) : false });
+  const tellPools = () => { for (const c of clients.values()) tellPool(c); };
 
   const soloParty = (c) => { c.party = { leader: c.id, members: [c.id], code: null, open: false }; };
 
@@ -115,6 +131,16 @@ export function createRelay() {
     }
   };
 
+  // Put a client in a party (leaving the one it had); the room code, if there was one, has done its job.
+  const joinParty = (c, party) => {
+    leaveParty(c);
+    party.members.push(c.id);
+    c.party = party;
+    closeRoom(party);
+    dequeue(party, true);
+    tellParty(party);
+  };
+
   const handlers = {
     profile(c, msg) {
       c.profile = cleanSpec(msg);
@@ -142,12 +168,35 @@ export function createRelay() {
       const party = codes.get(clean(msg.code, 4).toUpperCase());
       if (!party || !party.open || party === c.party) return send(c, { t: 'error', msg: 'No open room has that code.' });
       if (party.members.length >= MAX_PARTY) return send(c, { t: 'error', msg: 'That room is full.' });
-      leaveParty(c);
-      party.members.push(c.id);
-      c.party = party;
-      closeRoom(party); // the code has done its job
-      dequeue(party, true);
-      tellParty(party);
+      joinParty(c, party);
+    },
+
+    // Ask someone seen in the bluff to be your partner; nothing changes until they accept.
+    'party.invite'(c, msg) {
+      const to = clients.get(clean(msg.to, 12));
+      if (!to || to === c || to.match || c.match) return send(c, { t: 'error', msg: 'They are not around any more.' });
+      if (c.party.members.length >= MAX_PARTY || c.party.leader !== c.id) return send(c, { t: 'error', msg: 'Your party is full.' });
+      if (to.party.members.length > 1) return send(c, { t: 'error', msg: 'They are already in a party.' });
+      to.inviter = c.id;
+      send(to, { t: 'invite', from: c.id, name: c.profile.name || c.profile.species });
+    },
+
+    'party.accept'(c, msg) {
+      const from = clients.get(clean(msg.from, 12));
+      if (!from || c.inviter !== from.id) return send(c, { t: 'error', msg: 'That invite has run out.' });
+      c.inviter = null;
+      const party = from.party;
+      if (from.match || c.match || party.leader !== from.id || party.members.length >= MAX_PARTY || c.party.members.length > 1) {
+        return send(c, { t: 'error', msg: 'That invite has run out.' });
+      }
+      joinParty(c, party);
+    },
+
+    'party.decline'(c, msg) {
+      const from = clients.get(clean(msg.from, 12));
+      if (!from || c.inviter !== from.id) return;
+      c.inviter = null;
+      send(from, { t: 'error', msg: `${c.profile.name || c.profile.species || 'They'} is busy right now.` });
     },
 
     'party.leave'(c) {
@@ -157,8 +206,39 @@ export function createRelay() {
       tellParty(c.party);
     },
 
-    hub(c, msg) {
-      for (const m of members(c.party)) if (m !== c) send(m, { t: 'hub', from: c.id, d: msg.d });
+    // who you are to the pool, told when connecting so a note you left before is still known as yours
+    'note.hello'(c, msg) {
+      c.noteKey = clean(msg.key, 40);
+      tellPool(c);
+    },
+
+    // A note left in the pool: one each, and it stays until another player reads it.
+    'note.leave'(c, msg) {
+      const key = clean(msg.key, 40), text = clean(msg.text, 80).trim();
+      if (key.length < 8 || !text) return;
+      c.noteKey = key;
+      if (notes.some((n) => n.key === key)) return send(c, { t: 'error', msg: 'You already left a note.' });
+      notes.push({ key, name: c.profile.name || c.profile.species, text });
+      tellPools();
+    },
+
+    // The oldest note that is not yours is taken out of the water and read.
+    'note.read'(c, msg) {
+      const key = clean(msg.key, 40);
+      c.noteKey = key;
+      const i = notes.findIndex((n) => n.key !== key);
+      if (i < 0) return send(c, { t: 'note', note: null });
+      const [n] = notes.splice(i, 1);
+      send(c, { t: 'note', note: { name: n.name, text: n.text } });
+      tellPools();
+    },
+
+    // where a player is walking in the bluff, passed to every other player (a few at most) with who they look like
+    presence(c, msg) {
+      const n = (v, lo, hi) => (Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : lo);
+      const d = { a: clean(msg.a, 12), x: n(msg.x, -2000, 2000), y: n(msg.y, -2000, 2000), d: n(msg.d, 0, 7), w: msg.w ? 1 : 0 };
+      const who = { species: c.profile.species, form: c.profile.form, name: c.profile.name };
+      for (const o of clients.values()) if (o !== c) send(o, { t: 'presence', from: c.id, d, who });
     },
 
     // Wait for another party that wants the same kind of fight.
@@ -219,6 +299,8 @@ export function createRelay() {
       soloParty(c);
       send(c, { t: 'welcome', id: c.id });
       tellParty(c.party);
+      tellCrowd();
+      tellPool(c);
       ws.on('pong', () => { c.alive = true; });
       ws.on('message', (raw) => {
         let msg;
@@ -229,6 +311,8 @@ export function createRelay() {
         clients.delete(c.id);
         leaveMatch(c, true);
         leaveParty(c);
+        for (const o of clients.values()) send(o, { t: 'gone', id: c.id });
+        tellCrowd();
       });
       ws.on('error', () => ws.terminate());
     },

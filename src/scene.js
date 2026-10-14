@@ -666,7 +666,7 @@ export class Play extends Phaser.Scene {
   // self: the mon brought it on itself (Rest's sleep, the daze after Petal Dance); nothing a foe sends gets past a substitute.
   inflict(t, kind, self = false) {
     if ((t.sub || t.safeguard > 0) && !self) return;
-    t.setStatus(kind);
+    t.setStatus(kind, self);
     if (kind === 'taunt' && t.status?.kind === 'taunt' && !t.tauntFx && TAUNTED.frames?.length) {
       // the mark of it over its head for as long as it lasts
       t.tauntFx = true;

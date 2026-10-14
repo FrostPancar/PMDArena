@@ -36,7 +36,7 @@
 
 #pad .board {
   position: absolute; left: 50%; bottom: calc(19px * var(--px));
-  width: calc(229px * var(--px)); height: calc(68px * var(--px)); margin-left: calc(-114.5px * var(--px));
+  width: calc(229px * var(--px)); height: calc(91px * var(--px)); margin-left: calc(-114.5px * var(--px));
 }
 
 /* held upright, a phone is asked to turn */

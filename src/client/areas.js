@@ -16,6 +16,7 @@ export const AREAS = {
     spots: [
       { id: 'partner', at: [213, 148], r: 15, label: 'Partner' },
       { id: 'dream', at: [261, 148], r: 13, label: 'Sleep' },
+      { id: 'pool', at: [370, 146], r: 26, label: 'Pool' }, // the fountain's basin: notes are left in it
     ],
   },
   dojo: {

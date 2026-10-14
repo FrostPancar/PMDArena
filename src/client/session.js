@@ -14,6 +14,7 @@ export const session = {
   partner: null, // species id of the CPU partner waiting on the other bed, if one was asked along
   briefed: {}, // one-time prompts already shown: species id for the move menu, 'controls' for the battle card
   lastMap: null,
+  noteKey: null, // who you are to the pool: marks the note you left, without telling anyone which it is
   news: [], // move ids that have just opened (by level, or as a TM found) and have not been taken to battle yet
   tms: [], // move ids of the TMs found so far: any mon that can be taught one may use it
   ladder: { open: [], shown: [] }, // the CPU ladder (ladder.js): stages opened, and those whose opening the map has shown

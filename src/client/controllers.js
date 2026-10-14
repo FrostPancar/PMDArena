@@ -30,7 +30,8 @@ export class CpuController {
   target() {
     const m = this.mon;
     let best = null, bd = Infinity;
-    for (const t of [this.scene.player, ...this.scene.npcs]) {
+    // (Double Team copies count: whichever of them or the real one is nearest is the target)
+    for (const t of this.scene.targets) {
       if (t.team === m.team || !t.alive) continue;
       const d = Math.hypot(t.x - m.x, t.y - m.y) * ((t.slot + this.slot) % 2 ? 1 : 0.55);
       if (d < bd) { best = t; bd = d; }

@@ -362,7 +362,7 @@ export const KIND_LABEL = {
 // flat beams are ground art drawn left-to-right from the centre (sequence 002 of a directional set faces east).
 export const MOVES = {
   razorLeaf: { name: 'Razor Leaf', kind: 'projectile', fx: '0245_grass_whip', seqs: ['000'], speed: 230, range: 240, radius: 11, dmg: 16, cost: 22, charge: 0.25, fps: 14, spin: false, chargeFx: '0108_razor_leaf_wind', chargeSeqs: ['009'], chargeScale: 0.7 },
-  leafStorm: { name: 'Leaf Storm', kind: 'projectile', fx: '0186_leaf_storm', seqs: ['000'], slice: [4, 20], speed: 170, range: 230, radius: 12, dmg: 18, cost: 30, charge: 0.4, impactSeqs: ['001', '001', '002'] },
+  leafStorm: { name: 'Leaf Storm', kind: 'projectile', fx: '0186_leaf_storm', seqs: ['000'], slice: [4, 20], speed: 170, range: 230, radius: 12, dmg: 32, cost: 30, charge: 0.4, impactSeqs: ['001', '001', '002'], selfDebuff: { stat: 'atk', mul: 0.7, time: 2 } },
   leafBlade: { name: 'Leaf Blade', kind: 'melee', fx: '0100_sword_slash', seqs: ['000'], reach: 14, radius: 36, dmg: 20, cost: 18, charge: 0.075, fps: 12, tint: 0x9cff7a, lunge: false },
   flameBurst: { name: 'Flame Burst', kind: 'mid', status: { kind: 'burn', chance: 0.25 }, fx: '0189_fire_burst', seqs: ['000'], range: 75, radius: 20, dmg: 9, cost: 28, charge: 0.15, origin: [0.5, 0.9] },
   fireSpin: { name: 'Fire Spin', kind: 'mid', status: { kind: 'burn', chance: 0.3 }, fx: '0225_fire_whirl_column', seqs: ['000'], range: 85, radius: 24, dmg: 16, cost: 32, charge: 0.35, origin: [0.5, 0.9], fps: 45, linger: 5 },
@@ -376,7 +376,7 @@ export const MOVES = {
   ember: { name: 'Ember', kind: 'projectile', status: { kind: 'burn', chance: 0.25 }, fx: '0024_fireball_glow', seqs: ['000'], speed: 210, range: 260, radius: 10, dmg: 14, cost: 20, charge: 0.25, impactFx: '0090_eruption', impactSeqs: ['001'], impactScale: 0.75 },
   magicalLeaf: { name: 'Magical Leaf', kind: 'slight', fx: '0245_grass_whip', seqs: ['000'], fps: 14, spin: false, speed: 125, range: 250, turn: 0.6, radius: 10, dmg: 14, cost: 24, charge: 0.3, chargeFx: '0108_razor_leaf_wind', chargeSeqs: ['011'] },
   waterPulse: { name: 'Water Pulse', kind: 'projectile', fx: '0081_water_pulse', seqs: ['002'], speed: 150, range: 240, radius: 11, dmg: 16, cost: 28, charge: 0.35, rotate: true, fps: 20, impactSeqs: ['008'] },
-  shadowBall: { name: 'Shadow Ball', kind: 'homing', fx: '0092_shadow_ball', seqs: ['000'], speed: 85, range: 320, turn: 1.6, radius: 11, dmg: 15, cost: 32, charge: 0.4, scale: 1.5, fps: 8 },
+  shadowBall: { name: 'Shadow Ball', kind: 'homing', fx: '0092_shadow_ball', seqs: ['000'], speed: 85, range: 320, turn: 1.6, radius: 11, dmg: 22, cost: 32, charge: 0.3, scale: 1.5, fps: 8 },
   psybeam: { name: 'Psybeam', kind: 'beam', fx: '0006_pink_light_beam', seqs: ['000'], slice: [1, 32], length: 140, dmg: 18, cost: 38, charge: 0.5, fps: 45, impactSeqs: ['001'] },
   hydroBurst: { name: 'Hydro Burst', kind: 'aoe', fx: '0227_hydro_radial_burst', seqs: ['000'], slice: [12, 33], radius: 50, dmg: 16, cost: 40, charge: 0.45, scale: 1.2 },
   powerWhip: { name: 'Power Whip', kind: 'melee', fx: '0245_grass_whip', seqs: ['000', '001'], reach: 22, radius: 22, dmg: 22, cost: 24, charge: 0.125, fps: 18 },
@@ -386,7 +386,7 @@ export const MOVES = {
   bulletSeed: { name: 'Bullet Seed', kind: 'projectile', fx: '0117_seed_ball', seqs: ['000'], speed: 260, range: 240, radius: 5, dmg: 6, cost: 16, charge: 0.1, fps: 10, scale: 0.6, volley: { n: 5, gap: 0.09 } },
   petalDance: { name: 'Petal Dance', kind: 'aoe', fx: '0033_petals_scatter', seqs: ['003'], fps: 45, radius: 53, dmg: 18, cost: 42, charge: 0.45, scale: 1.2 },
   stunSpore: { name: 'Stun Spore', kind: 'mid', status: { kind: 'para', chance: 1 }, fx: '0093_powders', seqs: ['000'], range: 80, radius: 24, dmg: 15, cost: 24, charge: 0.3, origin: [0.5, 0.8], fps: 20 },
-  energyBall: { name: 'Energy Ball', kind: 'projectile', fx: '0150_green_spiky_orb', seqs: ['000'], speed: 150, range: 220, radius: 13, dmg: 20, cost: 30, charge: 0.4, impactSeqs: ['002'] },
+  energyBall: { name: 'Energy Ball', kind: 'projectile', fx: '0150_green_spiky_orb', seqs: ['000'], speed: 150, range: 220, radius: 13, dmg: 24, cost: 30, charge: 0.35, impactSeqs: ['002'] },
   fireBlast: { name: 'Fire Blast', kind: 'projectile', status: { kind: 'burn', chance: 0.35 }, fx: '0030_fire_blast', seqs: ['000'], speed: 150, range: 220, radius: 13, dmg: 24, cost: 40, charge: 0.55, scale: 1.05, fps: 14, impactSeqs: ['001'] },
   dynamicPunch: { name: 'Dynamic Punch', kind: 'melee', status: { kind: 'confuse', chance: 1 }, fx: '0005_fire_ring_explosion', seqs: ['000'], reach: 18, radius: 20, dmg: 26, cost: 36, charge: 0.3, fps: 30 },
   flamethrower: { name: 'Flamethrower', kind: 'beam', status: { kind: 'burn', chance: 0.3 }, fx: '0036_fire_streak_vertical', seqs: ['000'], length: 130, dmg: 18, cost: 36, charge: 0.45, fps: 55 },
@@ -403,17 +403,17 @@ export const MOVES = {
   futureSight: { name: 'Future Sight', kind: 'mid', fx: '0048_pillar_of_light', seqs: ['000'], range: 110, radius: 26, dmg: 26, cost: 45, charge: 0.15, origin: [0.5, 0.9], fps: 40, appear: 1300 },
   drainingKiss: { name: 'Draining Kiss', kind: 'melee', fx: '0199_charm', seqs: ['000'], reach: 18, radius: 18, dmg: 12, cost: 28, charge: 0.15, drain: 0.75, fps: 20 },
   darkPulse: { name: 'Dark Pulse', kind: 'aoe', fx: '0195_dark_pulse', seqs: ['000'], radius: 55, dmg: 17, cost: 38, charge: 0.45, fps: 55, scale: 1.2 },
-  moonblast: { name: 'Moonblast', kind: 'projectile', fx: '0206_moonblast', seqs: ['001'], speed: 130, range: 240, radius: 16, dmg: 24, cost: 40, charge: 0.55, scale: 1.5, fps: 8, chargeSeqs: ['000'], impactSeqs: ['002'] },
+  moonblast: { name: 'Moonblast', kind: 'projectile', fx: '0206_moonblast', seqs: ['001'], speed: 130, range: 240, radius: 16, dmg: 26, cost: 40, charge: 0.45, scale: 1.5, fps: 8, chargeSeqs: ['000'], impactSeqs: ['002'] },
   quickAttack: { name: 'Quick Attack', kind: 'melee', fx: '0149_white_slash_lines', seqs: ['000'], reach: 20, radius: 18, dmg: 14, cost: 10, charge: 0.03, chargeAnim: 'Double' },
   hyperBeam: { name: 'Hyper Beam', kind: 'beam', fx: '0113_white_laser_vertical', seqs: ['000'], length: 160, dmg: 26, cost: 55, charge: 0.75, fps: 45, anchor: 'top', chargeSeqs: ['001'] },
-  hyperVoice: { name: 'Hyper Voice', kind: 'projectile', fx: '0060_hyper_voice', seqs: ['002'], speed: 130, range: 80, radius: 15, dmg: 18, cost: 30, charge: 0.35, rotate: true, scale: 1.5, fps: 20 },
+  hyperVoice: { name: 'Hyper Voice', kind: 'projectile', fx: '0060_hyper_voice', seqs: ['002'], speed: 130, range: 80, radius: 15, dmg: 30, cost: 30, charge: 0.35, rotate: true, scale: 1.5, fps: 20 },
   drainPunch: { name: 'Drain Punch', kind: 'melee', fx: '0220_drain_punch', seqs: ['000'], reach: 18, radius: 20, dmg: 22, cost: 30, charge: 0.2, drain: 0.5, fps: 45 },
   thunderFang: { name: 'Thunder Fang', kind: 'melee', status: { kind: 'para', chance: 0.25 }, fx: '0152_thunder_fang', seqs: ['000'], reach: 18, radius: 18, dmg: 21, cost: 20, charge: 0.09, fps: 20 },
   nightSlash: { name: 'Night Slash', kind: 'melee', fx: '0230_night_slash', seqs: ['000'], reach: 20, radius: 20, dmg: 19, cost: 18, charge: 0.07, rotate: true, fps: 70, scale: 1.12 },
   xScissor: { name: 'X-Scissor', kind: 'melee', fx: '0166_x_scissor_slash', seqs: ['000'], reach: 20, radius: 22, dmg: 22, cost: 24, charge: 0.11 },
 
   dragonBreath: { name: 'Dragon Breath', kind: 'beam', status: { kind: 'para', chance: 0.3 }, fx: '0036_fire_streak_vertical', seqs: ['000'], length: 130, dmg: 19, cost: 36, charge: 0.25, fps: 55, tint: 0xb48cff },
-  dragonPulse: { name: 'Dragon Pulse', kind: 'projectile', fx: '0178_purple_ring_orb', seqs: ['000'], speed: 160, range: 240, radius: 13, dmg: 20, cost: 30, charge: 0.4, impactSeqs: ['001'] },
+  dragonPulse: { name: 'Dragon Pulse', kind: 'projectile', fx: '0178_purple_ring_orb', seqs: ['000'], speed: 160, range: 240, radius: 13, dmg: 20, cost: 30, charge: 0.3, impactSeqs: ['001'] },
   outrage: { name: 'Outrage', kind: 'aoe', fx: '0160_outrage', seqs: ['001'], radius: 46, dmg: 16, cost: 44, charge: 0.6, scale: 2.4, fps: 24, chargeSeqs: ['000'], chargeScale: 1.5, linger: 3, follow: true, after: 'confuse' },
   dualChop: { name: 'Dual Chop', kind: 'melee', fx: '0100_sword_slash', seqs: ['008'], reach: 12, radius: 32, dmg: 20, cost: 18, charge: 0.075, fps: 16, lunge: false, hitDelay: 30, active: 0.2 },
   shadowClaw: { name: 'Shadow Claw', kind: 'melee', fx: '0179_shadow_claw', seqs: ['000'], reach: 18, radius: 20, dmg: 20, cost: 18, charge: 0.075 },
@@ -464,7 +464,7 @@ export const MOVES = {
   woodHammer: { name: 'Wood Hammer', kind: 'melee', fx: '0148_wood_hammer', seqs: ['000'], reach: 18, radius: 22, dmg: 25, cost: 30, charge: 0.2 },
   hex: { name: 'Hex', kind: 'auto', fx: '0163_purple_claw_vortex', seqs: ['000'], range: 130, radius: 22, dmg: 19, cost: 30, charge: 0.4, fps: 45 },
   crossPoison: { name: 'Cross Poison', kind: 'melee', status: { kind: 'poison', chance: 0.4 }, fx: '0165_cross_poison', seqs: ['000'], reach: 18, radius: 20, dmg: 20, cost: 18, charge: 0.075 },
-  rockWrecker: { name: 'Rock Wrecker', kind: 'projectile', fx: '0182_rock_wrecker', seqs: ['001'], speed: 150, range: 240, radius: 14, dmg: 28, cost: 50, charge: 0.8, fps: 20, chargeSeqs: ['000'], impactSeqs: ['002'] },
+  rockWrecker: { name: 'Rock Wrecker', kind: 'projectile', fx: '0182_rock_wrecker', seqs: ['001'], speed: 150, range: 240, radius: 14, dmg: 35, cost: 50, charge: 0.8, fps: 20, chargeSeqs: ['000'], impactSeqs: ['002'] },
   focusBlast: { name: 'Focus Blast', kind: 'projectile', fx: '0185_focus_blast', seqs: ['010'], speed: 170, range: 250, radius: 13, dmg: 26, cost: 46, charge: 0.75, rotate: true, fps: 14, chargeSeqs: ['000'], impactSeqs: ['016'] },
   blizzard: { name: 'Blizzard', kind: 'projectile', status: { kind: 'freeze', chance: 0.3 }, fx: '0190_ice_projectile', seqs: ['010'], speed: 230, range: 250, radius: 11, dmg: 18, cost: 28, charge: 0.4, rotate: true, fps: 14, chargeSeqs: ['000'], impactSeqs: ['016'] },
   wakeUpSlap: { name: 'Wake-Up Slap', kind: 'melee', fx: '0191_wake_up_slap', seqs: ['000'], reach: 18, radius: 20, dmg: 19, cost: 18, charge: 0.075 },
@@ -516,7 +516,7 @@ export const MOVES = {
   luckyChant: { name: 'Lucky Chant', kind: 'self', fx: '0193_lucky_ring', seqs: ['000'], buff: { stat: 'def', mul: 1.5, time: 12 }, cost: 28, charge: 0.45, fps: 40 },
   helpingHand: { name: 'Helping Hand', kind: 'self', fx: '0020_target_lock_reticle', seqs: ['005'], empower: true, cost: 30, charge: 0.4, fps: 20, lift: 14 },
   // lobbed, placed and multi-part moves
-  seedBomb: { name: 'Seed Bomb', kind: 'projectile', fx: '0212_seed_bomb', seqs: ['000'], speed: 185, range: 220, radius: 11, dmg: 20, cost: 28, charge: 0.35, scale: 2, fps: 12, impactSeqs: ['001'], impactScale: 1.25, impactFps: 36, lob: true, arc: 44, burst: 20 },
+  seedBomb: { name: 'Seed Bomb', kind: 'projectile', fx: '0212_seed_bomb', seqs: ['000'], speed: 185, range: 220, radius: 11, dmg: 22, cost: 28, charge: 0.35, scale: 2, fps: 12, impactSeqs: ['001'], impactScale: 1.25, impactFps: 36, lob: true, arc: 44, burst: 20 },
   stealthRock: { name: 'Stealth Rock', kind: 'mid', fx: '0181_stealth_rock', seqs: ['001'], range: 100, radius: 16, dmg: 16, cost: 26, charge: 0.3, fps: 18, trap: 25 },
   sludgeWave: { name: 'Sludge Wave', kind: 'aoe', status: { kind: 'poison', chance: 0.4 }, fx: '0144_sludge_wave', seqs: ['000'], radius: 40, dmg: 22, cost: 15, charge: 0.3, fps: 16, grow: { min: 22, max: 78, rate: 30, upkeep: 30 } },
   waterfall: { name: 'Waterfall', kind: 'mid', fx: '0141_waterfall', seqs: ['002', '002', '002', '001'], range: 100, radius: 20, dmg: 24, cost: 32, charge: 0.3, origin: [0.5, 0.8], fps: 20, hitDelay: 1050 },
@@ -668,7 +668,7 @@ export const STATUS = {
   poison: { label: 'poisoned', tint: 0xd9aaff, icon: 'skull', time: 8, dps: 2 },
   para: { label: 'paralysed', tint: 0xfff29a, icon: 'spark', time: 5, spd: 0.5, fizzle: 0.25 },
   freeze: { label: 'frozen', tint: 0x9fd6ff, icon: 'ice', time: 1.8, immune: 5, hold: true, pose: true },
-  sleep: { label: 'asleep', tint: 0xc4c8e8, icon: 'zzz', time: 3.5, hold: true, wakes: true },
+  sleep: { label: 'asleep', tint: 0xc4c8e8, icon: 'zzz', time: 3.5, immune: 5, hold: true, wakes: true },
   confuse: { label: 'confused', tint: 0xffc4e4, icon: 'question', time: 5, reverse: true },
   trap: { label: 'trapped', tint: 0xcdb4e6, icon: 'blind', time: 4, root: true },
   attract: { label: 'infatuated', tint: 0xffc0d8, icon: 'heart', time: 4, noMove: true, noAttack: true },
@@ -915,7 +915,7 @@ for (const mv of Object.values(MOVES)) {
 // softStream: a stream's shots wear the target down without staggering it, so a held stream is not a stun lock.
 give('waterGun bubble bubbleBeam ember starShoot powderSnow thunderShock', { softStream: true, thru: undefined });
 // lobbed shots burst wider and hit harder the further they are thrown (lobScale: from point blank to full range)
-for (const mv of Object.values(MOVES)) if (mv.lob) Object.assign(mv, { burst: Math.round(mv.burst * 1.5), impactScale: (mv.impactScale ?? 1) * 1.3, lobScale: [0.75, 1.5] });
+for (const mv of Object.values(MOVES)) if (mv.lob) Object.assign(mv, { burst: Math.round(mv.burst * 1.5), impactScale: (mv.impactScale ?? 1) * 1.3, lobScale: [0.7, 1.7] });
 give('earthquake', { cost: 40 });
 give('earthquake magnitude', { deep: true }); // the only things that reach a mon underground
 // armor: while the move lasts its user takes damage but is not knocked back or out of it

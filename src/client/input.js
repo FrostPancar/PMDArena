@@ -28,6 +28,7 @@ export const keyGuard = () => {
 
 // One per scene. Whatever handler was pushed last gets the actions: { up(), down(), left(), right(), confirm(), cancel(), menu() }.
 // A handler that takes typing also has type(letter) and erase(); while it is on top the letter keys spell instead of steer.
+// With text: true it takes digits, spaces and punctuation too.
 // One that is walked around with (it reads dir()) says so with steer: true, which is what puts the d-pad on a touch screen.
 export class Actions {
   constructor(scene) {
@@ -38,8 +39,10 @@ export class Actions {
     const fresh = keyGuard();
     kb.on('keydown', (e) => {
       const top = this.top;
-      if (top?.type && (/^Key[A-Z]$/.test(e.code) || e.code === 'Backspace')) {
-        if (fresh(e)) this.spell(e.code === 'Backspace' ? null : e.code[3]);
+      // a handler with text: true takes any plain character as typed; the others only letters (room codes, names)
+      const typed = top?.type && (top.text && /^[A-Za-z0-9 .,:!?'"()\/%+=<>-]$/.test(e.key) ? e.key : /^Key[A-Z]$/.test(e.code) ? e.code[3] : null);
+      if (top?.type && (typed || e.code === 'Backspace')) {
+        if (fresh(e)) this.spell(e.code === 'Backspace' ? null : typed);
         return;
       }
       const action = ACTION_OF[e.code];
@@ -69,6 +72,7 @@ export class Actions {
   spell(ch) {
     const top = this.top;
     if (wipe.busy || !top?.type) return;
+    if (ch && !top.text && !/^[A-Z]$/i.test(ch)) return; // (the on-screen space and marks are for the handlers that take text)
     if (ch) top.type(ch); else top.erase?.();
   }
 

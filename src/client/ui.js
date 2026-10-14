@@ -296,6 +296,36 @@ export const enterCode = (scene, actions, hints, length = 4) => new Promise((res
   });
 });
 
+// Asks for a line of free text typed on the keyboard (letters, digits, spaces, marks). Resolves with it, or null when backed out of.
+export const enterText = (scene, actions, hints, { title = 'Message', max = 80 } = {}) => new Promise((resolve) => {
+  const g = new Group(), w = VIEW_W - 40, h = 64, x = (VIEW_W - w) >> 1, y = 40;
+  g.add(panel(scene, x, y, w, h));
+  g.add(text(scene, VIEW_W / 2, y + 7, title, INK.gold).setOrigin(0.5, 0));
+  const body = g.add(text(scene, x + 10, y + 22, '_').setMaxWidth(w - 20));
+  const count = g.add(text(scene, x + w - 8, y + h - 12, '', INK.dim).setOrigin(1, 0));
+  let line = '';
+  const show = () => { body.setText(`${line}_`); count.setText(`${line.length}/${max}`); };
+  show();
+  const buttons = hints?.push([
+    { key: 'Type', label: 'Write' },
+    { icon: 'btnA', key: 'Enter', label: 'Done', action: 'confirm' },
+    { icon: 'btnB', key: 'Esc', label: 'Back', action: 'cancel' },
+  ]);
+  const done = (value) => {
+    actions.pop(handler);
+    if (buttons) hints.pop(buttons);
+    g.clear();
+    resolve(value);
+  };
+  const handler = actions.push({
+    text: true,
+    type: (ch) => { if (line.length < max) { line += ch; show(); } },
+    erase: () => { line = line.slice(0, -1); show(); },
+    confirm: () => { if (line.trim()) done(line.trim()); },
+    cancel: () => done(null),
+  });
+});
+
 // A banner that slides in from the top, holds and leaves: area names, battle starts.
 export function banner(scene, title, sub) {
   const w = Math.max(120, 30 + Math.max(title.length, (sub ?? '').length) * 6), x = (VIEW_W - w) >> 1, h = sub ? 34 : 22;

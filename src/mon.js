@@ -110,6 +110,7 @@ export class Mon {
     this.pending = null; // { mv, aim } melee move waiting for the lunge to connect
     this.status = null; // { kind, t } while burned, poisoned, paralysed or frozen
     this.freezeImmune = 0;
+    this.sleepImmune = 0; // seconds after waking in which a foe cannot put it to sleep again
     this.shadow = scene.add.sprite(x, y, `s-${this.species.anims.Idle.key}`, 0).setAlpha(0.35).setDepth(1);
     this.sprite = scene.add.sprite(x, y, `a-${this.species.anims.Idle.key}`, 0);
     this.barBg = scene.add.rectangle(x, y, 18, 4, 0x10141d).setDepth(9000);
@@ -148,20 +149,23 @@ export class Mon {
   mul(stat) { return (this.buffs[stat].t > 0 ? this.buffs[stat].mul : 1) * (STATUS[this.status?.kind]?.[stat] ?? 1); }
 
   // One condition at a time: the same one is refreshed, a different one does not take. A thawed mon cannot be refrozen at once.
-  setStatus(kind) {
+  // self: the mon brought it on itself (Rest), which a recent waking does not stop.
+  setStatus(kind, self = false) {
     const s = STATUS[kind];
     if (!s || !this.alive || (this.status && this.status.kind !== kind)) return null;
     if (kind === 'freeze' && !this.status && this.freezeImmune > 0) return null;
+    if (kind === 'sleep' && !this.status && !self && this.sleepImmune > 0) return null;
     if (this.status) { this.status.t = s.time; return null; }
     this.status = { kind, t: s.time };
     if (kind === 'sleep' && this.species.anims.Sleep) { this.cancel(); this.state = 'loop'; this.setAnim('Sleep', 'loop'); }
-    if (s.immune) this.freezeImmune = s.time + s.immune;
+    if (kind === 'freeze' && s.immune) this.freezeImmune = s.time + s.immune;
     this.applyTint();
     return this.status;
   }
 
   clearStatus() {
     const slept = this.status?.kind === 'sleep' && this.animName === 'Sleep';
+    if (this.status?.kind === 'sleep') this.sleepImmune = STATUS.sleep.immune;
     this.status = null;
     if (slept && this.alive && this.state === 'loop') this.wake();
     this.applyTint();
@@ -429,7 +433,7 @@ export class Mon {
   }
 
   revive(x, y) {
-    Object.assign(this, { safeguard: 0, critUp: null, noCrit: 0, x, y, hp: this.maxHp, stamina: this.maxStamina, exhausted: false, runT: 0, snare: 0, armored: false, leap: 0, levi: 0, leviImmune: 0, buryImmune: 0, hop: 0, kx: 0, ky: 0, invuln: 1, buried: 0, shield: 0, leech: null, ingrain: null, regen: null, sub: false, lx: x, ly: y, detect: 0, bide: null, bond: 0, bondTo: null, endure: 0, webbed: 0, torment: null, tether: null, dance: null, fuse: null, rep: null, grip: 0, stun: 0, roost: 0, chill: null, locked: null, acro: null, locks: {}, ramp: null, status: null, freezeImmune: 0 });
+    Object.assign(this, { sleepImmune: 0, safeguard: 0, critUp: null, noCrit: 0, x, y, hp: this.maxHp, stamina: this.maxStamina, exhausted: false, runT: 0, snare: 0, armored: false, leap: 0, levi: 0, leviImmune: 0, buryImmune: 0, hop: 0, kx: 0, ky: 0, invuln: 1, buried: 0, shield: 0, leech: null, ingrain: null, regen: null, sub: false, lx: x, ly: y, detect: 0, bide: null, bond: 0, bondTo: null, endure: 0, webbed: 0, torment: null, tether: null, dance: null, fuse: null, rep: null, grip: 0, stun: 0, roost: 0, chill: null, locked: null, acro: null, locks: {}, ramp: null, status: null, freezeImmune: 0 });
     for (const b of Object.values(this.buffs)) b.t = 0;
     this.cancel();
     this.sprite.setAlpha(1);
@@ -525,6 +529,7 @@ export class Mon {
       else this.applyTint();
     }
     this.freezeImmune = Math.max(0, this.freezeImmune - dt);
+    this.sleepImmune = Math.max(0, this.sleepImmune - dt);
     if (this.status) {
       const s = STATUS[this.status.kind];
       if (s.dps && this.alive && this.hp > 1) this.hp = Math.max(1, this.hp - s.dps * dt);

@@ -7,11 +7,14 @@ const RETRY_MS = 3000;
 const handlers = {};
 let ws = null;
 let profile = null;
+let noteKey = null;
 let pinger = null, pings = 0;
 
 export const net = {
   id: null,
   online: false,
+  pool: { n: 0, mine: false }, // notes floating in the bluff's pool, and whether one is yours
+  crowd: 0, // how many players are connected to the relay, you included
   rtt: null, // ms there and back to the relay, smoothed
   offset: 0, // relay clock minus this machine's clock, in ms
   party: { code: null, open: false, leader: null, members: [] },
@@ -22,6 +25,7 @@ export const net = {
     ws.onopen = () => {
       net.online = true;
       if (profile) net.send('profile', profile);
+      if (noteKey) net.send('note.hello', { key: noteKey });
       emit('status', true);
     };
     ws.onmessage = (e) => {
@@ -36,6 +40,8 @@ export const net = {
       }
       if (msg.t === 'welcome') net.id = msg.id;
       else if (msg.t === 'party') net.party = msg;
+      else if (msg.t === 'crowd') net.crowd = msg.n;
+      else if (msg.t === 'pool') net.pool = { n: msg.n, mine: msg.mine };
       emit(msg.t, msg);
     };
     ws.onclose = () => {
@@ -43,6 +49,8 @@ export const net = {
       ws = null;
       net.online = false;
       net.id = null;
+      net.crowd = 0;
+      net.pool = { n: 0, mine: false };
       net.party = { code: null, open: false, leader: null, members: [] };
       if (was) { emit('party', net.party); emit('status', false); }
       setTimeout(() => net.connect(), RETRY_MS);
@@ -60,6 +68,12 @@ export const net = {
   setProfile(next) {
     profile = next;
     net.send('profile', profile);
+  },
+
+  // Who you are to the pool of notes (session.noteKey); sent again whenever the connection comes back.
+  setNoteKey(key) {
+    noteKey = key;
+    net.send('note.hello', { key });
   },
 
   // Listen for a message type (or 'status' for the connection itself). Returns the function that stops listening.

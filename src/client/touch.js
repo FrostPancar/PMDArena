@@ -270,6 +270,9 @@ function build() {
   };
   BOARD.forEach((line, row) => [...line].forEach((ch, i) => letter(ch, row * 11 + i * 23, row, 22, ch)));
   letter('Del', 2 * 11 + BOARD[2].length * 23, 2, 45, null);
+  // (spaces and the marks a note can use: the others are ignored by the handlers that take letters only)
+  letter('Space', 11, 3, 91, ' ');
+  [...'.,!?\'-'].forEach((ch, i) => letter(ch, 11 + 92 + i * 23, 3, 22, ch));
 
   for (const el of [ui.stick, ...ui.moves.map((k) => k.el), ui.parry.el, ui.jump.el, ui.run.el, ui.a.el, ui.b.el, ui.start.el, ui.board]) show(el, false);
   document.body.append(root);
