@@ -44,6 +44,7 @@ export const tapActs = (ptr, already) => !ptr.wasTouch || already;
 const M = 4; // gap to the screen edge
 const MOVE_W = 64, MOVE_H = 27, GAP = 3; // the four move plates, two across
 const ROUND = 32; // Jump, Parry and Run
+const LIFT = 10; // how far the buttons on the right sit above the bottom edge
 const STICK = 64, RIM = 24, DEAD = 6; // the stick's art, how far it can be pushed, and how far before it counts
 const AIM_DEAD = 8, AIM_SPAN = 44; // dragging a move button: where aiming starts, and the drag that is full reach
 const NOTCH = 20; // of the energy bar (see Mon)
@@ -212,9 +213,9 @@ function build() {
   }
   buildStick();
 
-  // fight: the four moves in the corner under the thumb, two by two; Jump and Run above them at the right, where the
-  // thumb slides up to; Parry beside them at the bottom
-  const cell = (col, row) => ({ right: edge(M + (1 - col) * (MOVE_W + GAP), 'right'), bottom: edge(M + (1 - row) * (MOVE_H + GAP), 'bottom') });
+  // fight: the four moves in the corner under the thumb, two by two; above them, left to right, Parry, Jump and Run
+  // where the thumb slides up to
+  const cell = (col, row) => ({ right: edge(M + (1 - col) * (MOVE_W + GAP), 'right'), bottom: edge(LIFT + M + (1 - row) * (MOVE_H + GAP), 'bottom') });
   let from = null;
   ui.moves = [0, 1, 2, 3].map((i) => makeKey(root, MOVE_W, MOVE_H, cell(i % 2, i >> 1), {
     down: (e) => {
@@ -240,22 +241,22 @@ function build() {
       if (e.type === 'pointerup') fight('move', i); // let go: it is thrown (a finger that was taken away throws nothing)
     },
   }));
-  const side = M + 2 * (MOVE_W + GAP) + 1;
-  const above = M + 2 * (MOVE_H + GAP);
-  ui.jump = makeKey(root, ROUND, ROUND, { right: edge(M, 'right'), bottom: edge(above, 'bottom') }, { down: () => fight('jump') });
-  ui.parry = makeKey(root, ROUND, ROUND, { right: edge(side, 'right'), bottom: edge(M, 'bottom') }, {
-    // with a move being aimed, this calls it off instead (and with one charging, the scene does)
-    down: () => { if (touch.aiming >= 0) touch.aiming = -1; else fight('parry'); },
-  });
-  ui.run = makeKey(root, ROUND, ROUND, { right: edge(M + ROUND + GAP, 'right'), bottom: edge(above, 'bottom') }, {
+  // above the moves, left to right: Parry, Jump, Run
+  const above = LIFT + M + 2 * (MOVE_H + GAP);
+  ui.run = makeKey(root, ROUND, ROUND, { right: edge(M, 'right'), bottom: edge(above, 'bottom') }, {
     down: () => { touch.run = true; },
     up: () => { touch.run = false; },
   });
+  ui.jump = makeKey(root, ROUND, ROUND, { right: edge(M + ROUND + GAP, 'right'), bottom: edge(above, 'bottom') }, { down: () => fight('jump') });
+  ui.parry = makeKey(root, ROUND, ROUND, { right: edge(M + 2 * (ROUND + GAP), 'right'), bottom: edge(above, 'bottom') }, {
+    // with a move being aimed, this calls it off instead (and with one charging, the scene does)
+    down: () => { if (touch.aiming >= 0) touch.aiming = -1; else fight('parry'); },
+  });
 
   // menus: A low in the corner, B beside it, START above
-  ui.a = makeKey(root, 34, 34, { right: edge(M, 'right'), bottom: edge(M + 18, 'bottom') }, { down: () => fire('confirm') });
-  ui.b = makeKey(root, 34, 34, { right: edge(M + 36, 'right'), bottom: edge(M, 'bottom') }, { down: () => fire('cancel') });
-  ui.start = makeKey(root, 56, 30, { right: edge(M, 'right'), bottom: edge(M + 54, 'bottom') }, { down: () => fire('menu') });
+  ui.a = makeKey(root, 34, 34, { right: edge(M, 'right'), bottom: edge(LIFT + M + 18, 'bottom') }, { down: () => fire('confirm') });
+  ui.b = makeKey(root, 34, 34, { right: edge(M + 36, 'right'), bottom: edge(LIFT + M, 'bottom') }, { down: () => fire('cancel') });
+  ui.start = makeKey(root, 56, 30, { right: edge(M, 'right'), bottom: edge(LIFT + M + 54, 'bottom') }, { down: () => fire('menu') });
   for (const [key, name] of [[ui.a, 'btnA'], [ui.b, 'btnB'], [ui.start, 'start']]) {
     face(key, name, (g) => { paintFrame(g, 'pad', key.w, key.h); stamp(g, name, key.w / 2, key.h / 2, 2); });
   }

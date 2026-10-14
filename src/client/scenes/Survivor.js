@@ -34,6 +34,7 @@ const CHEST_REACH = 14; // how near the player must come to a chest to open it
 const STARTERS = ['quickAttack', 'swift'];
 const COINS_EACH = { 1: 3, 2: 2, 3: 1 }; // what each foe drops, by how many came in its wave
 const SHOP_AFTER = 1300; // ms from a wave beaten to the shop opening (the coins are in by then)
+const LEGEND_HP = 250, LEGEND_COINS = 5; // a legendary's health, and the coins it drops
 const COIN_WAIT = 0.45, COIN_REACH = 8; // seconds a dropped coin lies before it flies to the player; how near it is taken
 
 // Survivor: you alone on a stage, and wave after wave of CPUs until you go down. No rounds: the next wave comes in a
@@ -117,8 +118,8 @@ export class Survivor extends Battle {
       for (const spec of specs) {
         const [x, y] = Practice.prototype.spotNear.call(this) ?? [this.player.x + 60, this.player.y];
         const f = { slot: this.fighters.length + 10 + this.kos, team: 1, kind: 'cpu', owner: ME, skill: level, ...spec };
-        const mon = new Mon(this, x, y, { team: 'n', species: lookOf(spec), move: spec.moves[0], hp: boss ? BOSS.hp : Math.max(1, Math.round(BASE_HP * share)), power });
-        Object.assign(mon, { kit: spec.moves, slot: f.slot, invuln: 0.6, purse: COINS_EACH[specs.length] });
+        const mon = new Mon(this, x, y, { team: 'n', species: lookOf(spec), move: spec.moves[0], hp: boss ? LEGEND_HP : Math.max(1, Math.round(BASE_HP * share)), power });
+        Object.assign(mon, { kit: spec.moves, slot: f.slot, invuln: 0.6, purse: boss ? LEGEND_COINS : COINS_EACH[specs.length] });
         if (boss) { mon.sprite.setScale(BOSS.scale); mon.shadow.setScale(BOSS.scale); }
         this.npcs.push(mon);
         mon.face(this.player.x, this.player.y);

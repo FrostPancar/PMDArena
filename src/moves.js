@@ -784,13 +784,13 @@ give('iceFang iceShard blizzard avalanche iceBall iceBeam auroraBeam', { chill: 
 // lock: Lock-On marks its target for that long, and every shot of the user's side homes in on it.
 give('lockOn', { lock: 8 });
 // Psychic
-//   catch    held: pink orbs circle the area, and enemy shots inside it hang in the air; on release they are thrown where
+//   catch    held: pink orbs circle the area (around: the user, wherever it goes), and enemy shots inside it hang in the air; on release they are thrown where
 //            the user aims. It does nothing else: with no shot caught, letting go just ends it.
 //   reverse  turns the nearest enemy shot in range around and makes it the user's; with none in range, the plain burst
 //   steer    held: the user's latest shot curves toward the aim
 //   wall     leaves a wall across the aim for 6 s: 'reflect' stops the other side's bodies and dashes, 'screen' their shots and
 //            beams (a light shot bounces back as the owner's); the owner's own beam splits in three passing through its screen
-give('psychic', { kind: 'mid', appear: undefined, radius: 30, catch: { upkeep: 14, max: 30, drift: 55 }, // held for as long as there is the energy; the field drifts after the aim at `drift` px a second
+give('psychic', { kind: 'mid', appear: undefined, radius: 38, catch: { upkeep: 14, max: 30, around: true }, // held for as long as there is the energy; the field is a circle around the user
  dmg: undefined, cost: 16, charge: 0.15, cls: 'status' });
 give('confusion', { reverse: true });
 give('kinesis', { kind: 'self', steer: { upkeep: 16, turn: 5 }, tag: undefined, debuff: undefined, dmg: undefined, cost: 8, charge: 0.1 });

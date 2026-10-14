@@ -17,6 +17,19 @@ Each push to `main` gets a version. The current one is in `src/version.js` (show
   waves. Esc, B or Next wave goes on. What you buy does not change your saved loadouts.
 - Every fifth wave the shop comes first, then the TM chest.
 
+## alpha 0.5.26
+
+**Phone pad**
+- Parry moves up to the jump and run row: left to right it is Parry, Jump, Run.
+- The moves and the buttons on the right sit a little higher.
+
+**Survivor**
+- A legendary has 250 HP (was 500) and drops 5 coins.
+
+**Moves**
+- Psychic is a field around the user, wherever the user goes, and a little bigger (radius 38, was 30). It no longer
+  drifts after your aim.
+
 ## alpha 0.5.25
 
 **Melee**

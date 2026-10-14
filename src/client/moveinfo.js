@@ -96,7 +96,7 @@ export function describe(id) {
   if (mv.push) n.push('Shoves foes back, and you too.');
   if (mv.bend) n.push('Goes to the point you aim at, then bends toward the nearest foe.');
   if (mv.ghost) n.push('Passes through Light Screens.');
-  if (mv.catch) n.push('Catches enemy shots in a field that drifts after your aim.', 'Let go to throw them back.');
+  if (mv.catch) n.push(mv.catch.around ? 'Catches enemy shots in a field around you.' : 'Catches enemy shots in a field that drifts after your aim.', 'Let go to throw them back.');
   if (mv.reverse) n.push('Turns the nearest enemy shot back on its owner.');
   if (mv.steer) n.push('Bends your latest shot toward your aim.');
   if (mv.wall === 'reflect') n.push('Leaves a wall for 6s that foes cannot walk or dash through.');

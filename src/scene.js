@@ -724,6 +724,8 @@ export class Play extends Phaser.Scene {
       if (w && mv.tag && mv.tag !== 'strike') ring(m.x, m.y, 9, color, 0.9); // and one under the user, for moves with no landing spot
       if (mv.grow) {
         if (w) ring(m.x, m.y, w.radius ?? mv.grow.min, color, alpha);
+      } else if (mv.catch?.around) {
+        ring(m.x, m.y, mv.radius, color, alpha); // a field around the user
       } else if (mv.kind === 'mid' || mv.kind === 'auto') {
         const s = this.landSpot(m, mv, w?.aim ?? this.aimOf(m, w ? w.track : 'pointer'));
         ring(s.hx ?? s.x, s.hy ?? s.y, mv.radius, color, alpha);
@@ -780,7 +782,7 @@ export class Play extends Phaser.Scene {
           w.aim = { dx: vx / l, dy: vy / l, dist: l };
         }
       }
-      const spot = this.landSpot(m, w.mv, w.aim ?? aim);
+      const spot = c.around ? { x: m.x, y: m.y } : this.landSpot(m, w.mv, w.aim ?? aim);
       if (w.t < charge) m.spend((w.mv.cost * Math.min(dt, charge - w.t)) / charge);
       w.t += dt;
       for (const q of this.shots) {
@@ -2369,7 +2371,7 @@ export class Play extends Phaser.Scene {
     this.auras = this.auras.filter((q) => {
       if (q.m.windup !== q.w || q.m.state !== 'windup') { for (const i of q.imgs) i.destroy(); return false; }
       q.t += dt;
-      const s = this.landSpot(q.m, q.w.mv, q.w.aim ?? this.aimOf(q.m, q.w.track)), R = q.w.mv.radius, n = 4, tail = 5;
+      const s = q.w.mv.catch.around ? q.m : this.landSpot(q.m, q.w.mv, q.w.aim ?? this.aimOf(q.m, q.w.track)), R = q.w.mv.radius, n = 4, tail = 5;
       for (let o = 0; o < n; o++) {
         for (let k = 0; k < tail; k++) {
           const img = (q.imgs[o * tail + k] ??= this.add.image(0, 0, 'orb'));
