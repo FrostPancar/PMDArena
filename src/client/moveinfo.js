@@ -14,7 +14,7 @@ const TYPE_MOVES = {
   bug: 'xScissor bugBite spiderWeb pinMissile megahorn furyCutter attackOrder defendOrder healOrder bugBuzz uTurn signalBeam stringShot stickyWeb',
   dragon: 'dragonBreath dragonPulse outrage dualChop dragonClaw dragonRush dracoMeteor dragonDance dragonTail',
   flying: 'gust whirlwind airSlash aerialAce featherDance tailwind roost braveBird fly bounce acrobatics hurricane',
-  ground: 'mudShot spikes boneRush bonemerang earthquake mudBomb sandTomb magnitude',
+  ground: 'mudShot spikes boneRush bonemerang earthquake mudBomb sandTomb magnitude dig',
   rock: 'rockSlide stoneEdge rockBlast rockTomb rockWrecker stealthRock rockThrow powerGem rollout',
   poison: 'venoshock poisonPowder poisonSting sludgeBomb poisonJab acid crossPoison sludgeWave toxicSpikes',
   steel: 'steelWing ironTail metalClaw flashCannon gyroBall meteorMash ironDefense bulletPunch magnetPull kingsShield',
@@ -150,7 +150,7 @@ export function describe(id) {
   if (mv.roll) n.push('You roll: faster with every bounce and hit.', 'A parry stops you dead.');
   if (mv.missPillar) n.push(`A miss leaves the boulder standing for ${secs(mv.missPillar)} as cover.`);
   if (mv.pillar) n.push(`Leaves a rock standing for ${secs(mv.pillar)} that blocks shots and movement.`);
-  if (mv.ambush) n.push('Also catches foes that dash, blink or dig across it, and harder.');
+  if (mv.ambush) n.push('Also catches foes that dash or blink across it, and harder.');
   if (mv.grow?.cycle) n.push('Its size swings up and down while you hold: let go at the size you want.');
   if (mv.deflect) n.push('Light shots bounce off. Let go as a hit lands to throw it back.');
   if (mv.magnet) n.push('Catches enemy metal shots nearby; they circle you and fly with your next move.');

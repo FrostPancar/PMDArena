@@ -856,7 +856,7 @@ give('dracoMeteor', { kind: 'mid', selfDebuff: { stat: 'atk', mul: 0.7, time: 5 
 // bond: whoever knocks the user out in that time takes the same blow. sap: burns stamina. torment: no move twice running.
 // tether: the foe cannot go further than that from the user. string: a thread that slows, and yanks on a second use.
 // web: a zone that slows and stops running. roll (hold): the user is the shot, turning slowly, faster with every bounce and
-// hit. pillar: the strike leaves cover standing. ambush: a trap that also catches dashes, blinks and Dig, harder.
+// hit. pillar: the strike leaves cover standing. ambush: a trap that also catches dashes and blinks, harder (a mon digging passes beneath it).
 // grow.cycle: the size swings up and down while held. deflect / burst: a stance that bounces light shots and, let go just
 // after it breaks, returns the blow. magnet: catches metal shots to throw later. dance: presses on the beat build stacks.
 // copy: the last move anyone used. endure: health cannot drop below 1. lowHp: stronger the worse hurt the user is.

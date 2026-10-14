@@ -3,6 +3,19 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.25
+
+**Melee**
+- Two close-range blows whose hitboxes overlap clash: neither lands, both mons are thrown apart and left reeling,
+  with the critical-hit spark and sound.
+- Super strong (heavy) melee moves beat the lighter ones: the heavy blow carries on and only the lighter mon is thrown
+  back. Two heavy blows, or two light ones, throw both.
+
+**Dig**
+- Dig is a Ground move.
+- A mon travelling underground passes beneath Stealth Rock and the other traps and zones. (Stealth Rock used to
+  catch diggers for extra damage; it still catches dashes and blinks.)
+
 ## alpha 0.5.24
 
 **Looks**

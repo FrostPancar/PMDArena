@@ -1572,7 +1572,8 @@ export class Play extends Phaser.Scene {
       const versus = mv?.versus && (mv.versus.any ? !!t.status : mv.versus.status.includes(t.status?.kind));
       // a flyer that is swatted, or a roosting mon caught by a ground move, takes half again
       const extra = (mv?.swat && t.flying) || (mv?.ground && t.roost > 0) ? 1.5 : 1;
-      if (this.swingsMeet(owner, t, mv)) { this.meleeClash(owner, t); continue; }
+      const theirs = this.swingsMeet(owner, t, mv, x, y, r);
+      if (theirs) { this.meleeClash(owner, t, mv, theirs.mv); continue; }
       // Punishment hits harder for every stat the target has raised
       const punish = mv?.punish ? 1 + mv.punish * Object.values(t.buffs).filter((b) => b.t > 0 && b.mul > 1).length : 1;
       const blocking = t.parry > 0, hp0 = t.hp;
@@ -1604,22 +1605,29 @@ export class Play extends Phaser.Scene {
     return any;
   }
 
-  // Is this close-range blow landing on a foe that is itself mid-swing with a close-range move, aimed back this way?
-  // (A heavy move goes through a lighter one, and nothing stops an armoured mon.)
-  swingsMeet(owner, t, mv) {
-    if (mv?.kind !== 'melee' || !t.alive || t.armored || t.sub || t.invuln > 0 || t.airborne) return false;
+  // Is this close-range blow (a circle of radius r at x, y) meeting a foe that is itself mid-swing with a close-range move?
+  // That is when the two hitboxes overlap, or the foe is swinging back this way. Answers with that swing, or null.
+  // (A super strong, heavy move goes through a lighter one, and nothing stops an armoured mon.)
+  swingsMeet(owner, t, mv, x, y, r) {
+    if (mv?.kind !== 'melee' || !t.alive || t.armored || t.sub || t.invuln > 0 || t.airborne) return null;
     const theirs = t.pending ?? (t.state === 'windup' ? t.windup : null);
-    if (theirs?.mv.kind !== 'melee') return false;
-    if (mv.tag === 'heavy' ? theirs.mv.tag !== 'heavy' : !t.pending && theirs.mv.tag === 'heavy') return false; // (a heavy move still charging is not stopped by a jab)
+    if (theirs?.mv.kind !== 'melee') return null;
+    if (mv.tag === 'heavy' ? theirs.mv.tag !== 'heavy' : !t.pending && theirs.mv.tag === 'heavy') return null; // (a heavy move still charging is not stopped by a jab)
     const [fx, fy] = theirs.aim ? [theirs.aim.dx, theirs.aim.dy] : dirVec(t.dir), dx = owner.x - t.x, dy = owner.y - t.y, l = Math.hypot(dx, dy) || 1;
-    return (fx * dx + fy * dy) / (l * (Math.hypot(fx, fy) || 1)) > 0.3;
+    // where their blow would land: the two circles touching is a clash
+    const spot = this.landSpot(t, theirs.mv, theirs.aim ?? { dx: fx, dy: fy, dist: 60 });
+    const overlap = Math.hypot((spot.hx ?? spot.x) - x, ((spot.hy ?? spot.y) - y) * 1.3) <= r + theirs.mv.radius;
+    return overlap || (fx * dx + fy * dy) / (l * (Math.hypot(fx, fy) || 1)) > 0.3 ? theirs : null;
   }
 
-  // Two close-range blows have met: neither lands. Both mons are thrown back from each other and left reeling.
-  meleeClash(a, b) {
+  // Two close-range blows have met: neither lands. Both mons are thrown back from each other and left reeling, with the
+  // spark and the sound of a critical hit. If only one of the two is a heavy move, that one wins: it is not stopped and
+  // only the other is thrown back.
+  meleeClash(a, b, mvA, mvB) {
     const dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy) || 1;
-    for (const [q, side] of [[a, -1], [b, 1]]) {
-      if (q.remote) continue; // each client throws back the fighters it runs
+    const heavyA = mvA?.tag === 'heavy', heavyB = mvB?.tag === 'heavy';
+    for (const [q, side, wins] of [[a, -1, heavyA && !heavyB], [b, 1, heavyB && !heavyA]]) {
+      if (q.remote || wins) continue; // each client throws back the fighters it runs
       q.cancel();
       const k = q.ingrain ? 0 : MELEE_CLASH.push * side; // a rooted mon is not shoved
       q.kx = (dx / l) * k; q.ky = (dy / l) * k;
@@ -1629,10 +1637,11 @@ export class Play extends Phaser.Scene {
       q.state = 'hurt';
       q.setAnim(q.species.anims.Hurt ? 'Hurt' : 'Idle', 'once', null, () => q.toIdle());
     }
-    this.shinePop((a.x + b.x) / 2, (a.y + b.y) / 2 - 10, 12);
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    if (CRIT_FX.frames?.length) this.fx.push({ img: this.add.image(Math.round(mx), Math.round(my) - 12, CRIT_FX.frames[0]).setScale(CRIT_FX.scale).setDepth(7003), frames: CRIT_FX.frames, t: 0, fps: 14 });
     if (FEEL.on && FEEL.shake) this.cameras.main.shake(110, 0.005, true);
     this.popup(a, 'CLASH');
-    this.game.events.emit('sfx', 'clash');
+    this.game.events.emit('sfx', 'crit');
   }
 
   // Everything a hit does once it has landed. On the client that runs the fighter that was hit this follows the hit at once;
@@ -2801,8 +2810,9 @@ export class Play extends Phaser.Scene {
     this.traps = this.traps.filter((q) => {
       q.wait -= dt;
       const near = (t) => t.team !== q.owner.team && t.alive && Math.hypot(t.x - q.x, (t.y - q.y) * 1.3) <= q.r + 7;
-      // an ambushing trap also catches whatever comes in by dash, blink or underground (not a plain jump), and harder
-      const rush = q.mv.ambush ? this.targets.find((t) => near(t) && (t.state === 'dash' || (t.under && !t.flying))) : null;
+      // an ambushing trap also catches whatever comes in by dash or blink (not a plain jump), and harder. A mon travelling
+      // underground (Dig) passes beneath it
+      const rush = q.mv.ambush ? this.targets.find((t) => near(t) && t.state === 'dash' && !t.under) : null;
       if (q.wait <= 0 && (rush || this.targets.some((t) => near(t) && !t.airborne && !t.under))) {
         q.wait = 0.9;
         const img = this.add.image(Math.round(q.x), Math.round(q.y) - 8, q.mv.frames[0]).setDepth(40 + q.y);
