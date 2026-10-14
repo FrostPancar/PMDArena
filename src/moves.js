@@ -417,7 +417,7 @@ export const MOVES = {
   outrage: { name: 'Outrage', kind: 'aoe', fx: '0160_outrage', seqs: ['001'], radius: 46, dmg: 16, cost: 44, charge: 0.6, scale: 2.4, fps: 24, chargeSeqs: ['000'], chargeScale: 1.5, linger: 3, follow: true, after: 'confuse' },
   dualChop: { name: 'Dual Chop', kind: 'melee', fx: '0100_sword_slash', seqs: ['008'], reach: 12, radius: 32, dmg: 20, cost: 18, charge: 0.075, fps: 16, lunge: false, hitDelay: 30, active: 0.2 },
   shadowClaw: { name: 'Shadow Claw', kind: 'melee', fx: '0179_shadow_claw', seqs: ['000'], reach: 18, radius: 20, dmg: 20, cost: 18, charge: 0.075 },
-  nightDaze: { name: 'Night Daze', kind: 'aoe', fx: '0201_dark_void', seqs: ['000'], radius: 48, dmg: 19, cost: 42, charge: 0.5, fps: 40, scale: 1.4 },
+  nightDaze: { name: 'Night Daze', kind: 'aoe', fx: '0201_dark_void', seqs: ['000'], radius: 48, dmg: 25, cost: 42, charge: 0.5, fps: 40, scale: 1.4, debuff: { stat: 'spd', mul: 0.6, time: 3 } },
   snarl: { name: 'Snarl', kind: 'mid', fx: '0176_dark_vortex', seqs: ['000'], range: 80, radius: 22, dmg: 16, cost: 24, charge: 0.3 },
   scaryFace: { name: 'Scary Face', kind: 'auto', fx: '0064_scary_face_eyes', seqs: ['000'], range: 130, radius: 20, dmg: 13, cost: 22, charge: 0.3, fps: 20, impactSeqs: ['001'], debuff: { stat: 'spd', mul: 0.6, time: 6 } },
   shadowSneak: { name: 'Shadow Sneak', kind: 'beam', fx: '0184_shadow_sneak', seqs: ['002'], flat: true, scale: 1.4, dmg: 17, cost: 28, charge: 0.25, fps: 22, impactSeqs: ['008'] },
@@ -866,7 +866,8 @@ give('nightShade', { fixedDmg: 20 });
 give('protect', { repeat: 0.5 });
 give('vineWhip', { grapple: 100, meet: true, tag: 'grab', cut: false, lunge: false }); // meet: user and foe are pulled to each other
 give('powerWhip', (mv) => ({ grapple: 110, tag: 'grab', knock: undefined, charge: mv.charge / 2, lunge: false }));
-give('stunSpore sleepPowder', { kind: 'projectile', cloud: true, speed: 45, range: 150, radius: 16, spin: false, light: undefined });
+// Stun Spore and Sleep Powder: point and click, the powder settles on the aimed spot up to `range` away
+give('stunSpore sleepPowder', { range: 150 });
 give('gust', { wind: true });
 give('leafBlade', { cost: 12, grow: { min: 22, max: 62, rate: 44, upkeep: 22, power: [0.8, 1.7] } });
 give('shadowSneak', { kind: 'blink', vanish: { time: 0.4, behind: true }, range: 150, radius: 18, look: undefined, upkeep: undefined, turnRate: undefined, cost: 28 });
@@ -921,7 +922,6 @@ give('earthquake magnitude', { deep: true }); // the only things that reach a mo
 give('braveBird rollout iceBall', { armor: true });
 give('zapCannon', { kind: 'homing', turn: 1.3 });
 give('venoshock', { gray: true, tint: 0xb04dff });
-give('sleepPowder', { kind: 'homing', speed: 75, turn: 1.5, range: 210, radius: 12 });
 give('gyroBall', { kind: 'hold', roll: { turn: 2.6, max: 5, gain: 0.2 }, parryStun: 1, armor: true, turn: undefined, speed: 130, radius: 14, dmg: 12, cost: 20, upkeep: 30, charge: 0.2 });
 give('fireBlast', { twice: 24 }); // where it ends it goes off, and again as the first blast dies down
 give('auroraBeam', { stream: { gap: 0.07, upkeep: 40 }, softStream: true, range: 120, speed: 300, dmg: 3, charge: 0.1, chill: undefined, pierce: undefined, status: { kind: 'freeze', chance: 0.04 } });
