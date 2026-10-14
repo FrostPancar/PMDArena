@@ -17,7 +17,7 @@ Each push to `main` gets a version. The current one is in `src/version.js` (show
   waves. Esc, B or Next wave goes on. What you buy does not change your saved loadouts.
 - Every fifth wave the shop comes first, then the TM chest.
 
-## alpha 0.5.26
+## alpha 0.5.27
 
 **Phone pad**
 - Parry moves up to the jump and run row: left to right it is Parry, Jump, Run.
