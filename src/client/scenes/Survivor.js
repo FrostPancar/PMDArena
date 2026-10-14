@@ -57,7 +57,7 @@ export class Survivor extends Battle {
     this.tally = text(this, VIEW_W / 2, 5, '', INK.gold).setOrigin(0.5, 0);
     this.showTally();
     this.events.once('create', () => {
-      const start = () => { banner(this, arenaName(this.cfg), 'Survivor'); this.begin(); };
+      const start = () => { banner(this, arenaName(this.cfg), 'Survivor', true); this.begin(); };
       if (session.briefed.controls) return start();
       session.briefed.controls = true;
       saveSession();
@@ -104,7 +104,7 @@ export class Survivor extends Battle {
         const tag = this.add.image(x, y, 'tag').setTint(FOE_TAG).setDepth(9003);
         this.fighters.push({ f, mon, controller: new CpuController(this, mon, f), tag, name: null, crew: null, at: 0 });
       }
-      if (boss) banner(this, `Wave ${this.beaten + 1}`, 'A legendary appears!');
+      if (boss) banner(this, `Wave ${this.beaten + 1}`, 'A legendary appears!', true);
     };
     arrive();
   }
@@ -133,7 +133,7 @@ export class Survivor extends Battle {
     const p = this.player;
     if (p.alive) { p.heal(p.maxHp * HEAL); this.healFx(p); }
     if (this.beaten % CHEST_EVERY === 0) return this.dropChest(); // the next wave waits for the chest to be picked up
-    banner(this, `Wave ${this.beaten} beaten`, this.beaten % PER_LEVEL === 0 && this.waveLevel <= MAX_LEVEL ? `The next are Lv ${this.waveLevel}` : undefined);
+    banner(this, `Wave ${this.beaten} beaten`, this.beaten % PER_LEVEL === 0 && this.waveLevel <= MAX_LEVEL ? `The next are Lv ${this.waveLevel}` : undefined, true);
     this.time.delayedCall(NEXT_WAVE, () => this.spawnWave());
   }
 
@@ -144,7 +144,7 @@ export class Survivor extends Battle {
     this.tweens.add({ targets: img, scale: 1, duration: 260, ease: 'Back.easeOut' });
     this.ringPop(x, y - 6, 10);
     this.loot = { x, y, img };
-    banner(this, `Wave ${this.beaten}: a chest!`, 'Walk over it to open it');
+    banner(this, `Wave ${this.beaten}: a chest!`, 'Walk over it to open it', true);
   }
 
   // Walked over, the chest is gone and the TM out of it slides up from where it stood; then the waves go on.
@@ -155,7 +155,7 @@ export class Survivor extends Battle {
     const disc = this.add.image(Math.round(x), Math.round(y) - 8, 'art-icons', 'tm').setDepth(9400).setAlpha(0);
     this.tweens.add({ targets: disc, y: disc.y - 26, alpha: { from: 0, to: 1 }, duration: 420, ease: 'Cubic.easeOut' });
     this.tweens.add({ targets: disc, alpha: 0, delay: 1300, duration: 300, onComplete: () => disc.destroy() });
-    banner(this, tm ? `TM found: ${MOVES[tm].name}` : 'Empty: you have every TM');
+    banner(this, tm ? `TM found: ${MOVES[tm].name}` : 'Empty: you have every TM', undefined, true);
     music.jingle('jingle_tm');
     this.time.delayedCall(NEXT_WAVE, () => this.spawnWave());
   }

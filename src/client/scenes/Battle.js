@@ -95,7 +95,7 @@ export class Battle extends Play {
     const rivals = this.cfg.fighters.filter((f) => f.team !== this.me.team);
     this.label = this.cfg.label ?? `${this.cfg.mode === '3v3' ? 'Crew' : this.cfg.mode} ${rivals.every((f) => f.kind === 'cpu') ? 'vs CPU' : 'vs players'}`; // also how the records file this fight
     const boss = this.cfg.boss;
-    const announce = () => banner(this, boss ? SPECIES[boss.id].name : arenaName(this.cfg), boss ? `Boss ${boss.at + 1} of ${boss.order.length}  ${arenaName(this.cfg)}` : this.level ? `${this.label}  Lv ${this.level}` : this.label);
+    const announce = () => banner(this, boss ? SPECIES[boss.id].name : arenaName(this.cfg), boss ? `Boss ${boss.at + 1} of ${boss.order.length}  ${arenaName(this.cfg)}` : this.level ? `${this.label}  Lv ${this.level}` : this.label, true);
 
     if (this.online) {
       const offs = [
@@ -316,9 +316,9 @@ export class Battle extends Play {
     this.waiting?.destroy();
     // a win on the ladder may open the next stage: said here, shown on the map next time
     const opened = won === true && this.level ? wonOn(this.mapId) : null;
-    if (opened) this.time.delayedCall(1400, () => banner(this, 'New stage opened!', MAPS[opened].name));
+    if (opened) this.time.delayedCall(1400, () => banner(this, 'New stage opened!', MAPS[opened].name, true));
     if (won !== null) { music.stop(); music.jingle(won ? 'jingle_win' : 'jingle_loss'); }
-    if (won === null) banner(this, message);
+    if (won === null) banner(this, message, undefined, true);
     else callout(this, won ? 'You win!' : message === 'A draw!' ? 'Draw' : 'You lose', this.need > 1 || won ? null : message, 1900, won ? INK.gold : INK.rose, this.need > 1 ? this.tally() : null);
     this.time.delayedCall(2200, () => (earned ? this.showResult(earned) : this.leave()));
   }

@@ -327,11 +327,12 @@ export const enterText = (scene, actions, hints, { title = 'Message', max = 80 }
 });
 
 // A banner that slides in from the top, holds and leaves: area names, battle starts.
-export function banner(scene, title, sub) {
+// Under any window that opens meanwhile, unless `top` (in a battle it goes over everything, the HUD included).
+export function banner(scene, title, sub, top = false) {
   const w = Math.max(120, 30 + Math.max(title.length, (sub ?? '').length) * 6), x = (VIEW_W - w) >> 1, h = sub ? 34 : 22;
   const parts = [panel(scene, x, 0, w, h, 'dim'), text(scene, VIEW_W / 2, 6, title, INK.gold).setOrigin(0.5, 0)];
   if (sub) parts.push(text(scene, VIEW_W / 2, 19, sub, INK.white).setOrigin(0.5, 0));
-  parts.forEach((p, i) => p.setDepth(DEPTH - 20 + Math.min(i, 1))); // under any window that opens meanwhile
+  parts.forEach((p, i) => p.setDepth((top ? DEPTH + 500 : DEPTH - 20) + Math.min(i, 1)));
   parts.forEach((p) => { p.y -= 44; });
   scene.tweens.add({
     targets: parts, y: '+=48', duration: 260, ease: 'Sine.easeOut', hold: 1700, yoyo: true,

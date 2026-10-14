@@ -54,7 +54,7 @@ export class Practice extends Battle {
       if (tool) this.tool(tool);
     });
     this.events.once('create', () => {
-      const start = () => { banner(this, MAPS[this.mapId].name, this.back.area === 'dojo' ? 'Moveset test' : 'Practice'); this.begin(); };
+      const start = () => { banner(this, MAPS[this.mapId].name, this.back.area === 'dojo' ? 'Moveset test' : 'Practice', true); this.begin(); };
       if (session.briefed.controls) return start();
       session.briefed.controls = true;
       saveSession();
@@ -115,7 +115,7 @@ export class Practice extends Battle {
   spawn(kind, species) {
     const foes = this.npcs.filter((n) => (kind === 'dummy') === (n.ai === 'dummy'));
     const at = this.spotNear();
-    if (!at || foes.length >= MAX_SPAWNS) return banner(this, foes.length >= MAX_SPAWNS ? `${MAX_SPAWNS} is plenty` : 'No room here');
+    if (!at || foes.length >= MAX_SPAWNS) return banner(this, foes.length >= MAX_SPAWNS ? `${MAX_SPAWNS} is plenty` : 'No room here', undefined, true);
     const pool = SPECIES_ORDER.filter((id) => id !== session.species);
     species ??= pool[Math.floor(Math.random() * pool.length)];
     if (!ensureSpecies(this, species)) return void this.time.delayedCall(200, () => this.spawn(kind, species));
