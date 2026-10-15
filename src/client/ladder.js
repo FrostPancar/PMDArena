@@ -52,13 +52,15 @@ const MON_LEVEL = [1, 1, 6, 12, 18, 26];
 const TM_COUNT = [0, 1, 3, 6, 10, 99];
 // How it plays. cool: its wait between attacks, times this. dodge: chance it jumps clear of a move it sees charging.
 // parry: chance it parries a shot or a swing coming at it. speed: how briskly it moves. aim: how far off (in px, at
-// most) its aim may be. run: it runs to close a long gap.
+// most) its aim may be. run: it runs to close a long gap. nerve: how much punishment (hits, a combo, a broken charge,
+// being parried) it takes before it jumps or runs clear to start over. wary: chance it holds off a slow move when a foe
+// fresh and close could knock it out of the charge.
 export const SKILL = {
-  1: { cool: 1.6, dodge: 0.14, parry: 0.05, speed: 0.74, aim: 20, run: false },
-  2: { cool: 1.28, dodge: 0.28, parry: 0.14, speed: 0.8, aim: 12, run: false },
-  3: { cool: 1, dodge: 0.4, parry: 0.22, speed: 0.85, aim: 8, run: false },
-  4: { cool: 0.75, dodge: 0.55, parry: 0.4, speed: 0.94, aim: 3, run: true },
-  5: { cool: 0.55, dodge: 0.7, parry: 0.6, speed: 1, aim: 0, run: true },
+  1: { cool: 1.6, dodge: 0.14, parry: 0.05, speed: 0.74, aim: 20, run: false, nerve: 4.2, wary: 0.2 },
+  2: { cool: 1.28, dodge: 0.28, parry: 0.14, speed: 0.8, aim: 12, run: false, nerve: 3.6, wary: 0.35 },
+  3: { cool: 1, dodge: 0.4, parry: 0.22, speed: 0.85, aim: 8, run: false, nerve: 3, wary: 0.5 },
+  4: { cool: 0.75, dodge: 0.55, parry: 0.4, speed: 0.94, aim: 3, run: true, nerve: 2.5, wary: 0.7 },
+  5: { cool: 0.55, dodge: 0.7, parry: 0.6, speed: 1, aim: 0, run: true, nerve: 2.1, wary: 0.85 },
 };
 export const skillOf = (level) => SKILL[Math.min(MAX_LEVEL, Math.max(1, Math.round(level ?? 3)))];
 

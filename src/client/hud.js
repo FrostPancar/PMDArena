@@ -4,12 +4,16 @@ import { SPECIES } from '../sprites.js';
 import { NOTCH, NOTCHES } from '../mon.js';
 import { typeOf } from './moveinfo.js';
 import { touch } from './touch.js';
+import { autoControls } from './session.js';
 import { DEPTH, INK, text, typeIcon, panel, shade } from './ui.js';
 
 const PLATE_W = 104, BAR_W = PLATE_W - 10;
 const CHIP_W = 30, CHIP_H = 17;
 // what each of the four moves is on: two mouse buttons, two keys
 const BUTTONS = [{ art: 'mouseL', say: 'Left click' }, { art: 'mouseR', say: 'Right click' }, { key: 'Q', say: 'Q' }, { key: 'E', say: 'E' }];
+// ...and under the auto-move controls, four keys
+const AUTO_BUTTONS = ['Q', 'W', 'E', 'R'].map((key) => ({ key, say: key }));
+const buttons = () => (autoControls() ? AUTO_BUTTONS : BUTTONS);
 
 const pinned = (o, depth = 2) => o.setScrollFactor(0).setDepth(DEPTH + depth);
 
@@ -46,7 +50,7 @@ export class BattleHud {
 
     const y = VIEW_H - CHIP_H - 3;
     this.chips = moves.map((id, i) => {
-      const x = 3 + i * (CHIP_W + 1), b = BUTTONS[i];
+      const x = 3 + i * (CHIP_W + 1), b = buttons()[i];
       const chip = {
         idle: panel(scene, x, y, CHIP_W, CHIP_H, 'dim'),
         hot: panel(scene, x, y, CHIP_W, CHIP_H, 'hot'),
@@ -67,7 +71,7 @@ export class BattleHud {
     const h = moves.length * 13 + 9, top = y - h - 2;
     this.intro = [panel(scene, 3, top, 126, h, 'dim')];
     moves.forEach((id, i) => {
-      this.intro.push(text(scene, 9, top + 5 + i * 13, BUTTONS[i].say, INK.gold), text(scene, 66, top + 5 + i * 13, MOVES[id].name));
+      this.intro.push(text(scene, 9, top + 5 + i * 13, buttons()[i].say, INK.gold), text(scene, 66, top + 5 + i * 13, MOVES[id].name));
     });
     scene.time.delayedCall(6000, () => !this.gone && scene.tweens.add({ targets: this.intro, alpha: 0, duration: 500 }));
   }
@@ -195,6 +199,18 @@ export const CONTROLS = [
   ['C', 'Call off a charging move'],
   ['Esc', 'Menu'],
 ];
+// the same card for the auto-move controls (Settings)
+const AUTO_CONTROLS = [
+  ['Auto', 'Your mon walks itself'],
+  ['Mouse', 'Aim'],
+  ['Q W E R', 'Moves 1 to 4'],
+  ['Hold a move', 'Aim it; let go to use it'],
+  ['Space', 'Jump over attacks'],
+  ['Left click', 'Parry, or call off a move'],
+  ['Right click', 'Run (hold to keep going)'],
+  ['C', 'Call off a charging move'],
+  ['Esc', 'Menu'],
+];
 // the same card for the touch pad
 const PAD_CONTROLS = [
   ['Stick', 'Move'],
@@ -209,7 +225,7 @@ const PAD_CONTROLS = [
 
 // The controls card. Returns its objects so the caller can take it down again.
 export function controlsCard(scene) {
-  const rows = touch.on ? PAD_CONTROLS : CONTROLS, split = touch.on ? 104 : 88;
+  const rows = touch.on ? PAD_CONTROLS : autoControls() ? AUTO_CONTROLS : CONTROLS, split = touch.on ? 104 : 88;
   const w = touch.on ? 262 : 230, h = 30 + rows.length * 13 + 22, x = (VIEW_W - w) >> 1, y = (VIEW_H - h) >> 1;
   const d = DEPTH + 10;
   const parts = [

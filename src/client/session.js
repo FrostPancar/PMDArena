@@ -83,6 +83,11 @@ export function newGame() {
 }
 
 // ---- how far a mon has come ----
+// The auto-move controls (set in Settings): the mon walks itself, the moves are on Q W E R, left click parries and
+// right click runs. Not for the touch pad, which has its own.
+export const autoControls = () => !!session.briefed.autoMove;
+export function setAutoControls(on) { session.briefed.autoMove = on; saveSession(); }
+
 export const progressOf = (id = session.species) => levelFor(session.mons[id]?.exp ?? 0);
 export const levelOf = (id = session.species) => progressOf(id).level;
 // The evolution a branching mon (Eevee) has chosen, or undefined while it has not, or if it does not branch.

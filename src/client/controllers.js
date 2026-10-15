@@ -1,6 +1,6 @@
 import { WALK_SPEED } from '../scene.js';
 import { MOVES } from '../moves.js';
-import { NOTCH } from '../mon.js';
+import { NOTCH, JUMP_COST } from '../mon.js';
 import { skillOf } from './ladder.js';
 
 // Who drives a fighter that is not the local player. The Battle scene calls update(dt) on each before the mons move.
@@ -11,19 +11,73 @@ const JUMP_TIME = 0.55, RUN_RATE = 1.6;
 const HOLD_ANIMS = new Set(['Sit', 'LookUp', 'Faint']);
 
 // ---- the computer ----
-// Picks the nearest foe, keeps at the distance its chosen move likes while circling, uses moves when they would
-// reach, swings when toe to toe, backs off when out of breath and sometimes jumps clear of a move it sees coming
-// or parries what is about to hit it. How well it does all that is its skill, 1 to 5 (ladder.js); a fighter that
-// names none plays at 3.
+// How a set of moves wants to be fought with. 'brawler': mostly close-in hits, stays on top of the foe and keeps a
+// combo going. 'hitrun': close-in hits that cover ground (dashes, rides), darts in, strikes and gets out again.
+// 'ranged': mostly moves that reach, keeps its distance and backs off when crowded. 'mixed': a bit of both.
+const CLOSE = new Set(['melee', 'dash', 'aoe', 'hold']), RUSH = new Set(['dash', 'hold']);
+export function styleOf(ids) {
+  let close = 0, far = 0, rush = 0, combo = 0;
+  for (const id of ids) {
+    const mv = MOVES[id];
+    if (!mv || mv.cls !== 'attack' || mv.kind === 'self' || mv.kind === 'blink') continue;
+    if (CLOSE.has(mv.kind)) { close++; if (RUSH.has(mv.kind)) rush++; if (mv.combo) combo++; } else far++;
+  }
+  if (far >= 2 && far > close) return 'ranged';
+  if (close >= 2 && close > far) return rush * 2 >= close && !combo ? 'hitrun' : 'brawler';
+  return 'mixed';
+}
+
+// A move that only powers its user up (Swords Dance, Agility, a charge-up): worth doing before the fighting starts,
+// and once is enough.
+export const isBoost = (mv) => !!mv && mv.kind === 'self' && !mv.heal && !mv.shield && !mv.sub && !mv.ingrain && !mv.regen && !mv.decoys
+  && (mv.empower || mv.drum || mv.critUp || (mv.buff && (mv.buff.stat === 'random' || mv.buff.mul > 1)));
+
+// A move that comes out before a fresh foe up close can knock it out of the charge.
+const FAST = 0.12;
+const slow = (mv) => (mv?.charge ?? 0) > FAST;
+
+// Picks the nearest foe and fights it the way its moves want (see styleOf): it powers itself up first while it is
+// safe to, keeps the distance its style likes while circling, uses moves when they would reach, swings when toe to
+// toe, backs off when out of breath and sometimes jumps clear of a move it sees coming or parries what is about to hit
+// it. It does not start a slow move under the nose of a foe that could break it, answers a foe's charge with a quick
+// jab, and when it is being hit, comboed, parried or keeps having its charges broken it stops pressing buttons and
+// jumps or runs clear to start again. How well it does all that is its skill, 1 to 5 (ladder.js); a fighter that names
+// none plays at 3.
+//
+// pilot: it only walks, for the player's own mon under the auto-move controls (the player does the rest).
 export class CpuController {
-  constructor(scene, mon, fighter) {
-    Object.assign(this, { scene, mon, moves: fighter.moves, slot: fighter.slot, skill: skillOf(fighter.skill) });
+  constructor(scene, mon, fighter, pilot = false) {
+    Object.assign(this, { scene, mon, pilot, slot: fighter.slot ?? mon.slot, skill: skillOf(fighter.skill) });
+    this.moves = fighter.moves;
     this.cool = (1.2 + Math.random()) * this.skill.cool; // until it may attack again
-    this.seen = new WeakSet(); // the shots and swings it has already decided whether to parry
+    this.seen = new WeakSet(); // the shots, swings and dashes it has already decided whether to parry
     this.swap = 0; // until it reconsiders its move
     this.side = Math.random() < 0.5 ? 1 : -1; // which way it circles
     this.sideFor = 1;
     this.watched = null; // the foe wind-up it has already decided about
+    this.fresh();
+  }
+
+  // A crew's next mon brings other moves: the style and the boosts go with them.
+  get moves() { return this._moves; }
+  set moves(ids) {
+    if (ids === this._moves) return;
+    this._moves = ids ?? [];
+    this.style = styleOf(this._moves);
+    this.fresh();
+  }
+
+  // A new life (a fight starts, the next of a crew steps in): nothing used yet, nothing to be wary of.
+  fresh() {
+    this.used = new Set(); // the boosts it has already used this life
+    this.stress = 0; // how hard it has been pressed lately (see nerve)
+    this.sinceHit = 9; // seconds since it was last hit
+    this.resetT = 0; // seconds left of getting clear
+    this.backT = 0; // seconds left of stepping out (after a hit and run, or to make room)
+    this.held = 0; // until it reconsiders whether a slow move is too risky up close
+    this.opening = 4; // the first seconds of a life, when a boost comes before anything else
+    this.hp = this.mon.hp;
+    this.round = this.scene.round;
   }
 
   // The nearest foe, leaning toward a different one than its team-mate would pick so a pair does not gang up at once.
@@ -39,12 +93,43 @@ export class CpuController {
     return best;
   }
 
+  // How hard it is being pressed: a hit counts, one soon after another (a combo) more, and a hit that broke its
+  // charge more again. Being parried counts too (see countered). It eases off with time.
+  feel(dt) {
+    const m = this.mon;
+    this.stress = Math.max(0, this.stress - dt * 0.45);
+    this.sinceHit += dt;
+    if (m.hp < this.hp - 0.5 && m.alive) {
+      this.stress += 1 + (this.sinceHit < 1.6 ? 0.7 : 0) + (this.winding ? 1.2 : 0);
+      this.sinceHit = 0;
+    }
+    this.hp = m.hp;
+    this.winding = m.state === 'windup';
+  }
+
+  // Its attack was parried (Battle.parried).
+  countered() { this.stress += 1.4; }
+
   update(dt) {
     const { scene: s, mon: m } = this;
+    if (this.round !== s.round || (m.alive && !this.alive)) this.fresh();
+    this.alive = m.alive;
+    this.feel(dt);
     const foe = s.fighting && m.alive ? this.target() : null;
-    if (!foe) { if (m.state === 'walk') this.walk(0, 0); return; }
+    if (!foe) { if (m.state === 'walk' || this.pilot) this.walk(0, 0); return; }
     const k = this.skill;
     const dx = foe.x - m.x, dy = foe.y - m.y, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
+    this.cool -= dt;
+    this.swap -= dt;
+    this.held -= dt;
+    this.opening -= dt;
+    this.backT -= dt;
+    this.sideFor -= dt;
+    if (this.sideFor <= 0) { this.sideFor = 0.8 + Math.random() * 1.6; if (Math.random() < 0.5) this.side = -this.side; }
+    if (this.pilot) return this.steer(foe, d, ux, uy, dt);
+
+    // in the air from a jump to get clear: keep drifting away
+    if (m.state === 'jump' && this.resetT > 0) { this.resetT -= dt; this.walk(-ux - uy * this.side * 0.5, -uy + ux * this.side * 0.5); return; }
 
     // a foe starts charging something: decide once whether to jump out of it
     const w = foe.state === 'windup' ? foe.windup : null;
@@ -56,40 +141,159 @@ export class CpuController {
     if (!m.grounded) return;
     if (this.threatened(foe, d) && s.parry(m)) return;
 
-    this.cool -= dt;
-    this.swap -= dt;
-    this.sideFor -= dt;
-    if (this.sideFor <= 0) { this.sideFor = 0.8 + Math.random() * 1.6; if (Math.random() < 0.5) this.side = -this.side; }
-    if (this.swap <= 0 && !m.ailment.encore) {
-      // prefer a move that would connect from here
-      this.swap = 0.5 + Math.random();
-      const ready = this.moves.filter((id) => { m.move = id; return s.wantsMove(m, d); });
-      const pool = ready.length ? ready : this.moves;
-      m.move = pool[Math.floor(Math.random() * pool.length)];
-    }
-    // a wall goes up between the two, a little way out from itself: never on top of the foe, which only shut it in
-    const wall = MOVES[m.move]?.wall, ahead = wall && { x: m.x + ux * Math.min(34, d * 0.5), y: m.y + uy * Math.min(34, d * 0.5) };
-    if (this.cool <= 0 && s.wantsMove(m, d) && s.useMove(m, ahead || this.aimAt(foe))) { this.cool = (1.1 + Math.random() * 1.3) * k.cool; return; }
-    if (d < 22 && this.cool <= 0 && !m.ailment.noAttack) {
-      this.walk(0, 0);
-      m.face(foe.x, foe.y);
-      m.aim = null;
-      if (m.act(m.swing)) this.cool = (1.1 + Math.random() * 0.9) * k.cool;
-      return;
+    // pressed too hard: stop trading blows and get clear, by a jump if it has the breath for one, else at a run
+    if (this.resetT <= 0 && this.stress >= k.nerve && !m.stuck) this.getClear(ux, uy);
+    if (this.resetT > 0) {
+      this.resetT -= dt;
+      if (this.resetT <= 0 || d > 150) { this.resetT = 0; this.cool = Math.min(this.cool, 0.3); }
+      else return void this.walk(-ux - uy * this.side * 0.6, -uy + ux * this.side * 0.6, WALK_SPEED * k.speed, dt, m.stamina >= NOTCH);
     }
 
-    const mv = MOVES[m.move], close = mv.kind === 'melee' || mv.kind === 'dash' || mv.kind === 'aoe';
-    const keep = m.exhausted || m.stamina < NOTCH ? 110 : close ? 16 : 72;
+    const open = this.exposed(foe); // the foe cannot hit back just now: a charge is safe
+    const fresh = d < 60 && !open; // up close to a foe that could break a charge
+
+    // power up first, while there is room to: once each, never again this life
+    const boost = this.moves.find((id) => isBoost(MOVES[id]) && !this.used.has(id));
+    if (boost && !m.ailment.encore && (d > 60 || open)) {
+      const was = m.move;
+      m.move = boost;
+      if (m.stamina >= MOVES[boost].cost && s.useMove(m, foe)) { this.used.add(boost); this.cool = Math.max(this.cool, 0.35); return; }
+      m.move = was;
+    }
+
+    // a foe winding up right in front of it: a quick jab knocks it out of the charge
+    if (w && d < 46 && this.cool <= 0.4 && Math.random() < k.wary * dt * 8) {
+      const was = m.move, jab = this.moves.find((id) => { if (!MOVES[id]?.jab) return false; m.move = id; return s.wantsMove(m, d); });
+      if (jab && s.useMove(m, foe)) { this.cool = (0.8 + Math.random() * 0.6) * k.cool; return this.struck(); }
+      m.move = was;
+      if (d < 24 && !m.ailment.noAttack && this.swing(foe)) return;
+    }
+
+    if (this.swap <= 0 && !m.ailment.encore) {
+      this.swap = 0.5 + Math.random();
+      m.move = this.choose(d, fresh);
+    }
+    // the boost is still to come and the foe is in the way: make room for it first (only at the start; later it fights)
+    const room = boost && this.opening > 0 && !open;
+    // a slow move under the nose of a foe that could break it: hold it, and as often as not step out to make room
+    const mv = MOVES[m.move];
+    if (fresh && slow(mv) && this.held <= 0) {
+      this.held = 0.45;
+      this.risky = Math.random() < k.wary;
+      if (this.risky && Math.random() < 0.5 && this.style !== 'brawler') this.backT = 0.5 + Math.random() * 0.4;
+    }
+    const hold = room || (fresh && slow(mv) && this.risky);
+
+    // a wall goes up between the two, a little way out from itself: never on top of the foe, which only shut it in
+    const wall = mv?.wall, ahead = wall && { x: m.x + ux * Math.min(34, d * 0.5), y: m.y + uy * Math.min(34, d * 0.5) };
+    if (!hold && this.cool <= 0 && s.wantsMove(m, d) && s.useMove(m, ahead || this.aimAt(foe))) {
+      this.cool = (1.1 + Math.random() * 1.3) * k.cool * (this.style === 'brawler' && foe.state === 'hurt' ? 0.45 : 1);
+      return this.struck();
+    }
+    if (d < 22 && this.cool <= 0 && !room && !m.ailment.noAttack && this.swing(foe)) return;
+
+    this.approach(foe, d, ux, uy, dt, room);
+  }
+
+  // A swing from where it stands. A brawler with the foe reeling keeps the combo going sooner.
+  swing(foe) {
+    const m = this.mon;
+    this.walk(0, 0);
+    m.face(foe.x, foe.y);
+    m.aim = null;
+    if (!m.act(m.swing)) return false;
+    this.cool = (1.1 + Math.random() * 0.9) * this.skill.cool * (this.style === 'brawler' ? 0.6 : 1);
+    this.struck();
+    return true;
+  }
+
+  // It has just struck: a hit-and-runner gets out again.
+  struck() { if (this.style === 'hitrun') this.backT = 0.8 + Math.random() * 0.6; }
+
+  // Is the foe in no state to hit back for a moment (reeling, stunned, out of breath, deep in a long charge)?
+  // (a charge counts only while plenty of it is left: a quick one would still come out first)
+  exposed(foe) {
+    const w = foe.state === 'windup' && foe.windup;
+    return foe.state === 'hurt' || foe.stun > 0 || foe.exhausted || foe.state === 'faint' || (!!w && (w.charge ?? w.mv.charge) - w.t > 0.3);
+  }
+
+  // The move to go for: one that would connect from here, leaning on what suits its style, and quick ones when a fresh
+  // foe is close. Boosts are not chosen here (see update).
+  choose(d, fresh) {
+    const { scene: s, mon: m } = this;
+    const pool = this.moves.filter((id) => MOVES[id] && !isBoost(MOVES[id]));
+    if (!pool.length) return m.move;
+    const fits = (mv) => (this.style === 'ranged' ? !CLOSE.has(mv.kind) : this.style === 'mixed' ? true : CLOSE.has(mv.kind));
+    const ready = pool.filter((id) => { m.move = id; return s.wantsMove(m, d); });
+    const list = ready.length ? ready : pool.filter((id) => fits(MOVES[id])).length ? pool.filter((id) => fits(MOVES[id])) : pool;
+    const weight = (id) => { const mv = MOVES[id]; return 1 + (fits(mv) ? 1 : 0) + (fresh && !slow(mv) ? 2 : 0) + (mv.dmg ?? 0) / 30; };
+    let r = Math.random() * list.reduce((n, id) => n + weight(id), 0);
+    for (const id of list) if ((r -= weight(id)) <= 0) return id;
+    return list[0];
+  }
+
+  // Get clear: a jump away (and a little to the side) if it has the stamina, otherwise a run.
+  getClear(ux, uy) {
+    const m = this.mon;
+    this.stress = 0;
+    this.resetT = 1.1 + Math.random() * 0.7;
+    this.backT = 0;
+    this.cool = Math.max(this.cool, 0.5);
+    if (m.stamina >= JUMP_COST + NOTCH * 0.5) m.jump(-ux - uy * this.side * 0.5, -uy + ux * this.side * 0.5, WALK_SPEED * 1.3);
+  }
+
+  // How far from the foe it likes to be, for its style and the move it has in mind.
+  keepFor(mv, foe) {
+    const m = this.mon;
+    if (m.exhausted || m.stamina < NOTCH || this.backT > 0) return 105;
+    const reach = mv ? (mv.length ?? mv.range ?? 90) : 90;
+    const far = Math.max(60, Math.min(115, reach * 0.75));
+    switch (this.style) {
+      case 'ranged': return far;
+      case 'brawler': return 16;
+      case 'hitrun': return this.cool <= 0.3 || this.exposed(foe) ? 16 : 85; // circling out of reach until it is ready to dart in
+      default: return mv && CLOSE.has(mv.kind) ? 16 : 72;
+    }
+  }
+
+  approach(foe, d, ux, uy, dt, room) {
+    const { mon: m, skill: k } = this;
+    const keep = room ? 90 : this.keepFor(MOVES[m.move], foe);
     let vx = -uy * this.side * 0.7, vy = ux * this.side * 0.7;
     if (d > keep + 12) { vx += ux; vy += uy; } else if (d < keep - 12) { vx -= ux; vy -= uy; }
-    // the best of them run in when the gap is long and they have the energy to spare for it
-    const run = k.run && d > keep + 70 && m.stamina >= NOTCH * 2;
+    // the best of them run in when the gap is long and they have the energy to spare for it; a hit-and-runner and a
+    // ranged mon that is crowded run out again
+    const run = (k.run && d > keep + 70 && m.stamina >= NOTCH * 2)
+      || (k.cool <= 1 && d < keep - 30 && m.stamina >= NOTCH * 2 && (this.backT > 0 || this.style === 'ranged'))
+      || (this.style === 'hitrun' && keep <= 16 && d > 50 && m.stamina >= NOTCH * 2);
     const moved = this.walk(vx, vy, WALK_SPEED * k.speed, dt, run);
     if (!moved) this.side = -this.side; // walked into something: go round the other way
   }
 
-  // Walk the mon. The player's own mon (a fight played by the computer, for testing) is moved by its scene from what
-  // is asked for here; anyone else is moved at once. Says whether it got anywhere.
+  // The auto-move controls: walk the player's mon the way its moves want (the one being aimed, if any), circling,
+  // and get out of the way when pressed hard. Running is the player's (right click).
+  steer(foe, d, ux, uy, dt) {
+    const { scene: s, mon: m } = this;
+    if (!m.grounded && m.state !== 'jump') return this.walk(0, 0);
+    if (this.resetT <= 0 && this.stress >= this.skill.nerve) { this.stress = 0; this.resetT = 0.9; }
+    if (this.resetT > 0) {
+      this.resetT -= dt;
+      return void this.walk(-ux - uy * this.side * 0.6, -uy + ux * this.side * 0.6);
+    }
+    const aimed = MOVES[s.moves?.[s.aiming]];
+    const keep = aimed ? (CLOSE.has(aimed.kind) ? 18 : aimed.kind === 'self' ? this.keepFor(null, foe) : Math.max(50, Math.min(110, (aimed.length ?? aimed.range ?? 90) * 0.7))) : this.keepFor(null, foe);
+    let vx = -uy * this.side * 0.6, vy = ux * this.side * 0.6;
+    if (d > keep + 10) { vx += ux; vy += uy; } else if (d < keep - 10) { vx -= ux; vy -= uy; }
+    // stand still to swing once in reach of a close-in move
+    if (aimed && CLOSE.has(aimed.kind) && d <= keep + 6) { vx = 0; vy = 0; m.face(foe.x, foe.y); }
+    if (!this.walk(vx, vy)) this.side = -this.side;
+  }
+
+  // The player struck under the auto-move controls: a hit-and-runner steps back out.
+  acted() { this.struck(); this.cool = 0.9 * this.skill.cool; }
+
+  // Walk the mon. The player's own mon (the auto-move controls, or a fight played by the computer for testing) is
+  // moved by its scene from what is asked for here; anyone else is moved at once. Says whether it got anywhere.
   walk(vx, vy, speed, dt, run = false) {
     const m = this.mon, was = this.at ?? [NaN, NaN];
     if (m === this.scene.player) {
@@ -99,7 +303,7 @@ export class CpuController {
     }
     const bx = m.x, by = m.y;
     m.walk(vx, vy, speed, dt, run);
-    return bx !== m.x || by !== m.y;
+    return bx !== m.x || by !== m.y || m.state === 'jump';
   }
 
   // What a move is aimed at: the foe, or a spot off to one side of it for a CPU whose aim is not true.
@@ -110,13 +314,16 @@ export class CpuController {
     return { get x() { return foe.x + Math.cos(a) * r; }, get y() { return foe.y + Math.sin(a) * r; } };
   }
 
-  // Is something about to hit it that it has decided to parry? Each shot and each swing is decided on once.
+  // Is something about to hit it that it has decided to parry? Each shot, swing and dash is decided on once.
   threatened(foe, d) {
     const { scene: s, mon: m, skill: k } = this;
     if (!k.parry || m.parryCd > 0) return false;
     const decide = (thing) => { if (this.seen.has(thing)) return false; this.seen.add(thing); return Math.random() < k.parry; };
     // a swing in mid-lunge close by
     if (foe.pending && d < 44 && decide(foe.pending)) return true;
+    // a dash coming straight at it
+    const dash = foe.state === 'dash' && s.dashes?.find((q) => q.m === foe);
+    if (dash && d < 60 && dash.vx * (m.x - foe.x) + dash.vy * (m.y - foe.y) > 0 && decide(dash)) return true;
     for (const q of s.shots) {
       if (q.owner.team === m.team || q.arc || q.caught) continue;
       const dx = m.x - q.x, dy = m.y - q.y, gap = Math.hypot(dx, dy);

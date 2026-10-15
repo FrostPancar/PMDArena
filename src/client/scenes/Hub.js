@@ -7,7 +7,7 @@ import { PLACE, DOJO_BACKDROP } from '../art.js';
 import { AREAS } from '../areas.js';
 import { Actions } from '../input.js';
 import { go, wipe } from '../transition.js';
-import { session, saveSession, loadoutOf, formOf, awaitsChoice, publicProfile, LOADOUT_SIZE } from '../session.js';
+import { session, saveSession, loadoutOf, formOf, awaitsChoice, publicProfile, LOADOUT_SIZE, autoControls, setAutoControls } from '../session.js';
 import { net } from '../net.js';
 import { cpuBattle, randomCpu, partnerSpec, before } from '../modes.js';
 import { bossBattle, survivorBattle, BOSSES } from '../bosses.js';
@@ -348,8 +348,9 @@ export class Hub extends Phaser.Scene {
     if (this.menu || !this.free) return;
     const close = () => { this.menu.close(); this.menu = null; this.showHints(); };
     const callouts = () => `Move callouts: ${session.briefed.quiet ? 'Off' : 'On'}`;
+    const movement = () => `Movement: ${autoControls() ? 'Auto' : 'WASD'}`; // (auto: the mon walks itself in battle, moves on Q W E R)
     const menu = new Menu(this, this.actions, {
-      x: VIEW_W - 144, y: 8, w: 136, title: 'Settings', items: [...soundRows(), { label: callouts() }, { label: 'Moves' }, { label: 'Close' }],
+      x: VIEW_W - 144, y: 8, w: 136, title: 'Settings', items: [...soundRows(), { label: callouts() }, { label: movement() }, { label: 'Moves' }, { label: 'Close' }],
       onPick: (i) => {
         if (soundPick(menu, i, 0)) return;
         if (i === 2) {
@@ -357,7 +358,10 @@ export class Hub extends Phaser.Scene {
           saveSession();
           this.registry.set('callouts', !session.briefed.quiet);
           menu.rows[2].setText(callouts());
-        } else if (i === 3) { close(); this.openMoves(); } else close();
+        } else if (i === 3) {
+          setAutoControls(!autoControls());
+          menu.rows[3].setText(movement());
+        } else if (i === 4) { close(); this.openMoves(); } else close();
       },
       onCancel: close,
     });

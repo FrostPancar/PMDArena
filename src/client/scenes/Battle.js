@@ -5,7 +5,7 @@ import { SPECIES, loadSpecies, ensureSpecies } from '../../sprites.js';
 import { Mon, dirVec } from '../../mon.js';
 import { Actions, keyGuard } from '../input.js';
 import { go, wipe } from '../transition.js';
-import { session, saveSession, bookBattle } from '../session.js';
+import { session, saveSession, bookBattle, autoControls, setAutoControls } from '../session.js';
 import { net } from '../net.js';
 import { mine, lookOf, arenaOf, arenaName, startingSpots, fightsToWin } from '../modes.js';
 import { LEDGES } from '../ledges.js';
@@ -25,6 +25,7 @@ const TAG = { ally: 0x8fdcff, foe: 0xff7a6a };
 const MOVE_ID = new Map(Object.entries(MOVES).map(([id, mv]) => [mv, id]));
 const r1 = (n) => Math.round(n * 10) / 10;
 const JUMP_TIME = 0.55; // how long Mon keeps a jump in the air
+const moveRow = () => `Movement: ${autoControls() ? 'Auto' : 'WASD'}`;
 
 // A match on one of the stages: 1v1, 2v2 or a 3v3 crew battle. All the combat is the playground's Play scene; this adds
 // who is fighting (the battle from modes.js or the relay), the player's four moves, the HUD, the result and the way back
@@ -483,6 +484,8 @@ export class Battle extends Play {
 
   parried(m) {
     if (!m.remote) this.tell({ k: 'pd', s: m.slot });
+    // whoever of the other side was in reach is the one whose blow was turned: a CPU takes that as a warning
+    for (const x of this.fighters ?? []) if (x.mon.team !== m.team && Math.hypot(x.mon.x - m.x, x.mon.y - m.y) < 80) x.controller?.countered?.();
     super.parried(m);
   }
 
@@ -631,7 +634,7 @@ export class Battle extends Play {
     const p = this.player, id = this.moves[i];
     if (!id || (p.ailment.encore && i !== this.slot)) return; // encored: only the move just used will come out
     p.move = id;
-    if (this.useMove(p, track)) this.slot = i;
+    if (this.useMove(p, track)) { this.slot = i; this.pilot?.acted(); }
     p.move = null;
   }
 
@@ -639,8 +642,9 @@ export class Battle extends Play {
   holding(m, track, t) {
     if (m !== this.player || typeof track === 'object') return super.holding(m, track, t);
     if (track === 'touch') return this.live && touch.held[this.slot];
-    const ptr = this.input.activePointer;
-    return this.live && [ptr.leftButtonDown(), ptr.rightButtonDown(), this.moveKeys.Q.isDown, this.moveKeys.E.isDown][this.slot];
+    const ptr = this.input.activePointer, k = this.moveKeys;
+    if (this.auto) return this.live && [k.Q, k.W, k.E, k.R][this.slot].isDown;
+    return this.live && [ptr.leftButtonDown(), ptr.rightButtonDown(), k.Q.isDown, k.E.isDown][this.slot];
   }
 
   // ---- the touch pad (touch.js) ----
@@ -765,26 +769,41 @@ export class Battle extends Play {
   // ---- input ----
   get live() { return this.fighting && !this.menu && !this.card && !wipe.busy; }
 
+  // The auto-move controls are on (see session.autoControls): a CpuController walks the player's mon (the pilot).
+  get auto() { return autoControls() && !touch.on && !this.cfg.auto; }
+
   inputDir() {
     if (!this.live) return [0, 0];
-    if (this.cfg.auto) return this.autoWalk ? [this.autoWalk.vx, this.autoWalk.vy] : [0, 0];
+    if (this.cfg.auto || this.pilot) return this.autoWalk ? [this.autoWalk.vx, this.autoWalk.vy] : [0, 0];
     const [x, y] = super.inputDir();
     return x || y ? [x, y] : touch.stick;
   }
 
-  // Shift, or the pad's Run button.
-  sprinting() { return this.cfg.auto ? !!this.autoWalk?.run : super.sprinting() || touch.run; }
+  // Shift, or the pad's Run button; under the auto-move controls, the right mouse button.
+  sprinting() {
+    if (this.cfg.auto) return !!this.autoWalk?.run;
+    if (this.pilot) return this.input.activePointer.rightButtonDown() || super.sprinting();
+    return super.sprinting() || touch.run;
+  }
 
   // Moves 1 and 2 are the left and right mouse buttons, 3 and 4 are Q and E; all four go where the pointer is.
+  // Under the auto-move controls the four are Q W E R, left click parries (or calls off a move) and right click runs.
   bindInput() {
     const fresh = keyGuard();
-    this.moveKeys = this.input.keyboard.addKeys('Q,E');
+    this.moveKeys = this.input.keyboard.addKeys('Q,W,E,R');
+    const AUTO_KEYS = { KeyQ: 0, KeyW: 1, KeyE: 2, KeyR: 3 };
     this.input.keyboard.on('keydown', (e) => {
       // the key that closes a menu (Space, E) must not also jump or parry
       if (e.repeat || !fresh(e) || this.game.loop.frame === this.menuClosedOn) return;
       if (e.code === 'Escape') return this.pause();
       if (!this.live) return;
       const p = this.player;
+      if (this.auto) {
+        if (e.code in AUTO_KEYS) this.press(AUTO_KEYS[e.code]);
+        else if (e.code === 'KeyC') { this.aiming = -1; this.cancelMove(p); }
+        else if (e.code === 'Space') this.jump();
+        return;
+      }
       if (e.code === 'KeyQ') this.press(2);
       else if (e.code === 'KeyE') this.press(3);
       else if (e.code === 'KeyR') { if (this.aiming >= 0) this.aiming = -1; else this.parry(p); } // (R calls off a move being aimed)
@@ -796,13 +815,21 @@ export class Battle extends Play {
     this.input.mouse.disableContextMenu();
     this.input.on('pointerdown', (ptr) => {
       if (!this.live || ptr.wasTouch) return; // a finger on the arena does nothing: the moves are on the pad
+      if (this.auto) {
+        // (right click is run, read as it is held: see sprinting)
+        if (ptr.button === 0) { if (this.aiming >= 0) this.aiming = -1; else if (!this.cancelMove(this.player)) this.parry(this.player); }
+        return;
+      }
       if (ptr.button === 0) this.press(0);
       else if (ptr.button === 2) this.press(1);
     });
-    const up = (ptr) => { if (!ptr.wasTouch) this.release(ptr.button === 2 ? 1 : 0); };
+    const up = (ptr) => { if (!ptr.wasTouch && !this.auto) this.release(ptr.button === 2 ? 1 : 0); };
     this.input.on('pointerup', up);
     this.input.on('pointerupoutside', up);
-    this.input.keyboard.on('keyup', (e) => { if (e.code === 'KeyQ') this.release(2); else if (e.code === 'KeyE') this.release(3); });
+    this.input.keyboard.on('keyup', (e) => {
+      if (this.auto) { if (e.code in AUTO_KEYS) this.release(AUTO_KEYS[e.code]); return; }
+      if (e.code === 'KeyQ') this.release(2); else if (e.code === 'KeyE') this.release(3);
+    });
   }
 
   // ---- menus ----
@@ -817,12 +844,19 @@ export class Battle extends Play {
     this.freeze(true);
     this.menu = new Menu(this, this.actions, {
       x: (VIEW_W - 116) >> 1, y: 74, w: 116, title: this.online ? 'Menu' : 'Paused',
-      items: [{ label: 'Keep fighting' }, { label: 'Controls' }, ...soundRows(), { label: this.online ? 'Give up' : this.leaveLabel ?? 'Back to the dojo' }],
+      items: [{ label: 'Keep fighting' }, { label: 'Controls' }, ...soundRows(), ...(touch.on ? [] : [{ label: moveRow() }]), { label: this.online ? 'Give up' : this.leaveLabel ?? 'Back to the dojo' }],
       onPick: (i) => {
         if (i === 1) return this.showControls();
         if (soundPick(this.menu, i, 2)) return;
+        if (i === 4 && !touch.on) {
+          setAutoControls(!autoControls());
+          this.aiming = -1;
+          this.hud.destroy();
+          this.hud = new BattleHud(this, this.player, this.moves); // (the chips name the buttons)
+          return this.menu.rows[4].setText(moveRow());
+        }
         this.resume();
-        if (i === 4) this.leave();
+        if (i === (touch.on ? 4 : 5)) this.leave();
       },
       onCancel: () => this.resume(),
     });
@@ -852,9 +886,18 @@ export class Battle extends Play {
     this.input.on('pointerdown', close);
   }
 
+  // The pilot of the auto-move controls, made when they are turned on and dropped when they are turned off.
+  steerPilot(dt) {
+    if (!this.auto) { if (this.pilot) this.pilot = this.autoWalk = null; return; }
+    this.pilot ??= new CpuController(this, this.player, { moves: this.moves, slot: this.player.slot, skill: 4 }, true);
+    this.pilot.moves = this.moves;
+    this.pilot.update(dt);
+  }
+
   update(t, ms) {
     if (!this.frozen) {
       const dt = Math.min(ms, 50) / 1000;
+      this.steerPilot(dt);
       for (const x of this.fighters) x.controller?.update(dt);
       super.update(t, ms);
       if (this.fighting) this.clock += dt;
