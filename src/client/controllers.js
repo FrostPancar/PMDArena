@@ -270,23 +270,51 @@ export class CpuController {
     if (!moved) this.side = -this.side; // walked into something: go round the other way
   }
 
-  // The auto-move controls: walk the player's mon the way its moves want (the one being aimed, if any), circling,
-  // and get out of the way when pressed hard. Running is the player's (right click).
+  // How close a move wants its user to be to land: within a melee move's reach, a dash's run, an area's edge; a move that
+  // reaches far is used from most of its range.
+  reachFor(mv) {
+    if (!mv) return null;
+    if (mv.kind === 'melee') return Math.max(14, (mv.reach ?? 20) + (mv.radius ?? 12) * 0.5 - 4);
+    if (mv.kind === 'dash') return Math.max(30, (mv.dash ?? 80) * 0.6);
+    if (mv.kind === 'aoe') return Math.max(14, (mv.grow ? mv.grow.max : mv.radius ?? 30) * 0.6);
+    if (mv.kind === 'hold') return 40;
+    if (mv.kind === 'self') return null;
+    return Math.max(50, Math.min(110, (mv.length ?? mv.range ?? 90) * 0.7));
+  }
+
+  // Is the player's mon in trouble just now: hit a moment ago, pressed hard, or about to be hit by a foe close by
+  // (a swing, a dash coming at it, a charge about to go off)?
+  danger(foe, d) {
+    const w = foe.state === 'windup' && foe.windup;
+    return this.sinceHit < 1.5 || this.stress >= this.skill.nerve * 0.6 || (!!foe.pending && d < 50) || (foe.state === 'dash' && d < 90)
+      || (!!w && d < 100 && (w.charge ?? w.mv.charge) - w.t < 0.35);
+  }
+
+  // The auto-move controls: walk the player's mon the way its moves want, circling. The move being aimed decides the
+  // distance; with none, a close-in move the mon can afford pulls it in to that move's reach while it is safe, and
+  // otherwise it keeps the distance its style likes. Holding run (right click) is a choice made on the spot: in trouble,
+  // it runs clear; safe, it runs in. Pressed hard, it gets out of the way on its own.
   steer(foe, d, ux, uy, dt) {
     const { scene: s, mon: m } = this;
     if (!m.grounded && m.state !== 'jump') return this.walk(0, 0);
+    const danger = this.danger(foe, d), run = !!s.runHeld?.();
     if (this.resetT <= 0 && this.stress >= this.skill.nerve) { this.stress = 0; this.resetT = 0.9; }
-    if (this.resetT > 0) {
-      this.resetT -= dt;
-      return void this.walk(-ux - uy * this.side * 0.6, -uy + ux * this.side * 0.6);
-    }
+    const flee = () => this.walk(-ux - uy * this.side * 0.6, -uy + ux * this.side * 0.6);
+    if (this.resetT > 0) { this.resetT -= dt; return void flee(); }
+    if (run && danger) return void flee();
+
     const aimed = MOVES[s.moves?.[s.aiming]];
-    const keep = aimed ? (CLOSE.has(aimed.kind) ? 18 : aimed.kind === 'self' ? this.keepFor(null, foe) : Math.max(50, Math.min(110, (aimed.length ?? aimed.range ?? 90) * 0.7))) : this.keepFor(null, foe);
+    const close = (s.moves ?? []).map((id) => MOVES[id]).filter((mv) => mv && mv.cls === 'attack' && CLOSE.has(mv.kind) && m.stamina >= mv.cost);
+    const near = !danger || run ? close.sort((a, b) => this.reachFor(b) - this.reachFor(a))[0] : null; // (the longest reach of them)
+    let keep = aimed ? this.reachFor(aimed) ?? this.keepFor(null, foe) : near ? this.reachFor(near) : this.keepFor(null, foe);
+    if (run && !aimed) keep = Math.min(keep, near ? this.reachFor(near) : 40); // safe and running: in close
+    const inReach = (aimed ? CLOSE.has(aimed.kind) : !!near) && d <= keep + 4;
     let vx = -uy * this.side * 0.6, vy = ux * this.side * 0.6;
-    if (d > keep + 10) { vx += ux; vy += uy; } else if (d < keep - 10) { vx -= ux; vy -= uy; }
-    // stand still to swing once in reach of a close-in move
-    if (aimed && CLOSE.has(aimed.kind) && d <= keep + 6) { vx = 0; vy = 0; m.face(foe.x, foe.y); }
-    if (!this.walk(vx, vy)) this.side = -this.side;
+    if (d > keep + 6) { vx = ux; vy = uy; } // (closing in goes straight, not round)
+    else if (d < keep - 10) { vx -= ux; vy -= uy; }
+    // in reach of a close-in move: stand and face the foe, ready to strike
+    if (inReach) { vx = 0; vy = 0; m.face(foe.x, foe.y); }
+    if (!this.walk(vx, vy) && (vx || vy)) this.side = -this.side;
   }
 
   // The player struck under the auto-move controls: a hit-and-runner steps back out.

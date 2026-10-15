@@ -2,28 +2,68 @@ import { VIEW_W, VIEW_H } from '../scene.js';
 import { MOVES } from '../moves.js';
 import { SPECIES } from '../sprites.js';
 import { NOTCH, NOTCHES } from '../mon.js';
-import { typeOf } from './moveinfo.js';
+import { typeOf, TYPE_TINT, describe } from './moveinfo.js';
 import { touch } from './touch.js';
 import { autoControls } from './session.js';
 import { DEPTH, INK, text, typeIcon, panel, shade } from './ui.js';
 
 const PLATE_W = 104, BAR_W = PLATE_W - 10;
-const CHIP_W = 30, CHIP_H = 17;
+const CHIP_W = 91, CHIP_H = 24, CHIP_GAP = 2; // wide enough for the longest move name
 // what each of the four moves is on: two mouse buttons, two keys
-const BUTTONS = [{ art: 'mouseL', say: 'Left click' }, { art: 'mouseR', say: 'Right click' }, { key: 'Q', say: 'Q' }, { key: 'E', say: 'E' }];
+const BUTTONS = [{ art: 'mouseL' }, { art: 'mouseR' }, { key: 'Q' }, { key: 'E' }];
 // ...and under the auto-move controls, four keys
-const AUTO_BUTTONS = ['Q', 'W', 'E', 'R'].map((key) => ({ key, say: key }));
+const AUTO_BUTTONS = ['Q', 'W', 'E', 'R'].map((key) => ({ key }));
 const buttons = () => (autoControls() ? AUTO_BUTTONS : BUTTONS);
+
+const hex = (c) => `#${c.toString(16).padStart(6, '0')}`;
+// A type's colour lifted a third of the way to white, so the dark ones (Dark, Ghost, Dragon) still read on a chip.
+const nameTint = (type) => { const c = TYPE_TINT[type] ?? 0xffffff, up = (sh) => Math.round(((c >> sh) & 255) * 0.65 + 255 * 0.35); return (up(16) << 16) | (up(8) << 8) | up(0); };
+
+// A move chip's card, painted once per type and state: a dark body with cut corners, a stripe of the move's type colour
+// down the left with a faint wash of it across the top, and a key cap for the button. Lit (hot) while its move is aimed,
+// charged or held: a brighter body and a gold rim.
+function chipTexture(scene, type, hot) {
+  const key = `chip-${type}-${hot ? 'hot' : 'idle'}`;
+  if (scene.textures.exists(key)) return key;
+  const w = CHIP_W, h = CHIP_H, c = document.createElement('canvas'), g = c.getContext('2d'), tint = hex(TYPE_TINT[type] ?? 0xa8a878);
+  c.width = w; c.height = h;
+  const row = (y, x0, x1, col) => { g.fillStyle = col; g.fillRect(x0, y, x1 - x0, 1); };
+  for (let y = 0; y < h; y++) {
+    const cut = y === 0 || y === h - 1 ? 2 : y === 1 || y === h - 2 ? 1 : 0;
+    row(y, cut, w - cut, '#0a1826'); // outline
+    if (y === 0 || y === h - 1) continue;
+    const t = y / h, a = hot ? 0.95 : 0.86;
+    // body: a soft top-to-bottom fall
+    row(y, 1 + cut, w - 1 - cut, hot ? `rgba(${58 - t * 24},${104 - t * 40},${160 - t * 50},${a})` : `rgba(${24 - t * 12},${42 - t * 20},${64 - t * 26},${a})`);
+  }
+  // the rim, just inside the outline
+  g.fillStyle = hot ? '#fff3a0' : '#3d5b7a';
+  g.fillRect(2, 1, w - 4, 1); g.fillRect(2, h - 2, w - 4, 1); g.fillRect(1, 2, 1, h - 4); g.fillRect(w - 2, 2, 1, h - 4);
+  // the type: a stripe down the left and a wash across the top
+  g.fillStyle = tint;
+  g.fillRect(2, 3, 2, h - 6);
+  g.globalAlpha = hot ? 0.22 : 0.16;
+  g.fillRect(4, 2, w - 6, 9);
+  g.globalAlpha = 1;
+  // the key cap
+  const kx = 6, ky = 6, kw = 11, kh = 12;
+  g.fillStyle = '#0a1826'; g.fillRect(kx + 1, ky, kw - 2, kh); g.fillRect(kx, ky + 1, kw, kh - 2);
+  g.fillStyle = hot ? '#3a6aa0' : '#23486c'; g.fillRect(kx + 1, ky + 1, kw - 2, kh - 3);
+  g.fillStyle = hot ? '#7fb0e0' : '#4c7299'; g.fillRect(kx + 1, ky + 1, kw - 2, 1);
+  g.fillStyle = '#0f243a'; g.fillRect(kx + 1, ky + kh - 2, kw - 2, 1);
+  scene.textures.addCanvas(key, c);
+  return key;
+}
 
 const pinned = (o, depth = 2) => o.setScrollFactor(0).setDepth(DEPTH + depth);
 
 // What the player sees during a fight, kept small so the arena stays in view: a slim plate top left with the mon's
-// health and stamina, and along the bottom edge one chip per battle move showing the button it is on. The move being
-// charged (or last used, or under the mouse) is named beside the chips; all four are listed for the first seconds.
+// health and stamina, and along the bottom edge one chip per battle move showing the button it is on, its type, what it
+// costs (in notches of stamina) and its name.
 // On a touch screen the moves are the pad's own buttons (touch.js), each with its name on it, so only the plate is drawn.
 export class BattleHud {
   constructor(scene, mon, moves) {
-    Object.assign(this, { scene, mon, moves, hover: -1 });
+    Object.assign(this, { scene, mon, moves });
     const sp = mon.species, before = new Set(scene.children.list);
     // everything made from here on is the HUD's, so it can be taken down again when a crew's next mon comes out
     this.build(sp);
@@ -48,32 +88,30 @@ export class BattleHud {
     this.chips = [];
     if (touch.on) return;
 
+    // a chip per move: the button on a key cap, the name, and what it costs as pips like the energy bar's cells
     const y = VIEW_H - CHIP_H - 3;
     this.chips = moves.map((id, i) => {
-      const x = 3 + i * (CHIP_W + 1), b = buttons()[i];
-      const chip = {
-        idle: panel(scene, x, y, CHIP_W, CHIP_H, 'dim'),
-        hot: panel(scene, x, y, CHIP_W, CHIP_H, 'hot'),
-        type: typeIcon(scene, x + 21, y + 8, typeOf(id)),
-      };
-      if (b.art) pinned(scene.add.image(x + 8, y + 8, b.art));
-      else text(scene, x + 5, y + 3, b.key, INK.gold);
-      // over the HUD the mouse names the move instead of using it
-      chip.idle.setInteractive().on('pointerover', () => { this.hover = i; }).on('pointerout', () => { if (this.hover === i) this.hover = -1; })
-        .on('pointerdown', (_p, _x, _y, e) => e.stopPropagation());
+      const x = 3 + i * (CHIP_W + CHIP_GAP), b = buttons()[i], type = typeOf(id), mv = MOVES[id];
+      const card = (hot) => pinned(scene.add.image(x, y, chipTexture(scene, type, hot)).setOrigin(0), 0);
+      const chip = { idle: card(false), hot: card(true).setVisible(false), name: text(scene, x + 20, y + 2, mv.name, nameTint(type)), tint: nameTint(type), pips: [] };
+      if (b.art) pinned(scene.add.image(x + 11, y + 12, b.art), 3);
+      else text(scene, x + 12, y + 7, b.key, INK.gold).setOrigin(0.5, 0).setDepth(DEPTH + 3);
+      // a pip per notch of stamina (half a pip for half a notch), each on a dark socket
+      const notches = mv.cost / NOTCH;
+      for (let n = 0; n < Math.ceil(notches - 0.01); n++) {
+        const px = x + 21 + n * 9, part = Math.min(1, notches - n);
+        shade(scene, px - 1, y + 16, 9, 4, 0x06101c, 1).setDepth(DEPTH + 1);
+        chip.pips.push(shade(scene, px, y + 17, Math.max(1, Math.round(7 * part)), 2, 0xf2c94c, 1).setDepth(DEPTH + 2));
+      }
+      // what kind of move it is, in one picture: a status move, or how it is delivered (claws for melee, an arrow for a
+      // shot, a beam, a target for a spot, a burst all round, a dash, a hold...), as the move menu draws them
+      const info = describe(id), pic = info.role === 'Status' ? 'roleStatus' : `kind${info.delivery[0].toUpperCase()}${info.delivery.slice(1)}`;
+      chip.kind = pinned(scene.add.image(x + CHIP_W - 9, y + 17, pic), 3);
+      // a click on the HUD does not use a move
+      chip.idle.setInteractive().on('pointerdown', (_p, _x, _y, e) => e.stopPropagation());
       return chip;
     });
-    const nx = 3 + moves.length * (CHIP_W + 1) + 4;
-    this.name = text(scene, nx, y + 3, '');
-    this.cost = text(scene, nx, y + 3, '', INK.sky);
 
-    // the opening reminder of what is on which button
-    const h = moves.length * 13 + 9, top = y - h - 2;
-    this.intro = [panel(scene, 3, top, 126, h, 'dim')];
-    moves.forEach((id, i) => {
-      this.intro.push(text(scene, 9, top + 5 + i * 13, buttons()[i].say, INK.gold), text(scene, 66, top + 5 + i * 13, MOVES[id].name));
-    });
-    scene.time.delayedCall(6000, () => !this.gone && scene.tweens.add({ targets: this.intro, alpha: 0, duration: 500 }));
   }
 
   destroy() {
@@ -89,8 +127,8 @@ export class BattleHud {
     return true;
   }
 
-  // charging: the slot being wound up or held right now (-1 for none); recent: the slot last used.
-  refresh(charging, recent) {
+  // charging: the slot being wound up, held or aimed right now (-1 for none).
+  refresh(charging) {
     const m = this.mon, frac = m.hp / m.maxHp;
     this.hp.setDisplaySize(Math.max(frac > 0 ? 1 : 0.001, Math.round(BAR_W * frac)), 4).setTint(frac > 0.5 ? 0x58d858 : frac > 0.2 ? 0xf2c94c : 0xef5a4a);
     this.st.forEach((c, i) => {
@@ -101,15 +139,16 @@ export class BattleHud {
     const buffs = m.buffText();
     this.set(this.buffs, 'buffs', buffs === '-' ? '' : buffs.replace(/↑/g, '+').replace(/↓/g, '-'));
     if (!this.chips.length) return;
+    // faded, with the cost in red: not enough stamina for it
     this.chips.forEach((c, i) => {
+      const can = m.stamina >= MOVES[this.moves[i]].cost;
       c.hot.setVisible(i === charging);
-      c.type.setAlpha(m.stamina >= MOVES[this.moves[i]].cost ? 1 : 0.35); // faded: not enough stamina
+      if (c.can === can) return;
+      c.can = can;
+      c.name.setTint(can ? c.tint : INK.off); // (in its type's colour)
+      c.kind.setAlpha(can ? 1 : 0.4);
+      for (const pip of c.pips) pip.setTint(can ? 0xf2c94c : 0xef5a4a);
     });
-    const shown = this.hover >= 0 ? this.hover : charging >= 0 ? charging : recent;
-    const mv = MOVES[this.moves[shown]], can = m.stamina >= mv.cost;
-    if (this.set(this.name, 'name', mv.name)) this.cost.setText(mv.cost < NOTCH ? '1/2' : String(mv.cost / NOTCH)).setX(this.name.x + this.name.width + 6);
-    this.name.setTint(can ? INK.white : INK.off);
-    this.cost.setTint(can ? INK.sky : INK.rose);
   }
 }
 

@@ -782,9 +782,12 @@ export class Battle extends Play {
   // Shift, or the pad's Run button; under the auto-move controls, the right mouse button.
   sprinting() {
     if (this.cfg.auto) return !!this.autoWalk?.run;
-    if (this.pilot) return this.input.activePointer.rightButtonDown() || super.sprinting();
+    if (this.pilot) return this.runHeld();
     return super.sprinting() || touch.run;
   }
+
+  // The run button under the auto-move controls: right click (or Shift). Which way it runs is the pilot's call.
+  runHeld() { return this.input.activePointer.rightButtonDown() || super.sprinting(); }
 
   // Moves 1 and 2 are the left and right mouse buttons, 3 and 4 are Q and E; all four go where the pointer is.
   // Under the auto-move controls the four are Q W E R, left click parries (or calls off a move) and right click runs.
@@ -917,6 +920,6 @@ export class Battle extends Play {
     }
     if (this.score) this.showScore();
     this.drawAim();
-    this.hud.refresh(this.aiming >= 0 ? this.aiming : this.player.state === 'windup' || this.player.state === 'bird' ? this.slot : -1, this.slot);
+    this.hud.refresh(this.aiming >= 0 ? this.aiming : this.player.state === 'windup' || this.player.state === 'bird' ? this.slot : -1);
   }
 }
