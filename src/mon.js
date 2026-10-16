@@ -17,11 +17,11 @@ const LOOP = new Set(['Sleep', 'EventSleep', 'Laying', 'Float', 'Head', 'LostBal
 const HOLD = new Set(['Sit', 'LookUp', 'Faint']);
 const SLEEPY = new Set(['Sleep', 'EventSleep', 'Laying']);
 
-export const RUN_MULT = 1.7;
+export const RUN_MULT = 3.2; // a dash's speed, as a multiple of walking
 // Energy is a bar of five notches (kept as 0..100, a notch being 20, so a held move can still drain it smoothly).
-// A move costs one notch or two (a light poke half), a jump two, a burst of running half; a parry that lands gives one back.
+// A move costs one notch or two (a light poke half), a jump two, a dash one; a parry that lands gives one back.
 export const NOTCH = 20, NOTCHES = 5;
-const RUN_TIME = 2, RUN_COST = NOTCH / 2; // a burst of running: how long it lasts and what it costs
+const RUN_TIME = 0.2, RUN_COST = NOTCH; // a dash: how long it lasts (a short hop of ground) and what it costs
 export const BASE_HP = 150; // every mon's health
 const HEAVY_STUN = 0.75; // seconds a heavy move's hit leaves its target unable to act
 const STAMINA_REGEN = 48;
@@ -47,7 +47,9 @@ export class Mon {
     this.buryImmune = 0; // seconds after digging itself out during which it cannot be buried again
     this.healsUsed = 0; // healing moves used this match (see HEAL_LIMIT)
     this.snare = 0; // seconds it is still held fast in a web: it cannot walk or jump, but can still fight
-    this.runT = 0; // seconds of running left from the notch last spent on it
+    this.runT = 0; // seconds of dash left
+    this.runPrev = false; // the dash button was down last step (a dash takes a fresh press)
+    this.dashV = [0, 0]; // which way the dash in progress is going
     this.stamina = this.maxStamina;
     this.regenDelay = 0;
     this.exhausted = false;
@@ -246,14 +248,28 @@ export class Mon {
     if (this.stamina <= 0) this.exhausted = true;
   }
 
-  // Walk intent for this frame; (0,0) means stand still. Running costs stamina.
+  // Walk intent for this frame; (0,0) means stand still. A fresh press of run is a dash, which costs stamina.
   walk(vx, vy, speed, dt, run = false) {
+    const press = run && !this.runPrev;
+    this.runPrev = run;
     if (this.state === 'jump') {
       const l = Math.hypot(vx, vy) || 1;
       this.air.ix = vx / l; this.air.iy = vy / l;
       return;
     }
     if (this.ailment.reverse) { vx = -vx; vy = -vy; }
+    // a dash: one press spends a notch for a short burst the way the stick points (or the way it faces), that holds its heading
+    const able = !this.beaming && !(this.webbed > 0);
+    const canGo = this.grounded && !this.stuck && !this.ailment.root && !this.ingrain && !(this.snare > 0);
+    if (this.runT > 0 && (this.state !== 'idle' && this.state !== 'walk' || !canGo)) this.runT = 0;
+    if (press && able && canGo && this.runT <= 0 && !this.exhausted && this.stamina >= RUN_COST && (this.state === 'idle' || this.state === 'walk')) {
+      this.spend(RUN_COST);
+      this.runT = RUN_TIME;
+      const [fx, fy] = vx || vy ? [vx, vy] : dirVec(this.dir);
+      const fl = Math.hypot(fx, fy) || 1;
+      this.dashV = [fx / fl, fy / fl];
+    }
+    if (this.runT > 0 && able) [vx, vy] = this.dashV;
     if ((!vx && !vy) || this.stuck || this.ailment.root || this.ingrain || this.snare > 0) {
       if (this.state === 'walk') this.toIdle();
       return;
@@ -264,9 +280,6 @@ export class Mon {
     }
     if (!this.grounded) return;
     speed *= this.mul('spd') * (this.beaming ? 0.3 : 1);
-    // running: half a notch buys a burst that lasts whether or not the button stays down; held, the next notch goes as it runs out
-    const able = !this.beaming && !(this.webbed > 0);
-    if (run && able && this.runT <= 0 && !this.exhausted && this.stamina >= RUN_COST) { this.spend(RUN_COST); this.runT = RUN_TIME; }
     this.running = able && this.runT > 0;
     if (this.running) speed *= RUN_MULT;
     if (!this.beaming) this.dir = dirFromVec(vx, vy); // a beam decides which way its user faces
@@ -433,7 +446,7 @@ export class Mon {
   }
 
   revive(x, y) {
-    Object.assign(this, { sleepImmune: 0, safeguard: 0, critUp: null, noCrit: 0, x, y, hp: this.maxHp, stamina: this.maxStamina, exhausted: false, runT: 0, snare: 0, armored: false, leap: 0, levi: 0, leviImmune: 0, buryImmune: 0, hop: 0, kx: 0, ky: 0, invuln: 1, buried: 0, shield: 0, leech: null, ingrain: null, regen: null, sub: false, lx: x, ly: y, detect: 0, bide: null, bond: 0, bondTo: null, endure: 0, webbed: 0, torment: null, tether: null, dance: null, fuse: null, rep: null, grip: 0, stun: 0, roost: 0, chill: null, locked: null, acro: null, locks: {}, ramp: null, status: null, freezeImmune: 0 });
+    Object.assign(this, { sleepImmune: 0, safeguard: 0, critUp: null, noCrit: 0, x, y, hp: this.maxHp, stamina: this.maxStamina, exhausted: false, runT: 0, runPrev: false, snare: 0, armored: false, leap: 0, levi: 0, leviImmune: 0, buryImmune: 0, hop: 0, kx: 0, ky: 0, invuln: 1, buried: 0, shield: 0, leech: null, ingrain: null, regen: null, sub: false, lx: x, ly: y, detect: 0, bide: null, bond: 0, bondTo: null, endure: 0, webbed: 0, torment: null, tether: null, dance: null, fuse: null, rep: null, grip: 0, stun: 0, roost: 0, chill: null, locked: null, acro: null, locks: {}, ramp: null, status: null, freezeImmune: 0 });
     for (const b of Object.values(this.buffs)) b.t = 0;
     this.cancel();
     this.sprite.setAlpha(1);

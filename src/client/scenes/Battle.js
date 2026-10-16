@@ -779,14 +779,14 @@ export class Battle extends Play {
     return x || y ? [x, y] : touch.stick;
   }
 
-  // Shift, or the pad's Run button; under the auto-move controls, the right mouse button.
+  // Shift, or the pad's Dash button; under the auto-move controls, the right mouse button.
   sprinting() {
     if (this.cfg.auto) return !!this.autoWalk?.run;
     if (this.pilot) return this.runHeld();
     return super.sprinting() || touch.run;
   }
 
-  // The run button under the auto-move controls: right click (or Shift). Which way it runs is the pilot's call.
+  // The dash button under the auto-move controls: right click (or Shift). Which way it runs is the pilot's call.
   runHeld() { return this.input.activePointer.rightButtonDown() || super.sprinting(); }
 
   // Moves 1 and 2 are the left and right mouse buttons, 3 and 4 are Q and E; all four go where the pointer is.

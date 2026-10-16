@@ -8,7 +8,7 @@ import { paintFrame } from './ui.js';
 // and buttons in the right one. Which buttons depends on what the screen on top can do with them:
 //   in a fight   the stick walks (it comes to wherever the thumb lands); on the right are the four moves, as wide
 //                plates in the colour of their type, and three round buttons that look nothing like them: Jump, Parry
-//                and Run. Running is its own button so that it is never set off by a hard push of the stick.
+//                and Dash. Dashing is its own button so that it is never set off by a hard push of the stick.
 //                A move is aimed before it is thrown: hold its button and a guide shows where it will go (at the
 //                nearest foe, or wherever the button is dragged toward), let go and it goes; Parry calls the aim off.
 //                Moves that are held (beams, flights, widening blasts) start on the press instead and are steered
@@ -23,7 +23,7 @@ const phone = navigator.maxTouchPoints > 0 && matchMedia('(pointer: coarse)').ma
 export const touch = {
   on: asked || phone,
   stick: [0, 0], // which way the stick is pushed: a unit vector, or 0, 0
-  run: false, // the Run button is down
+  run: false, // the Dash button is down
   held: [false, false, false, false], // the move buttons that are down
   aiming: -1, // the move whose button is being held to aim it (it goes off on release), or -1
   aim: null, // { dx, dy, reach 0..1 } once a move button has been dragged away from where it was pressed
@@ -43,7 +43,7 @@ export const tapActs = (ptr, already) => !ptr.wasTouch || already;
 
 const M = 4; // gap to the screen edge
 const MOVE_W = 64, MOVE_H = 27, GAP = 3; // the four move plates, two across
-const ROUND = 32; // Jump, Parry and Run
+const ROUND = 32; // Jump, Parry and Dash
 const LIFT = 10; // how far the buttons on the right sit above the bottom edge
 const STICK = 64, RIM = 24, DEAD = 6; // the stick's art, how far it can be pushed, and how far before it counts
 const AIM_DEAD = 8, AIM_SPAN = 44; // dragging a move button: where aiming starts, and the drag that is full reach
@@ -52,7 +52,7 @@ const NOTCH = 20; // of the energy bar (see Mon)
 const ROUNDS = {
   jump: { colors: ['#d9ffd0', 'rgba(52,150,78,0.62)'], label: 'Jump', art: ['...#...', '..###..', '.#####.', '#######', '..###..', '..###..'] },
   parry: { colors: ['#e6eefa', 'rgba(64,104,190,0.62)'], label: 'Parry', art: ['#######', '#######', '#######', '.#####.', '..###..', '...#...'] },
-  run: { colors: ['#fff3a0', 'rgba(196,146,36,0.62)'], label: 'Run', art: ['#..#.....', '.#..#....', '..#..#...', '..#..#...', '.#..#....', '#..#.....'] },
+  run: { colors: ['#fff3a0', 'rgba(196,146,36,0.62)'], label: 'Dash', art: ['#..#.....', '.#..#....', '..#..#...', '..#..#...', '.#..#....', '#..#.....'] },
   cancel: { colors: ['#ffd9d2', 'rgba(204,62,50,0.78)'], label: 'Cancel', art: ['#.....#', '.#...#.', '..#.#..', '...#...', '..#.#..', '.#...#.', '#.....#'] },
 };
 const REPEAT = [380, 130]; // a held direction steps a menu again after this long, then this often
@@ -213,7 +213,7 @@ function build() {
   }
   buildStick();
 
-  // fight: the four moves in the corner under the thumb, two by two; above them, left to right, Parry, Jump and Run
+  // fight: the four moves in the corner under the thumb, two by two; above them, left to right, Parry and Dash, with Jump to their lower left
   // where the thumb slides up to
   const cell = (col, row) => ({ right: edge(M + (1 - col) * (MOVE_W + GAP), 'right'), bottom: edge(LIFT + M + (1 - row) * (MOVE_H + GAP), 'bottom') });
   let from = null;
@@ -241,14 +241,14 @@ function build() {
       if (e.type === 'pointerup') fight('move', i); // let go: it is thrown (a finger that was taken away throws nothing)
     },
   }));
-  // above the moves, left to right: Parry, Jump, Run
+  // above the moves, left to right: Parry, Dash; Jump sits to the lower left of the moves
   const above = LIFT + M + 2 * (MOVE_H + GAP);
   ui.run = makeKey(root, ROUND, ROUND, { right: edge(M, 'right'), bottom: edge(above, 'bottom') }, {
     down: () => { touch.run = true; },
     up: () => { touch.run = false; },
   });
-  ui.jump = makeKey(root, ROUND, ROUND, { right: edge(M + ROUND + GAP, 'right'), bottom: edge(above, 'bottom') }, { down: () => fight('jump') });
-  ui.parry = makeKey(root, ROUND, ROUND, { right: edge(M + 2 * (ROUND + GAP), 'right'), bottom: edge(above, 'bottom') }, {
+  ui.jump = makeKey(root, ROUND, ROUND, { right: edge(M + 2 * (MOVE_W + GAP), 'right'), bottom: edge(LIFT + M, 'bottom') }, { down: () => fight('jump') });
+  ui.parry = makeKey(root, ROUND, ROUND, { right: edge(M + ROUND + GAP, 'right'), bottom: edge(above, 'bottom') }, {
     // with a move being aimed, this calls it off instead (and with one charging, the scene does)
     down: () => { if (touch.aiming >= 0) touch.aiming = -1; else fight('parry'); },
   });

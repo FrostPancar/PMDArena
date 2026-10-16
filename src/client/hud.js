@@ -228,7 +228,7 @@ export function callout(scene, title, sub, hold = 900, tint = INK.gold, score = 
 
 export const CONTROLS = [
   ['W A S D', 'Move'],
-  ['Shift', 'Run (a burst; hold to keep going)'],
+  ['Shift', 'Dash (a short burst, one notch)'],
   ['Space', 'Jump over attacks'],
   ['Mouse', 'Aim'],
   ['Left / Right click', 'Moves 1 and 2'],
@@ -246,14 +246,14 @@ const AUTO_CONTROLS = [
   ['Hold a move', 'Aim it; let go to use it'],
   ['Space', 'Jump over attacks'],
   ['Left click', 'Parry, or call off a move'],
-  ['Right click', 'Run (hold to keep going)'],
+  ['Right click', 'Dash (a short burst, one notch)'],
   ['C', 'Call off a charging move'],
   ['Esc', 'Menu'],
 ];
 // the same card for the touch pad
 const PAD_CONTROLS = [
   ['Stick', 'Move'],
-  ['Run', 'A burst of speed'],
+  ['Dash', 'A short burst of speed'],
   ['Hold a move', 'Aim it at the nearest foe'],
   ['Drag it', 'Aim it yourself'],
   ['Let go', 'Use the move'],
