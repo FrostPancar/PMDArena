@@ -3004,7 +3004,8 @@ export class Play extends Phaser.Scene {
 
   updateShots(dt) {
     // shots of opposite sides that touch clash: the lighter is destroyed and the heavier flies on weaker; equals cancel
-    const weigh = (q) => (q.mv ? (q.mv.light ? 0 : q.mv.weight ?? 1) : 0), sh = this.shots;
+    // (a shot sent back by a perfect parry is heavier than any, and beats out whatever it meets without losing strength)
+    const weigh = (q) => (q.reflected ? 99 : q.mv ? (q.mv.light ? 0 : q.mv.weight ?? 1) : 0), sh = this.shots;
     for (let i = 0; i < sh.length; i++) {
       for (let j = i + 1; j < sh.length; j++) {
         const a = sh[i], b = sh[j];
@@ -3015,7 +3016,7 @@ export class Play extends Phaser.Scene {
         if (wa <= wb) { a.dead = true; this.sayShot(a, 'dead'); }
         if (wb <= wa) { b.dead = true; this.sayShot(b, 'dead'); }
         const win = wa > wb ? a : wb > wa ? b : null, lose = win === a ? b : a;
-        if (win) { win.dmg = Math.max(win.dmg * 0.3, win.dmg - lose.dmg * 0.5); this.sayShot(win, 'turn'); }
+        if (win && !win.reflected) { win.dmg = Math.max(win.dmg * 0.3, win.dmg - lose.dmg * 0.5); this.sayShot(win, 'turn'); }
       }
     }
     const lanes = this.fields.filter((f) => f.lane), screens = this.walls.filter((w) => w.kind === 'screen');
@@ -3125,7 +3126,7 @@ export class Play extends Phaser.Scene {
       else if (s.spin !== false) s.img.angle += 720 * dt;
       // high in its arc a lobbed shot passes over whatever is below
       const high = s.arc && s.arc * 4 * u * (1 - u) > 14 && s.life > 0;
-      // parried in the first instant of the window, a strike shot is sent straight back, twice as fast, as the blocker's own
+      // parried in the first instant of the window, a strike shot is sent straight back, twice as fast, as the blocker's own, and heavy: it beats out any shot it meets
       const ace = high || (s.mv && s.mv.tag !== 'strike') ? null
         : this.targets.find((t) => !t.remote && t.team !== s.owner.team && t.alive && t.parry > PARRY.window - PARRY.perfect && Math.hypot(t.x - s.x, (t.y - s.y) * 1.3) <= s.r + 7);
       if (ace) {
@@ -3133,6 +3134,7 @@ export class Play extends Phaser.Scene {
         ace.invuln = 0.4;
         this.parried(ace);
         this.popup(ace, 'REFLECT');
+        s.reflected = true;
         this.turnShot(s, ace, -s.vx * 2, -s.vy * 2);
         return true;
       }

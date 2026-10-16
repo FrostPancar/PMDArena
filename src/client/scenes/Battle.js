@@ -570,7 +570,7 @@ export class Battle extends Play {
     if (!by) return;
     if (d.f === 'caught') { if (by.windup) q.caught = { m: by, w: by.windup }; return; }
     // 'turn' and 'orbit': it is where its decider says, going where it says, for whom it says
-    Object.assign(q, { owner: by, x: d.x, y: d.y, vx: d.vx, vy: d.vy, speed: Math.hypot(d.vx, d.vy), dmg: d.dm, limbo: 0, dead: false, caught: null, back: false, life: q.life0 ?? 0.75 });
+    Object.assign(q, { owner: by, x: d.x, y: d.y, vx: d.vx, vy: d.vy, speed: Math.hypot(d.vx, d.vy), dmg: d.dm, reflected: !!d.hv || undefined, limbo: 0, dead: false, caught: null, back: false, life: q.life0 ?? 0.75 });
     q.orbit = d.f === 'orbit' ? { m: by, a: 0, t: 99 } : null;
     q.done?.clear();
     q.img.setVisible(true);
@@ -586,7 +586,7 @@ export class Battle extends Play {
   sayShot(q, f, by) {
     if (!q.id) return;
     const who = by ?? q.owner, from = who.remote ? this.player : who;
-    this.tell({ k: 'sf', s: from.slot, o: who.slot, id: q.id, f, x: r1(q.x), y: r1(q.y), vx: r1(q.vx), vy: r1(q.vy), dm: r1(q.dmg), mv: q.mv?.id, r: q.r });
+    this.tell({ k: 'sf', s: from.slot, o: who.slot, id: q.id, f, x: r1(q.x), y: r1(q.y), vx: r1(q.vx), vy: r1(q.vy), dm: r1(q.dmg), mv: q.mv?.id, r: q.r, hv: q.reflected ? 1 : 0 });
   }
 
   sayClash(c, auth, lost) {
