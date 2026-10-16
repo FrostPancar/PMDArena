@@ -896,10 +896,12 @@ for (const mv of Object.values(MOVES)) if (mv.kind === 'projectile' && mv.range 
 // Melee moves come out at once and carry the user a short dart toward the aim (step), so they are easier to land.
 // The heaviest keep their wind-up: that wait is the price of the power.
 // (25 power and up: Focus Punch, Mega Punch, Mega Kick, Megahorn, Seismic Toss, Dynamic Punch, Cross Chop, Wood Hammer)
-const SLOW_MELEE = 25, MELEE_STEP = 16;
+// Now that the swing's danger ring shows (and holds) where it will land from the start of the charge, the ordinary ones
+// take a short wind-up so there is time to step out of it; the quickest (a charge of 0.05 or less, and jabs) stay instant.
+const SLOW_MELEE = 25, MELEE_STEP = 16, MELEE_CHARGE = 0.5, QUICK_MELEE = 0.05;
 for (const mv of Object.values(MOVES)) {
   if (mv.kind !== 'melee') continue;
-  if (mv.dmg < SLOW_MELEE) mv.charge = 0;
+  if (mv.dmg < SLOW_MELEE) mv.charge = mv.jab || (mv.charge ?? 0) <= QUICK_MELEE ? 0 : MELEE_CHARGE;
   mv.step ??= MELEE_STEP;
 }
 // What a move costs is counted in notches of the energy bar (20 each, see Mon): one, two for the strong ones (those

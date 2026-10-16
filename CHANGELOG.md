@@ -3,6 +3,17 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.33
+
+**Lane previews**
+- A mon charging a **shot, beam or dash** now shows the strip it will cover, from the mon along its aim (a fan shows each
+  of its lanes). The lane follows the aim until the move goes off. Coloured like the rings: red for a foe's, white for yours.
+
+**Melee wind-up**
+- Ordinary melee moves (under 25 power) now take a **0.5s charge** instead of coming out at once, so the locked danger ring
+  can be stepped out of. The quickest stay instant: Quick Attack, Mach Punch, Bullet Punch, Cut, Fury Cutter, Fury Swipes,
+  Slash, Bug Bite and the jabs. Heavy melee moves keep their own charge. Tune it with `MELEE_CHARGE` in moves.js.
+
 ## alpha 0.5.32
 
 **Danger marks lock in at the start of the charge**
