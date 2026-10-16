@@ -3,6 +3,16 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.30
+
+**Run is now Dash**
+- Shift, right click (auto-move controls) and the pad's button now **dash**: one press spends **one notch** of stamina for a
+  short burst of ground the way you are pushing (or the way you face if you are standing still), with the same running
+  animation. Holding the button does not keep going; every dash is a fresh press.
+
+**Touch pad**
+- **Jump** moves to the lower left of the moves. The row above the moves is now **Parry** (left) and **Dash** (right).
+
 ## alpha 0.5.29
 
 **Move buttons (bottom left)**
