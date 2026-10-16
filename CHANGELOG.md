@@ -3,6 +3,14 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.32
+
+**Danger marks lock in at the start of the charge**
+- The ring showing where a move will land appears the moment its user starts charging, and now stays **where it was aimed
+  when the charge began** for melee swings and self-targeting moves too (before, only spot moves, blinks and lobs were fixed).
+  A move that picks its own target (nearest foe, a leading shot) fixes that spot at the start, so walking away from the
+  ring is how to dodge it.
+
 ## alpha 0.5.31
 
 **Reflected shots are heavy**

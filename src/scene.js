@@ -569,7 +569,7 @@ export class Play extends Phaser.Scene {
     const step = mv.cycle?.[(m.cycles[mv.name] ?? 0) % mv.cycle.length];
     // a combo move used again right after the last one comes out at once
     const chain = mv.combo && m.ramp?.mv === mv && m.ramp.t > 0;
-    m.windup = { mv, t: 0, track, free, cost, charge: chain || free ? 0.02 : (step?.charge ?? mv.charge) * (mv.rainQuick && this.rain[m.team] > 0 ? mv.rainQuick : 1), aim: mv.kind === 'mid' || mv.kind === 'blink' || mv.lob ? this.aimOf(m, track) : null };
+    m.windup = { mv, t: 0, track, free, cost, charge: chain || free ? 0.02 : (step?.charge ?? mv.charge) * (mv.rainQuick && this.rain[m.team] > 0 ? mv.rainQuick : 1), aim: mv.kind === 'mid' || mv.kind === 'blink' || mv.kind === 'melee' || mv.lob ? this.aimOf(m, track) : mv.kind === 'auto' ? this.lockAuto(m, mv, track) : null };
     if (mv.chargeFrames.length) {
       const img = this.add.image(m.x, m.y - 8, mv.chargeFrames[0]).setDepth(60 + m.y).setScale(mv.chargeScale ?? 1).setOrigin(...(mv.chargeOrigin ?? [0.5, 0.5]));
       this.chargeFx.push({ img, m, w: m.windup, frames: mv.chargeFrames });
@@ -674,9 +674,16 @@ export class Play extends Phaser.Scene {
     }
   }
 
+  // The aim of a move that picks its own target, fixed as the charge begins: the spot it will come down on.
+  lockAuto(m, mv, track) {
+    const aim = this.aimOf(m, track), s = this.landSpot(m, mv, aim);
+    return s.foe ? { ...aim, spot: { x: s.x, y: s.y } } : aim;
+  }
+
   // Where a spot-landing move comes down for a given aim (the same answer the indicator shows).
   landSpot(m, mv, aim) {
     if (mv.kind === 'auto') {
+      if (aim.spot) return aim.spot; // fixed when the charge began
       const near = this.nearestFoe(m, m.x, m.y, mv.range);
       // a leading move lands where the target is heading, not where it stands
       const k = mv.lead ?? 0;
@@ -737,7 +744,7 @@ export class Play extends Phaser.Scene {
         ring(m.x + a.dx * d, m.y + a.dy * d, mv.burst, color, alpha);
       } else if (mv.kind === 'aoe' && w && !mv.dream) ring(m.x, m.y, mv.radius, color, alpha);
       else if (mv.kind === 'melee' && w) {
-        const s = this.landSpot(m, mv, this.aimOf(m, w.track));
+        const s = this.landSpot(m, mv, w.aim ?? this.aimOf(m, w.track));
         ring(s.hx, s.hy, mv.radius, color, 0.5);
       }
     }
