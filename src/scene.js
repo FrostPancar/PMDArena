@@ -706,11 +706,12 @@ export class Play extends Phaser.Scene {
       g.fillStyle(color, alpha * 0.22).fillEllipse(x, y, r * 2, (r * 2) / 1.3);
       g.lineStyle(1, color, alpha).strokeEllipse(x, y, r * 2, (r * 2) / 1.3);
     };
-    // the strip a shot, a beam or a dash will cover, from its user along the aim
-    const lane = (x, y, dx, dy, len, half, color, alpha) => {
-      const px = -dy * half, py = dx * half * 0.77, ex = x + dx * len, ey = y + dy * len;
-      const pts = [{ x: x + px, y: y + py }, { x: ex + px, y: ey + py }, { x: ex - px, y: ey - py }, { x: x - px, y: y - py }];
-      g.fillStyle(color, alpha * 0.22).fillPoints(pts, true).lineStyle(1, color, alpha).strokePoints(pts, true);
+    // the dotted line a foe's shot, beam or dash will go down (the same dots as the aim guide), faint and red
+    const dots = (x, y, dx, dy, len) => {
+      for (let d = 12; d < len - 6; d += 8) {
+        const px = Math.round(x + dx * d), py = Math.round(y + dy * d);
+        g.fillStyle(0x06101c, 0.2).fillRect(px - 2, py - 2, 4, 4).fillStyle(0xff5a4a, 0.5).fillRect(px - 1, py - 1, 2, 2);
+      }
     };
     // a move that is on its way down: the ring pulses until it lands
     for (const q of this.pendings) {
@@ -748,14 +749,13 @@ export class Play extends Phaser.Scene {
       } else if (mv.lob) {
         const a = w?.aim ?? this.aimOf(m, 'pointer'), d = Phaser.Math.Clamp(a.dist, 30, mv.range);
         ring(m.x + a.dx * d, m.y + a.dy * d, mv.burst, color, alpha);
-      } else if (w && (mv.kind === 'projectile' || mv.kind === 'homing' || mv.kind === 'slight' || mv.kind === 'beam' || mv.kind === 'dash')) {
-        // a charging shot, beam or dash: the lane it will go down, following the aim until it is let go
-        const a = w.aim ?? this.aimOf(m, w.track), beam = mv.kind === 'beam', dash = mv.kind === 'dash';
-        const len = beam ? mv.length : dash ? mv.dash : mv.range, half = Math.max(5, beam ? 6 : dash ? mv.radius ?? 10 : mv.radius);
-        const n = mv.fan ?? 1;
+      } else if (w && !mine && (mv.kind === 'projectile' || mv.kind === 'homing' || mv.kind === 'slight' || mv.kind === 'beam' || mv.kind === 'dash')) {
+        // a foe charging a shot, beam or dash: the line it will go down, following its aim until it lets go
+        // (yours is the aim guide, which is already on screen while you hold the button)
+        const a = w.aim ?? this.aimOf(m, w.track), len = mv.kind === 'beam' ? mv.length : mv.kind === 'dash' ? mv.dash : mv.range, n = mv.fan ?? 1;
         for (let i = 0; i < n; i++) {
           const t = Math.atan2(a.dy, a.dx) + (i - (n - 1) / 2) * 0.17;
-          lane(m.x, m.y, Math.cos(t), Math.sin(t), len, half, color, 0.5);
+          dots(m.x, m.y, Math.cos(t), Math.sin(t), len);
         }
       } else if (mv.kind === 'aoe' && w && !mv.dream) ring(m.x, m.y, mv.radius, color, alpha);
       else if (mv.kind === 'melee' && w) {
