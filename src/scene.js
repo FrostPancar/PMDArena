@@ -2974,8 +2974,8 @@ export class Play extends Phaser.Scene {
         if (!h.img.board) h.img.setFlipX(aim.dx < 0);
       }
       if (h.img.board) {
-        h.img.setTexture('surfboard', m.dir).setPosition(Math.round(m.x), Math.round(m.y) + 1).setDepth(9 + m.y);
-        h.img.spray.setTexture(mv.frames[Math.floor(h.t * (mv.fps ?? 12)) % mv.frames.length]).setPosition(Math.round(m.x), Math.round(m.y) - 2).setDepth(8 + m.y);
+        h.img.setTexture('surfboard', m.dir).setPosition(Math.round(m.x), Math.round(m.y) + 1).setDepth(m.y + 3);
+        h.img.spray.setTexture(mv.frames[Math.floor(h.t * (mv.fps ?? 12)) % mv.frames.length]).setPosition(Math.round(m.x), Math.round(m.y) - 2).setDepth(m.y + 2);
       }
       else h.img.setTexture(mv.frames[Math.floor(h.t * (mv.fps ?? 12)) % mv.frames.length]).setPosition(Math.round(m.x), Math.round(m.y) - (mv.dig || mv.ride ? 2 : 10) - (m.leap > 0 ? Math.round(m.hop) : 0)).setDepth(mv.dig ? 12 + m.y : mv.ride ? 9 + m.y : 60 + m.y);
       if (mv.fly) { const u = Math.min(1, h.t / 0.3); h.img.setTexture(mv.dirFrames[4][0]).setPosition(Math.round(m.x), Math.round(m.y - 10 - u * u * 240)).setDepth(7000).setVisible(u < 1); }
