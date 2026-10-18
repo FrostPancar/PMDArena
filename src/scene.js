@@ -741,6 +741,11 @@ export class Play extends Phaser.Scene {
         if (w) ring(m.x, m.y, w.radius ?? mv.grow.min, color, alpha);
       } else if (mv.catch?.around) {
         // (a field around the user: no ring, its catch is automatic)
+      } else if (mv.reticle === 'line' && mv.grapple) {
+        // (Vine Whip) the line the whip travels, as far as it reaches
+        const a = w?.aim ?? this.aimOf(m, w ? w.track : 'pointer'), ex = m.x + a.dx * mv.grapple, ey = m.y + a.dy * mv.grapple;
+        g.lineStyle(3, 0x06101c, alpha * 0.4).lineBetween(m.x, m.y, ex, ey).lineStyle(1, color, alpha).lineBetween(m.x, m.y, ex, ey);
+        g.fillStyle(color, alpha).fillRect(Math.round(ex) - 1, Math.round(ey) - 1, 3, 3);
       } else if (mv.kind === 'mid' || mv.kind === 'auto') {
         const s = this.landSpot(m, mv, w?.aim ?? this.aimOf(m, w ? w.track : 'pointer'));
         ring(s.hx ?? s.x, s.hy ?? s.y, mv.radius, color, alpha);
@@ -915,6 +920,15 @@ export class Play extends Phaser.Scene {
 
   // Where a teleport move puts its user: toward the aim, pulled back to the last walkable spot.
   blinkSpot(m, mv, aim) {
+    if (mv.seekFoe) {
+      // (Aerial Ace) comes down on the nearest foe wherever it is, a few px short of it; with none about, a short hop along the aim
+      const foe = this.nearestFoe(m, m.x, m.y, Infinity);
+      if (foe) {
+        const dx = foe.x - m.x, dy = foe.y - m.y, l = Math.hypot(dx, dy) || 1, k = Math.max(0, l - 10) / l;
+        return { x: m.x + dx * k, y: m.y + dy * k };
+      }
+      mv = { ...mv, range: 40 };
+    }
     let d = Math.min(aim.dist, mv.range);
     while (d > 0 && !this.walkable(m.x + aim.dx * d, m.y + aim.dy * d)) d -= 4;
     d = Math.max(0, d);
@@ -1093,7 +1107,9 @@ export class Play extends Phaser.Scene {
       if (mv.leap) {
         // jumps there in plain sight, out of reach on the way, and comes down with the hit
         m.state = 'dash';
-        this.leaps.push({ m, mv, x0: m.x, y0: m.y, to: this.blinkSpot(m, mv, aim), t: 0, dmg, burst });
+        const to = this.blinkSpot(m, mv, aim), far = Math.hypot(to.x - m.x, to.y - m.y);
+        if (mv.seekFoe && far > 1) m.dir = dirFromVec(to.x - m.x, to.y - m.y);
+        this.leaps.push({ m, mv, x0: m.x, y0: m.y, to, t: 0, dmg, burst, dur: mv.leapSpeed ? Math.max(mv.leap, far / mv.leapSpeed) : mv.leap });
         return;
       }
       burst();
@@ -1105,7 +1121,13 @@ export class Play extends Phaser.Scene {
 
     if (mv.kind === 'hold') {
       // the user becomes the art and flies for as long as the button is held
-      const img = this.add.image(m.x, m.y - 8, mv.frames[0]).setScale(mv.scale ?? 1);
+      const board = mv.board && this.textures.exists('surfboard'); // (Surf rides a surfboard drawn under the mon)
+      const img = board ? this.add.image(m.x, m.y, 'surfboard', m.dir) : this.add.image(m.x, m.y - 8, mv.frames[0]).setScale(mv.scale ?? 1);
+      img.board = board;
+      if (board) { // the water it kicks up, under the board
+        img.spray = this.add.image(m.x, m.y - 2, mv.frames[0]).setScale(mv.scale ?? 1);
+        img.once('destroy', () => img.spray.destroy());
+      }
       m.state = 'bird';
       m.hidden = !mv.ride; // a ridden move (Surf) keeps the user in view on top of the art
       if (mv.dig) {
@@ -1779,7 +1801,7 @@ export class Play extends Phaser.Scene {
     this.leaps = this.leaps.filter((l) => {
       const { m, mv } = l;
       if (m.state !== 'dash') { m.hop = 0; return false; } // knocked out of the air
-      const u = Math.min(1, (l.t += dt) / mv.leap);
+      const u = Math.min(1, (l.t += dt) / (l.dur ?? mv.leap));
       m.x = Phaser.Math.Linear(l.x0, l.to.x, u); m.y = Phaser.Math.Linear(l.y0, l.to.y, u);
       m.hop = 52 * 4 * u * (1 - u);
       if (u < 1) return true;
@@ -2951,9 +2973,13 @@ export class Play extends Phaser.Scene {
       } else if (aim.dist > 6) {
         m.dir = dirFromVec(aim.dx, aim.dy);
         m.slide(aim.dx * mv.speed * dt, aim.dy * mv.speed * dt);
-        h.img.setFlipX(aim.dx < 0);
+        if (!h.img.board) h.img.setFlipX(aim.dx < 0);
       }
-      h.img.setTexture(mv.frames[Math.floor(h.t * (mv.fps ?? 12)) % mv.frames.length]).setPosition(Math.round(m.x), Math.round(m.y) - (mv.dig || mv.ride ? 2 : 10) - (m.leap > 0 ? Math.round(m.hop) : 0)).setDepth(mv.dig ? 12 + m.y : mv.ride ? 9 + m.y : 60 + m.y);
+      if (h.img.board) {
+        h.img.setTexture('surfboard', m.dir).setPosition(Math.round(m.x), Math.round(m.y) + 1).setDepth(9 + m.y);
+        h.img.spray.setTexture(mv.frames[Math.floor(h.t * (mv.fps ?? 12)) % mv.frames.length]).setPosition(Math.round(m.x), Math.round(m.y) - 2).setDepth(8 + m.y);
+      }
+      else h.img.setTexture(mv.frames[Math.floor(h.t * (mv.fps ?? 12)) % mv.frames.length]).setPosition(Math.round(m.x), Math.round(m.y) - (mv.dig || mv.ride ? 2 : 10) - (m.leap > 0 ? Math.round(m.hop) : 0)).setDepth(mv.dig ? 12 + m.y : mv.ride ? 9 + m.y : 60 + m.y);
       if (mv.fly) { const u = Math.min(1, h.t / 0.3); h.img.setTexture(mv.dirFrames[4][0]).setPosition(Math.round(m.x), Math.round(m.y - 10 - u * u * 240)).setDepth(7000).setVisible(u < 1); }
       if (mv.rollGrow) h.img.setScale((mv.scale ?? 1) * Math.min(2.4, 1 + mv.rollGrow * h.t + 0.12 * h.n)); // the rock gathers size as it goes
       if (mv.dig) this.digTrail(h, dt);

@@ -346,6 +346,40 @@ function buildPixel(scene) {
   }
 }
 
+// A surfboard seen from above, its nose pointing the way its rider faces: one frame per direction, in the mons' sheet
+// order (S, SE, E, NE, N, NW, W, SW; see DIR_NAMES in mon.js), so `add.image(x, y, 'surfboard', mon.dir)` turns it
+// with a mon. Cream deck, an orange stringer, a blue band behind the nose, and the rail's thickness showing below.
+const SURF_INKS = { '#': '#0a1826', c: '#fff4d6', C: '#e8cf9a', o: '#ff8a3d', b: '#3fa9e0', s: '#b07a3a' };
+const SURFBOARD = [
+  // S
+  ['............######............', '...........#cccccc#...........', '..........#cccccccc#..........', '.........#ccccoocccc#.........', '.........#ccccoocccc#.........', '.........#ccccoocccc#.........', '.........#ccccoocccc#.........', '........#cccccooccccc#........', '........#cccccooccccc#........', '........#cccccooccccc#........', '........#cccccooccccc#........', '........#CccccooccccC#........', '........#sccccooccccs#........', '.........#ccccoocccc#.........', '.........#ccccoocccc#.........', '.........#CcccoocccC#.........', '.........#scccoocccs#.........', '..........#CccooccC#..........', '..........#sccooccs#..........', '...........#bbbbbb#...........', '...........#sbbbbs#...........', '............#sccs#............', '.............#CC#.............', '.............#ss#.............', '..............##..............'],
+  // SE
+  ['..............................', '..............................', '......#####...................', '.....#ccccc##.................', '....#cccccccc##...............', '...#ccooccccccc#..............', '...#cccooccccccc#.............', '...#cccccoccccccc#............', '...#Ccccccoccccccc#...........', '...#sCcccccoocccccc#..........', '....#sCcccccoocccccc#.........', '.....#sCccccccocccccc#........', '......#sCccccccocccccc#.......', '.......#sCccccccoocccc#.......', '........#sCCcccccoocccc#......', '.........#ssCCcccccoccc#......', '..........##ssCCccccocbb#.....', '............##ssCCCcbbbc#.....', '..............##sssbbbccc#....', '................###sssCCC#....', '...................###sss#....', '......................###.....', '..............................', '..............................', '..............................'],
+  // E
+  ['..............................', '..............................', '..............................', '..............................', '..............................', '..............................', '...........####...............', '....#######cccc#####..........', '..##cccccccccccccccc###.......', '.#ccccccccccccccccccccc###....', '#cccccccccccccccccccccccbb##..', '#ccoooooooooooooooooooocbbcc#.', '#ccoooooooooooooooooooocbbCC#.', '#CcccccccccccccccccccccCbbss#.', '#sCCccccccccccccccccCCCsss##..', '.#ssCCCCCCCccccCCCCCsss###....', '..##sssssssCCCCsssss###.......', '....#######ssss#####..........', '...........####...............', '..............................', '..............................', '..............................', '..............................', '..............................', '..............................'],
+  // NE
+  ['..............................', '..............................', '..............................', '......................###.....', '...................###ccc#....', '................###bbbccC#....', '..............##ccccbbbcs#....', '............##ccccccocbb#.....', '..........##cccccccocccs#.....', '.........#cccccccoocccC#......', '........#cccccccooccccs#......', '.......#cccccccocccccC#.......', '......#cccccccocccccCs#.......', '.....#ccccccoocccccCs#........', '....#ccccccoocccccCs#.........', '...#ccccccoccccccCs#..........', '...#cccccoccccccCs#...........', '...#cccooccccccCs#............', '...#CcoocccccCCs#.............', '...#sCcccccCCss#..............', '....#sCCCCCss##...............', '.....#sssss##.................', '......#####...................', '..............................', '..............................'],
+  // N
+  ['..............##..............', '.............#cc#.............', '.............#cc#.............', '............#bbbb#............', '...........#bbbbbb#...........', '...........#ccoocc#...........', '..........#cccooccc#..........', '..........#cccooccc#..........', '.........#ccccoocccc#.........', '.........#ccccoocccc#.........', '.........#ccccoocccc#.........', '.........#ccccoocccc#.........', '........#cccccooccccc#........', '........#cccccooccccc#........', '........#cccccooccccc#........', '........#cccccooccccc#........', '........#CccccooccccC#........', '........#sccccooccccs#........', '.........#ccccoocccc#.........', '.........#ccccoocccc#.........', '.........#CcccoocccC#.........', '.........#sCccccccCs#.........', '..........#sCCCCCCs#..........', '...........#ssssss#...........', '............######............'],
+  // NW
+  ['..............................', '..............................', '..............................', '.....###......................', '....#ccc###...................', '....#Cccbbb###................', '....#scbbbcccc##..............', '.....#bbcocccccc##............', '.....#scccoccccccc##..........', '......#Ccccooccccccc#.........', '......#sccccooccccccc#........', '.......#Ccccccoccccccc#.......', '.......#sCcccccoccccccc#......', '........#sCcccccoocccccc#.....', '.........#sCcccccoocccccc#....', '..........#sCccccccocccccc#...', '...........#sCccccccoccccc#...', '............#sCccccccooccc#...', '.............#sCCcccccoocC#...', '..............#ssCCcccccCs#...', '...............##ssCCCCCs#....', '.................##sssss#.....', '...................#####......', '..............................', '..............................'],
+  // W
+  ['..............................', '..............................', '..............................', '..............................', '..............................', '..............................', '...............####...........', '..........#####cccc#######....', '.......###cccccccccccccccc##..', '....###ccccccccccccccccccccc#.', '..##bbccccccccccccccccccccccc#', '.#ccbbcoooooooooooooooooooocc#', '.#CCbbcoooooooooooooooooooocc#', '.#ssbbCcccccccccccccccccccccC#', '..##sssCCCccccccccccccccccCCs#', '....###sssCCCCCccccCCCCCCCss#.', '.......###sssssCCCCsssssss##..', '..........#####ssss#######....', '...............####...........', '..............................', '..............................', '..............................', '..............................', '..............................', '..............................'],
+  // SW
+  ['..............................', '..............................', '...................#####......', '.................##ccccc#.....', '...............##cccccccc#....', '..............#cccccccoocc#...', '.............#cccccccooccc#...', '............#cccccccoccccc#...', '...........#cccccccocccccC#...', '..........#ccccccoocccccCs#...', '.........#ccccccoocccccCs#....', '........#ccccccoccccccCs#.....', '.......#ccccccoccccccCs#......', '.......#ccccooccccccCs#.......', '......#ccccoocccccCCs#........', '......#cccocccccCCss#.........', '.....#bbcoccccCCss##..........', '.....#cbbbcCCCss##............', '....#cccbbbsss##..............', '....#CCCsss###................', '....#sss###...................', '.....###......................', '..............................', '..............................', '..............................'],
+];
+
+function buildSurfboard(scene) {
+  const h = SURFBOARD[0].length, w = SURFBOARD[0][0].length, [c, g] = blank(w * 8, h);
+  SURFBOARD.forEach((rows, d) => rows.forEach((row, y) => [...row].forEach((ch, x) => {
+    if (ch === '.') return;
+    g.fillStyle = SURF_INKS[ch];
+    g.fillRect(d * w + x, y, 1, 1);
+  })));
+  const tex = scene.textures.addCanvas('surfboard', c);
+  SURFBOARD.forEach((_, d) => tex.add(d, 0, d * w, 0, w, h));
+}
+
 function buildFlags(scene) {
   const src = scene.textures.get('art-flags').getSourceImage();
   const [cw, ch] = FLAG_CELL, [c, g] = blank(cw * 6, ch * FLAG_COUNT);
@@ -362,6 +396,7 @@ export function buildArt(scene) {
   buildFont(scene);
   buildIcons(scene);
   buildPixel(scene);
+  buildSurfboard(scene);
   buildFlags(scene);
   buildBluff(scene);
   buildDream(scene);

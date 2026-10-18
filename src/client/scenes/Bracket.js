@@ -16,7 +16,8 @@ const COL_X = [14, 46, 78, 110], ROW_Y = 34, ROW_GAP = 19, FACE = 16, CHAMP = [V
 
 // The tournament bracket (tournament.js), shown before the first match and between the others. Coming back from a
 // match it first plays out the round just finished: the losers grey out and the winners slide on along their lines.
-// Then it shows the player's next pairing, or the end of the run: knocked out, or champion with the prize TM.
+// Then it shows the player's next pairing, or the end of the run: knocked out (the rest of the bracket then plays out on its
+// own), and a victory screen with confetti for whoever wins it; the prize TM comes only if that is the player's mon.
 export class Bracket extends Phaser.Scene {
   constructor() { super('bracket'); }
 
@@ -29,10 +30,9 @@ export class Bracket extends Phaser.Scene {
     this.leaving = false;
   }
 
-  // the standing sheets of the entrants with no portrait, to show them by instead
+  // the standing sheets of the entrants, which the bracket shows them by (their portraits are for the winners)
   preload() {
-    const ids = this.t.entrants.filter((e) => ![e.form, e.species].some((id) => this.textures.exists(`face-${id}`))).map((e) => e.form);
-    loadIdle(this, ids);
+    loadIdle(this, this.t.entrants.map((e) => e.form));
   }
 
   create() {
@@ -46,6 +46,7 @@ export class Bracket extends Phaser.Scene {
 
     this.lines = this.add.graphics().setScrollFactor(0).setDepth(DEPTH);
     this.faces = this.t.entrants.map((e, i) => this.face(e, ...this.at(i, 0), FACE));
+    this.footerParts = null;
     this.actions = new Actions(this);
     this.hints = new Hints(this, this.actions);
     this.hints.set([]);
@@ -68,18 +69,38 @@ export class Bracket extends Phaser.Scene {
     return [side ? VIEW_W - COL_X[r] : COL_X[r], y];
   }
 
-  // A portrait in a frame (gold for the player's own), `size` px across; one with no portrait is its standing sprite.
-  face(e, x, y, size) {
+  // An entrant in a frame (gold for the player's own), `size` px across: its standing sprite, animated. Its portrait (the
+  // pick sprite) is what it wears while it moves on (look()).
+  face(e, x, y, size, still = false) {
     const back = this.add.image(x, y, 'px').setDisplaySize(size + 2, size + 2).setTint(e.me ? INK.gold : 0x9fb4c8).setScrollFactor(0).setDepth(DEPTH + 1);
     const inner = this.add.image(x, y, 'px').setDisplaySize(size, size).setTint(0x163454).setScrollFactor(0).setDepth(DEPTH + 1);
     const img = this.add.image(x, y, 'px').setScrollFactor(0).setDepth(DEPTH + 2);
-    const id = [e.form, e.species].find((k) => this.textures.exists(`face-${k}`));
-    if (id) img.setTexture(`face-${id}`).setScale(size / 40);
-    else {
-      const idle = SPECIES[e.form].anims.Idle;
-      img.setTexture(`a-${idle.key}`, 0).setScale(Math.min(1, (size / Math.max(idle.fw, idle.fh)) * 1.4));
+    const idle = SPECIES[e.form].anims.Idle, portrait = [e.form, e.species].find((k) => this.textures.exists(`face-${k}`));
+    const f = {
+      parts: [back, inner, img], img, back, size, idle, portrait, k: 1, mode: 'idle', frame: 0, t: 0, still,
+      base: { idle: Math.min(1, (size / Math.max(idle.fw, idle.fh)) * 1.4), portrait: size / 40 },
+    };
+    this.look(f, 'idle');
+    return f;
+  }
+
+  // Which of its two looks a face wears: 'idle' (the standing sprite) or 'portrait' (none for a mon that has none).
+  look(f, mode) {
+    if (mode === 'portrait' && !f.portrait) mode = 'idle';
+    f.mode = mode;
+    if (mode === 'portrait') f.img.setTexture(`face-${f.portrait}`);
+    else f.img.setTexture(`a-${f.idle.key}`, f.frame);
+    f.img.setScale(f.base[mode] * f.k);
+  }
+
+  // The standing sprites play (facing down).
+  update(_time, delta) {
+    for (const f of this.faces ?? []) {
+      if (f.still || f.mode !== 'idle' || !f.img.active) continue;
+      f.t += delta * 0.06; // (frame durations are in 60ths of a second)
+      while (f.t >= f.idle.durs[f.frame]) { f.t -= f.idle.durs[f.frame]; f.frame = (f.frame + 1) % f.idle.durs.length; }
+      f.img.setFrame(f.frame);
     }
-    return { parts: [back, inner, img], img, back, size };
   }
 
   // Moves a face (all of its parts) to a spot, at once or with a tween.
@@ -88,33 +109,42 @@ export class Bracket extends Phaser.Scene {
     this.tweens.add({ targets: f.parts, x, y, duration: ms, delay, ease: 'Back.easeOut' });
   }
 
-  // The faces as they stand after round `r`: winners on to the next column, losers greyed in their last.
+  // The faces as they stand after round `r`: the winners (in their pick sprites) on to the next column, the losers hurt and gone.
   place(r, animate, done) {
     const won = this.t.alive[r + 1], out = this.t.alive[r].filter((i) => !won.includes(i));
-    for (const i of out) this.grey(i, animate);
+    for (const i of out) this.knockOut(i, animate);
+    if (animate && won.length) sfx.play('pick_mon');
     won.forEach((i, k) => {
+      const f = this.faces[i], last = r + 1 === 4;
       this.ghost(i); // the winner leaves a ghost of itself behind, so the column it came from stays full
-      this.moveFace(this.faces[i], this.at(i, r + 1), animate ? 420 : 0, animate ? 260 + k * 90 : 0);
+      if (animate) this.look(f, 'portrait');
+      this.moveFace(f, this.at(i, r + 1), animate ? 420 : 0, animate ? 260 + k * 90 : 0);
+      if (animate && !last) this.time.delayedCall(260 + k * 90 + 420, () => this.look(f, 'idle'));
     });
     if (r + 1 === 4) this.crown(this.faces[won[0]], animate);
     if (animate) this.time.delayedCall(260 + won.length * 90 + 420, done);
   }
 
-  grey(i, animate) {
+  // A loser flashes red, shakes, and fades out of the bracket.
+  knockOut(i, animate) {
     const f = this.faces[i];
-    if (animate) this.tweens.add({ targets: f.parts, alpha: 0.35, duration: 260 });
-    else f.parts.forEach((p) => p.setAlpha(0.35));
-    f.img.setTint(0x777777);
+    if (!animate) return f.parts.forEach((p) => p.setVisible(false));
+    f.img.setTint(0xff5a4a);
+    const x = f.img.x;
+    this.tweens.add({ targets: f.parts, x: { from: x - 2, to: x + 2 }, duration: 55, yoyo: true, repeat: 4, onComplete: () => f.parts.forEach((p) => p.setX(x)) });
+    this.tweens.add({ targets: f.parts, alpha: 0, duration: 260, delay: 480, onComplete: () => f.parts.forEach((p) => p.setVisible(false)) });
+    this.time.delayedCall(60, () => sfx.play('faint'));
   }
 
   ghost(i) {
-    const e = this.t.entrants[i], f = this.faces[i], g = this.face(e, f.img.x, f.img.y, f.size);
+    const e = this.t.entrants[i], f = this.faces[i], g = this.face(e, f.img.x, f.img.y, f.size, true);
     g.parts.forEach((p) => p.setAlpha(0.35).setDepth(p.depth - 1));
   }
 
   // The champion's face grows to fill the middle.
   crown(f, animate) {
     const s = CHAMP_FACE / f.size;
+    f.k = s;
     for (const p of f.parts) {
       const sx = p.scaleX * s, sy = p.scaleY * s;
       if (animate) this.tweens.add({ targets: p, scaleX: sx, scaleY: sy, duration: 500, delay: 700, ease: 'Back.easeOut' });
@@ -173,32 +203,70 @@ export class Bracket extends Phaser.Scene {
     this.hints.set([{ icon: 'btnA', key: 'Enter', label: 'Fight', action: 'confirm' }, { icon: 'btnB', key: 'Esc', label: 'Withdraw', action: 'cancel' }]);
   }
 
+  // The player is out: the rest of the bracket is played out round by round, down to a champion.
   knockedOut() {
-    const r = round(this.t) - 1;
-    music.jingle('jingle_loss');
-    this.footer('Knocked out', `in the ${ROUNDS[r]}`, INK.rose);
+    const out = round(this.t) - 1;
+    if (!this.lostJingle) { this.lostJingle = true; music.jingle('jingle_loss'); }
+    this.footer('Knocked out', `in the ${ROUNDS[out]}`, INK.rose);
     this.hints.set([{ icon: 'btnA', key: 'Enter', label: 'Back to the basement', action: 'confirm' }]);
+    this.time.delayedCall(1700, () => {
+      if (this.leaving) return;
+      const r = round(this.t);
+      this.t = settle(this.t, false);
+      this.subtitle.setText(ROUNDS[r]);
+      this.playOut(r, () => { if (!this.leaving) this.after(); });
+    });
   }
 
+  // Somebody has won it all: a victory screen with confetti. Only the player's own mon wins the prize TM.
   champion() {
+    const win = this.t.alive[4][0], e = this.t.entrants[win], mine = !!e.me;
     this.subtitle.setText('Champion!');
-    this.t.prize ??= prizeTM() ?? 'none'; // (once: this screen may be built again)
-    const tm = this.t.prize !== 'none' ? this.t.prize : null;
+    let tm = null;
+    if (mine) {
+      this.t.prize ??= prizeTM() ?? 'none'; // (once: this screen may be built again)
+      tm = this.t.prize !== 'none' ? this.t.prize : null;
+    }
     this.cameras.main.flash(300, 255, 240, 160);
     music.jingle(tm ? 'jingle_tm' : 'jingle_win');
-    this.footer('You won the tournament!', tm ? `Found the ${MOVES[tm].name} TM!` : 'No TM left for your mon to learn.', INK.gold);
+    shade(this, 0, 0, VIEW_W, VIEW_H, 0x06101c, 0.7).setDepth(DEPTH + 5);
+    const big = this.face(e, VIEW_W / 2, 82, 52);
+    big.parts.forEach((p) => p.setDepth(DEPTH + 6).setAlpha(0));
+    this.look(big, 'portrait');
+    this.faces.push(big); // (so it animates)
+    this.tweens.add({ targets: big.parts, alpha: 1, duration: 300 });
+    this.tweens.add({ targets: big.parts, y: '-=3', duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const name = mine ? session.profile.name : SPECIES[e.form].name;
+    const title = text(this, VIEW_W / 2, 33, mine ? 'You won the tournament!' : `${name} wins the tournament!`, INK.gold).setOrigin(0.5, 0).setDepth(DEPTH + 7);
+    this.tweens.add({ targets: title, alpha: { from: 0, to: 1 }, duration: 300 });
+    this.confetti();
+    this.footer(mine ? SPECIES[e.form].name : 'Champion', mine ? (tm ? `Found the ${MOVES[tm].name} TM!` : 'No TM left for your mon to learn.') : 'Better luck next time.', INK.gold, DEPTH + 8);
     this.hints.set([{ icon: 'btnA', key: 'Enter', label: 'Back to the basement', action: 'confirm' }]);
   }
 
-  footer(title, sub, tint = INK.white) {
+  // Bits of paper raining down for as long as the screen is up.
+  confetti() {
+    const colors = [0xff5a4a, 0xffe45c, 0x8fdcff, 0x9af0a0, 0xff9ae0, 0xffffff];
+    const drop = (fromTop) => {
+      const c = this.add.image(Math.random() * VIEW_W, fromTop ? -4 : Math.random() * VIEW_H, 'px').setScrollFactor(0).setDepth(DEPTH + 6)
+        .setTint(colors[Math.floor(Math.random() * colors.length)]).setDisplaySize(2 + Math.random() * 2, 3 + Math.random() * 3);
+      const fall = VIEW_H + 8 - c.y, ms = fall * (22 + Math.random() * 24), sway = (Math.random() - 0.5) * 40;
+      this.tweens.add({ targets: c, y: VIEW_H + 8, x: c.x + sway, angle: (Math.random() - 0.5) * 900, scaleX: { from: c.scaleX, to: c.scaleX * 0.15 }, yoyo: false, duration: ms, onComplete: () => { c.destroy(); if (!this.leaving) drop(true); } });
+    };
+    for (let i = 0; i < 70; i++) drop(false);
+  }
+
+  footer(title, sub, tint = INK.white, depth = DEPTH) {
+    this.footerParts?.forEach((o) => o.destroy());
     const y = VIEW_H - 15 - 32;
-    panel(this, (VIEW_W - 176) >> 1, y, 176, 30, 'win');
-    const a = text(this, VIEW_W / 2, y + 5, title, tint).setOrigin(0.5, 0), b = text(this, VIEW_W / 2, y + 16, sub, INK.dim).setOrigin(0.5, 0);
+    const box = panel(this, (VIEW_W - 176) >> 1, y, 176, 30, 'win').setDepth(depth);
+    const a = text(this, VIEW_W / 2, y + 5, title, tint).setOrigin(0.5, 0).setDepth(depth + 1), b = text(this, VIEW_W / 2, y + 16, sub, INK.dim).setOrigin(0.5, 0).setDepth(depth + 1);
+    this.footerParts = [box, a, b];
     for (const o of [a, b]) this.tweens.add({ targets: o, alpha: { from: 0, to: 1 }, duration: 300 });
   }
 
   next() {
-    if (!this.ready || this.leaving) return;
+    if (this.leaving || (!this.ready && !(round(this.t) < 4 && !stillIn(this.t)))) return; // (a knocked-out player may skip the rest)
     this.leaving = true;
     sfx.play('ui_pick');
     if (round(this.t) < 4 && stillIn(this.t)) return go(this, 'battle', { battle: tourneyBattle(this.t) });

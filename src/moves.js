@@ -428,7 +428,7 @@ export const MOVES = {
   crabhammer: { name: 'Crabhammer', kind: 'melee', fx: '0147_red_fist_impact', seqs: ['000'], reach: 18, radius: 20, dmg: 24, cost: 26, charge: 0.15 },
   bubbleBeam: { name: 'Bubble Beam', kind: 'slight', fx: '0089_bubble_rings', seqs: ['000'], slice: [0, 9], speed: 125, range: 250, turn: 0.65, radius: 13, dmg: 15, cost: 24, charge: 0.3, fps: 15 },
   razorShell: { name: 'Razor Shell', kind: 'melee', fx: '0158_water_arc_slash', seqs: ['000'], reach: 20, radius: 22, dmg: 20, cost: 20, charge: 0.09, fps: 45 },
-  surf: { name: 'Surf', kind: 'hold', ride: true, fx: '0073_water_droplets_spray', seqs: ['000'], speed: 200, radius: 18, dmg: 14, cost: 15, upkeep: 50, charge: 0.15, scale: 0.5, fps: 14 },
+  surf: { name: 'Surf', kind: 'hold', ride: true, board: true, fx: '0073_water_droplets_spray', seqs: ['000'], speed: 200, radius: 18, dmg: 14, cost: 15, upkeep: 50, charge: 0.15, scale: 0.5, fps: 14 },
   bonemerang: { name: 'Bonemerang', kind: 'projectile', fx: '0011_bone_spin', seqs: ['000'], speed: 200, range: 230, radius: 11, dmg: 16, cost: 20, charge: 0.25, scale: 1.3, fps: 20, impactSeqs: ['001'] },
   meteorMash: { name: 'Meteor Mash', kind: 'melee', fx: '0180_punch_shockwave', seqs: ['000'], reach: 18, radius: 20, dmg: 20, cost: 20, charge: 0.1, bonus: { chance: 0.3, buff: { stat: 'atk', mul: 1.3, time: 6 }, scale: 0.6 }, bonusFx: '0216_yellow_powerup', bonusSeqs: ['000'] },
   earthquake: { name: 'Earthquake', kind: 'aoe', fx: '0172_earthquake', seqs: ['000'], altSeqs: ['001'], scatter: true, radius: 67, dmg: 20, cost: 15, charge: 0.3, grow: { min: 26, max: 101, rate: 32, upkeep: 30 }, fps: 24, bury: 1.4 },
@@ -444,7 +444,7 @@ export const MOVES = {
   rockBlast: { name: 'Rock Blast', kind: 'mid', fx: '0002_rock_rubble_burst', seqs: ['000'], range: 85, radius: 22, dmg: 18, cost: 26, charge: 0.3, fps: 14 },
   thunderbolt: { name: 'Thunderbolt', kind: 'mid', status: { kind: 'para', chance: 0.25 }, fx: '0119_thunder', seqs: ['002'], range: 140, radius: 20, dmg: 21, cost: 34, charge: 0.28, origin: [0.5, 0.9], fps: 22 },
   brine: { name: 'Brine', kind: 'mid', fx: '0021_water_splash', seqs: ['000'], range: 80, radius: 22, dmg: 16, cost: 22, charge: 0.25, fps: 14 },
-  overheat: { name: 'Overheat', kind: 'aoe', status: { kind: 'burn', chance: 1 }, fx: '0028_fireballs_burst', seqs: ['000'], radius: 55, dmg: 30, cost: 50, charge: 0.45, fps: 20, chargeSeqs: ['001'], scale: 1.2, lockOut: { element: 'fire', time: 5 } },
+  overheat: { name: 'Overheat', kind: 'aoe', status: { kind: 'burn', chance: 1 }, fx: '0028_fireballs_burst', seqs: ['000'], radius: 80, dmg: 30, cost: 50, charge: 0.45, fps: 20, chargeSeqs: ['001'], scale: 1.2, lockOut: { element: 'fire', time: 5 } },
   incinerate: { name: 'Incinerate', kind: 'mid', status: { kind: 'burn', chance: 0.3 }, fx: '0029_flame_swirl_puff', seqs: ['001'], range: 80, radius: 24, dmg: 17, cost: 24, charge: 0.3, origin: [0.5, 0.75], fps: 14 },
   lavaPlume: { name: 'Lava Plume', kind: 'aoe', status: { kind: 'burn', chance: 0.35 }, fx: '0024_fireball_glow', seqs: ['000'], radius: 58, dmg: 16, cost: 40, charge: 0.5, spout: 7, arc: 34, burst: 16, scale: 0.6, impactFx: '0034_magma_rocks_eruption', impactSeqs: ['000'], impactScale: 0.5 },
   discharge: { name: 'Discharge', kind: 'aoe', status: { kind: 'para', chance: 0.4 }, fx: '0042_thunder_arcs', seqs: ['000', '001'], radius: 50, dmg: 18, cost: 40, charge: 0.45, scale: 1.2 },
@@ -565,7 +565,7 @@ export const MOVES = {
   fly: { name: 'Fly', kind: 'hold', fly: 2, tag: 'heavy', fx: '0027_white_wings_flap', seqs: ['000'], speed: 150, radius: 26, dmg: 30, cost: 20, upkeep: 25, charge: 0.3, knock: 2, impactFx: '0002_rock_rubble_burst', impactSeqs: ['000'] },
   bounce: { name: 'Bounce', kind: 'blink', leap: 0.55, status: { kind: 'para', chance: 0.5 }, fx: '0002_rock_rubble_burst', seqs: ['000'], range: 100, radius: 22, dmg: 20, cost: 24, charge: 0.15 },
   acrobatics: { name: 'Acrobatics', kind: 'dash', chain: 3, fx: '0177_white_slash_flurry', seqs: ['000'], dash: 70, dur: 0.32, radius: 15, dmg: 14, cost: 22, charge: 0.12, fps: 60 },
-  uTurn: { name: 'U-turn', kind: 'dash', back: true, fx: '0177_white_slash_flurry', seqs: ['000'], dash: 95, dur: 0.36, radius: 15, dmg: 13, cost: 20, charge: 0.12, fps: 60 },
+  uTurn: { name: 'U-turn', kind: 'dash', chain: 3, fx: '0177_white_slash_flurry', seqs: ['000'], dash: 70, dur: 0.32, radius: 15, dmg: 13, cost: 20, charge: 0.12, fps: 60 },
   hurricane: { name: 'Hurricane', kind: 'mid', pull: 70, swat: true, fx: '0135_whirlwind_spiral', seqs: ['000'], range: 100, radius: 30, dmg: 14, cost: 38, charge: 0.4, origin: [0.5, 0.9], linger: 3 },
   signalBeam: { name: 'Signal Beam', kind: 'beam', status: { kind: 'confuse', chance: 0.5 }, fx: '0006_pink_light_beam', seqs: ['000'], slice: [1, 32], length: 130, dmg: 12, cost: 24, charge: 0.3, fps: 45, tint: 0x9cffb0, ghost: true, turnRate: 2.2 },
   seismicToss: { name: 'Seismic Toss', kind: 'melee', fx: '0099_mega_moves', seqs: ['006'], scale: 1.3, fps: 16, tag: 'grab', toss: 0.45, fixedDmg: 28, reach: 16, radius: 18, dmg: 28, cost: 28, charge: 0.12 },
@@ -804,7 +804,7 @@ give('futureSight', { hideFor: 1 }); // the foe does not see the ring for the fi
 //   field.lane a strip along the aim instead of a circle; enemy shots flying up it are slowed
 //   pull       a lingering zone that drags foes and their shots toward its centre; blow throws enemy shots outward
 //   roost      grounds the user that long: no jump, no Fly, and ground moves hit it harder
-give('aerialAce', { seek: 7, parryStun: 1 });
+give('aerialAce', { kind: 'blink', leap: 0.4, leapSpeed: 420, seekFoe: true, charge: 0.4, parryStun: 1 });
 give('tailwind', { field: { lane: true, len: 150, half: 20, time: 8 } });
 give('whirlwind', { blow: true });
 give('thunder', { swat: true });
@@ -939,7 +939,13 @@ for (const [id, mv] of Object.entries(MOVES)) {
   mv.grow = mv.grow.cycle || mv.grow.random ? { ...mv.grow, rate: mv.grow.rate * 1.6 } : { ...mv.grow, rate: mv.grow.rate * 2.5, max: Math.min(90, Math.round(mv.grow.max * 1.3)) };
 }
 give('circleThrow', { throw: 170, throwBack: true });
-give('acrobatics', { bounce: 55 }); // a hit sends its user springing off the way it is steering
+give('acrobatics uTurn', { bounce: 55 }); // a hit sends its user springing off the way it is steering
+// (after the passes above, which would otherwise reset these wind-ups: Scary Face now bursts around its user, Brick Break
+// keeps less of the usual melee wind-up, and Focus Blast steers toward foes)
+give('scaryFace', { kind: 'aoe', radius: 60, range: undefined, charge: 0.3 });
+give('brickBreak', { charge: 0.25 });
+give('vineWhip', { charge: 0.125, reticle: 'line' }); // a quarter of the usual melee wind-up; its reach is shown as a line
+give('focusBlast', { kind: 'homing', turn: 1.3 });
 // held: the shield stays up while the button is down, for energy
 give('protect', { shield: 0.3, guard: { upkeep: 24 }, drift: undefined, repeat: undefined });
 give('rainDance', { rain: 10 });
