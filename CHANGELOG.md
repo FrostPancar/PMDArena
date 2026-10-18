@@ -3,6 +3,18 @@
 Each push to `main` gets a version. The current one is in `src/version.js` (shown on the title screen) and
 `package.json`; the commit for it is tagged with the same name.
 
+## alpha 0.5.35
+
+**Moving while shooting**
+- A held **stream** (Water Gun, Ember, Bubble, Thunder Shock, Rock Blast and the rest) can now be fired **on the move with
+  no penalty**: a shot no longer roots its user for the length of its animation (a mon already walking keeps its walk
+  animation while it fires).
+- A held **beam** can be walked with at **50%** of normal speed (it was 30%).
+
+**Psychic and Iron Defense**
+- Both now come out on **frame 1** of the press instead of the next step (Psychic's cost is still paid, up front).
+- **Psychic no longer draws a ring** around its user: it catches shots by itself, there is nothing to aim.
+
 ## alpha 0.5.34
 
 - The lane previews for a foe's charging shot, beam or dash are now the **dotted line of the aim guide** instead of a box,

@@ -22,6 +22,7 @@ export const RUN_MULT = 3.2; // a dash's speed, as a multiple of walking
 // A move costs one notch or two (a light poke half), a jump two, a dash one; a parry that lands gives one back.
 export const NOTCH = 20, NOTCHES = 5;
 const RUN_TIME = 0.2, RUN_COST = NOTCH; // a dash: how long it lasts (a short hop of ground) and what it costs
+const BEAM_WALK = 0.5; // a mon firing a held beam walks at this share of its speed
 export const BASE_HP = 150; // every mon's health
 const HEAVY_STUN = 0.75; // seconds a heavy move's hit leaves its target unable to act
 const STAMINA_REGEN = 48;
@@ -48,6 +49,7 @@ export class Mon {
     this.healsUsed = 0; // healing moves used this match (see HEAL_LIMIT)
     this.snare = 0; // seconds it is still held fast in a web: it cannot walk or jump, but can still fight
     this.runT = 0; // seconds of dash left
+    this.streamT = 0; // seconds left that a held stream keeps firing (see scene.updateVolleys)
     this.runPrev = false; // the dash button was down last step (a dash takes a fresh press)
     this.dashV = [0, 0]; // which way the dash in progress is going
     this.stamina = this.maxStamina;
@@ -260,7 +262,8 @@ export class Mon {
     if (this.ailment.reverse) { vx = -vx; vy = -vy; }
     // a dash: one press spends a notch for a short burst the way the stick points (or the way it faces), that holds its heading
     const able = !this.beaming && !(this.webbed > 0);
-    const canGo = this.grounded && !this.stuck && !this.ailment.root && !this.ingrain && !(this.snare > 0);
+    const shooting = this.state === 'action' && this.streamT > 0; // a held stream's shot does not root its user
+    const canGo = (this.grounded || shooting) && !this.stuck && !this.ailment.root && !this.ingrain && !(this.snare > 0);
     if (this.runT > 0 && (this.state !== 'idle' && this.state !== 'walk' || !canGo)) this.runT = 0;
     if (press && able && canGo && this.runT <= 0 && !this.exhausted && this.stamina >= RUN_COST && (this.state === 'idle' || this.state === 'walk')) {
       this.spend(RUN_COST);
@@ -278,8 +281,8 @@ export class Mon {
       if (SLEEPY.has(this.animName)) return this.wake();
       this.state = 'idle';
     }
-    if (!this.grounded) return;
-    speed *= this.mul('spd') * (this.beaming ? 0.3 : 1);
+    if (!this.grounded && !shooting) return;
+    speed *= this.mul('spd') * (this.beaming ? BEAM_WALK : 1);
     this.running = able && this.runT > 0;
     if (this.running) speed *= RUN_MULT;
     if (!this.beaming) this.dir = dirFromVec(vx, vy); // a beam decides which way its user faces
@@ -523,6 +526,7 @@ export class Mon {
     }
     if (this.ramp) this.ramp.t -= dt;
     this.runT = Math.max(0, this.runT - dt);
+    this.streamT = Math.max(0, this.streamT - dt);
     this.snare = Math.max(0, this.snare - dt);
     this.safeguard = Math.max(0, this.safeguard - dt);
     this.noCrit = Math.max(0, this.noCrit - dt);

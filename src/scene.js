@@ -576,6 +576,7 @@ export class Play extends Phaser.Scene {
     }
     // moves that land on a spot are wound up with a spin, the rest with the charge pose
     const spin = (mv.kind === 'mid' || mv.lob) && m.species.anims.Rotate;
+    if (mv.snap && !m.remote) { this.updateWindup(m, 0); if (m.state !== 'windup') return true; } // (comes out on the very first frame)
     m.setAnim(m.species.anims[mv.chargeAnim] ? mv.chargeAnim : spin ? 'Rotate' : m.species.anims.Charge ? 'Charge' : 'Idle', 'loop');
     return true;
   }
@@ -739,7 +740,7 @@ export class Play extends Phaser.Scene {
       if (mv.grow) {
         if (w) ring(m.x, m.y, w.radius ?? mv.grow.min, color, alpha);
       } else if (mv.catch?.around) {
-        ring(m.x, m.y, mv.radius, color, alpha); // a field around the user
+        // (a field around the user: no ring, its catch is automatic)
       } else if (mv.kind === 'mid' || mv.kind === 'auto') {
         const s = this.landSpot(m, mv, w?.aim ?? this.aimOf(m, w ? w.track : 'pointer'));
         ring(s.hx ?? s.x, s.hy ?? s.y, mv.radius, color, alpha);
@@ -805,7 +806,7 @@ export class Play extends Phaser.Scene {
         }
       }
       const spot = c.around ? { x: m.x, y: m.y } : this.landSpot(m, w.mv, w.aim ?? aim);
-      if (w.t < charge) m.spend((w.mv.cost * Math.min(dt, charge - w.t)) / charge);
+      if (charge > 0 ? w.t < charge : w.t === 0) m.spend(charge > 0 ? (w.mv.cost * Math.min(dt, charge - w.t)) / charge : w.mv.cost);
       w.t += dt;
       for (const q of this.shots) {
         if (!q.caught && !q.arc && q.owner.team !== m.team && Math.hypot(q.x - spot.x, (q.y - spot.y) * 1.3) <= w.mv.radius + q.r) { q.caught = { m, w }; this.sayShot(q, 'caught', m); }
@@ -879,7 +880,7 @@ export class Play extends Phaser.Scene {
       if (lunge) { m.kx = aim.dx * mv.step * DART; m.ky = aim.dy * mv.step * DART; m.dartT = 0.16; } else m.slide(aim.dx * mv.step, aim.dy * mv.step);
     }
     if (!lunge) this.fireMove(m, mv, aim);
-    if (mv.kind !== 'self' || mv.userAnim) m.mute = m.act(mv.userAnim ?? (mv.kind === 'melee' ? m.swingFor(mv) : 'Shoot'));
+    if ((mv.kind !== 'self' || mv.userAnim) && !(mv.stream && m.state === 'walk')) m.mute = m.act(mv.userAnim ?? (mv.kind === 'melee' ? m.swingFor(mv) : 'Shoot'));
     // a slash cuts for the whole of its swing, not just the instant it lands
     if (mv.cut) this.cuts.push({ m, mv, aim, t: m.state === 'action' ? m.anim.durs.reduce((a, b) => a + b, 0) / 60 : 0.25 });
     if (lunge && m.mute) m.pending = { mv, aim };
@@ -2171,6 +2172,7 @@ export class Play extends Phaser.Scene {
         // a stream runs while the button is down and there is energy to feed it
         if ((v.t > 0.12 && !this.holding(m, v.track, v.t)) || m.stamina <= 0) return false;
         m.spend(mv.stream.upkeep * dt);
+        m.streamT = 0.1; // (a stream's shots can be fired on the move)
       } else if (v.track === 'touch' && v.left < mv.volley.n && !this.holding(m, v.track, v.t)) return false;
       if ((v.wait -= dt) > 0) return true;
       v.wait += (mv.stream ?? mv.volley).gap;

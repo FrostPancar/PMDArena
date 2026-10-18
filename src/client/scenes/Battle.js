@@ -736,6 +736,7 @@ export class Battle extends Play {
     const ring = (x, y, r) => g.lineStyle(3, dark, 0.55 * on).strokeEllipse(x, y, r * 2, r * 1.54).fillStyle(col, 0.16 * on).fillEllipse(x, y, r * 2, r * 1.54).lineStyle(1, col, on).strokeEllipse(x, y, r * 2, r * 1.54);
     if (mv.kind === 'self') return ring(p.x, p.y, 13);
     if (mv.kind === 'aoe') return ring(p.x, p.y, mv.grow?.max ?? mv.radius);
+    if (mv.catch?.around) return; // (Psychic catches whatever comes near: nothing to aim)
     const spot = mv.kind === 'mid' || mv.kind === 'blink' || mv.lob;
     const reach = spot ? Phaser.Math.Clamp(a.dist, 24, mv.range ?? 100) : mv.kind === 'melee' ? mv.reach + 14 + (mv.step ?? 0) : mv.range ?? mv.length ?? mv.dash ?? 100;
     for (let d = 12; d < reach - 6; d += 8) {

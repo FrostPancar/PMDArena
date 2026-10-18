@@ -790,7 +790,7 @@ give('lockOn', { lock: 8 });
 //   steer    held: the user's latest shot curves toward the aim
 //   wall     leaves a wall across the aim for 6 s: 'reflect' stops the other side's bodies and dashes, 'screen' their shots and
 //            beams (a light shot bounces back as the owner's); the owner's own beam splits in three passing through its screen
-give('psychic', { kind: 'mid', appear: undefined, radius: 38, catch: { upkeep: 14, max: 30, around: true }, // held for as long as there is the energy; the field is a circle around the user
+give('psychic', { snap: true, charge: 0, kind: 'mid', appear: undefined, radius: 38, catch: { upkeep: 14, max: 30, around: true }, // held for as long as there is the energy; the field is a circle around the user
  dmg: undefined, cost: 16, charge: 0.15, cls: 'status' });
 give('confusion', { reverse: true });
 give('kinesis', { kind: 'self', steer: { upkeep: 16, turn: 5 }, tag: undefined, debuff: undefined, dmg: undefined, cost: 8, charge: 0.1 });
@@ -980,7 +980,7 @@ give('shadowSneak', { dir8: 0, impactDir8: 8, range: 90, scale: 1, fps: 30, vani
 give('ingrain', { ingrain: { time: 10, hps: 3 } }); // (a jump pulls the roots up early: see Mon.jump)
 // Iron Defense, King's Shield and Bide are braced for while their button is held; what the first hit taken does differs:
 // Iron Defense bursts (a blast a little wider than Shock Wave), King's Shield raises Attack, Bide empowers the next attack.
-give('ironDefense', { charge: 0, burst: { radius: 66, mul: 1.5, min: 14 } });
+give('ironDefense', { charge: 0, snap: true, burst: { radius: 66, mul: 1.5, min: 14 } });
 give('kingsShield', (mv) => ({ stance: { upkeep: 14 }, buff: { ...mv.buff, mul: 2.5 }, onBlock: { buff: { stat: 'atk', mul: 1.5, time: 8 } } }));
 give('bide', { fx: '0164_normal_ring', seqs: ['001'], tint: undefined, bide: undefined, charge: 0, stance: { upkeep: 14 }, buff: { stat: 'def', mul: 2.5, time: 10 }, onBlock: { empower: true }, cls: undefined });
 give('attract', { charge: 0.8 });
