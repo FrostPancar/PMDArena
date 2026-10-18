@@ -741,6 +741,13 @@ export class Battle extends Play {
     if (mv.kind === 'aoe') return ring(p.x, p.y, mv.grow?.max ?? mv.radius);
     if (mv.catch?.around) return; // (Psychic catches whatever comes near: nothing to aim)
     const spot = mv.kind === 'mid' || mv.kind === 'blink' || mv.lob;
+    if (mv.reticle === 'line' && mv.grapple) { // (Vine Whip) just the dotted line, as far as the whip goes: no ring
+      for (let d = 12; d < mv.grapple - 6; d += 8) {
+        const x = Math.round(p.x + a.dx * d), y = Math.round(p.y + a.dy * d);
+        g.fillStyle(dark, 0.55 * on).fillRect(x - 2, y - 2, 4, 4).fillStyle(col, on).fillRect(x - 1, y - 1, 2, 2);
+      }
+      return;
+    }
     const reach = spot ? Phaser.Math.Clamp(a.dist, 24, mv.range ?? 100) : mv.kind === 'melee' ? mv.reach + 14 + (mv.step ?? 0) : mv.range ?? mv.length ?? mv.dash ?? 100;
     for (let d = 12; d < reach - 6; d += 8) {
       const x = Math.round(p.x + a.dx * d), y = Math.round(p.y + a.dy * d);

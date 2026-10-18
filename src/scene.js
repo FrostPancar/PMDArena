@@ -742,10 +742,8 @@ export class Play extends Phaser.Scene {
       } else if (mv.catch?.around) {
         // (a field around the user: no ring, its catch is automatic)
       } else if (mv.reticle === 'line' && mv.grapple) {
-        // (Vine Whip) the line the whip travels, as far as it reaches
-        const a = w?.aim ?? this.aimOf(m, w ? w.track : 'pointer'), ex = m.x + a.dx * mv.grapple, ey = m.y + a.dy * mv.grapple;
-        g.lineStyle(3, 0x06101c, alpha * 0.4).lineBetween(m.x, m.y, ex, ey).lineStyle(1, color, alpha).lineBetween(m.x, m.y, ex, ey);
-        g.fillStyle(color, alpha).fillRect(Math.round(ex) - 1, Math.round(ey) - 1, 3, 3);
+        // (Vine Whip) only the dotted line it travels: a foe's winding up shows it faint and red, yours is the aim guide
+        if (w && !mine) { const a = w.aim ?? this.aimOf(m, w.track); dots(m.x, m.y, a.dx, a.dy, mv.grapple); }
       } else if (mv.kind === 'mid' || mv.kind === 'auto') {
         const s = this.landSpot(m, mv, w?.aim ?? this.aimOf(m, w ? w.track : 'pointer'));
         ring(s.hx ?? s.x, s.hy ?? s.y, mv.radius, color, alpha);
