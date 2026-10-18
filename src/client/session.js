@@ -164,7 +164,8 @@ export const publicProfile = () => ({
 //     unlocked: [move ids], evolved: form id or null, ready: true if a branching mon now awaits its choice }
 //   (from / to are levelFor() results)
 // scale: the share of the usual EXP this kind of fight is worth. exp: the EXP itself, where the mode works it out
-// (Survivor). noTm: no TM is found at the end (Survivor gives its TMs in chests along the way).
+// (Survivor). noTm: no TM is found at the end (a 1v1 never finds one: a Tournament gives one to its champion, and
+// Survivor gives its TMs in chests along the way).
 export function bookBattle({ mode, won, gaveUp, dealt, kept, seconds, kos, species, scale = 1, exp: fixed, noTm = false }) {
   const id = species ?? session.species, mon = (session.mons[id] ??= { exp: 0, battles: 0, wins: 0 });
   const from = levelFor(mon.exp), branch = branchOf(id), look = formAt(id, from.level, branch);

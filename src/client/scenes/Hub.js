@@ -511,8 +511,8 @@ export class Hub extends Phaser.Scene {
       return d.close();
     }
     // With a friend in the room the pillar sends you both, so it offers what two can do. Alone it asks first which
-    // kind of play: Singleplayer (against the computer: fights, a crew battle, Survivor, Boss Rush) or Online (other players).
-    const story = [['1v1', 'cpu 1v1'], ['Crew', 'cpu 3v3'], ...(cpu ? [['2v2 with your partner', 'cpu 2v2']] : []), ['Survivor', 'survivor'], ...(BOSSES.length ? [['Boss Rush', 'boss']] : [])];
+    // kind of play: Singleplayer (against the computer: fights, a crew battle, Survivor, Boss Rush, a Tournament) or Online (other players).
+    const story = [['1v1', 'cpu 1v1'], ['Crew', 'cpu 3v3'], ...(cpu ? [['2v2 with your partner', 'cpu 2v2']] : []), ['Survivor', 'survivor'], ...(BOSSES.length ? [['Boss Rush', 'boss']] : []), ['Tournament', 'tourney']];
     const online = [['1v1 vs random player', 'queue 1v1', off], ['Crew vs random player', 'queue 3v3', off], ...(cpu ? [['2v2 vs random team', 'queue 2v2', off]] : [])];
     let options = friend
       ? [[`1v1 vs ${nameOf(friend.species)}`, 'duel'], [`Crew vs ${nameOf(friend.species)}`, 'crew'], ['2v2 vs CPU team', 'friends vs cpu'], ['2v2 vs random team', 'queue 2v2']]
@@ -528,6 +528,7 @@ export class Hub extends Phaser.Scene {
       const pick = kind;
       if (pick === 'survivor') { d.close(); return go(this, 'survivor', { battle: survivorBattle() }); }
       if (pick === 'boss') { d.close(); return go(this, 'battle', { battle: bossBattle() }); }
+      if (pick === 'tourney') { d.close(); return go(this, 'bracket', {}); }
       if (pick.startsWith('cpu')) { d.close(); const battle = cpuBattle(pick.slice(4)); return go(this, before(battle), { battle }); }
       if (!net.online) { await d.say(OFFLINE); continue; }
       // from here the relay answers with a match, which main.js turns into the stage draw

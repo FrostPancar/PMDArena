@@ -9,6 +9,7 @@ import { StageDraw } from './scenes/StageDraw.js';
 import { Battle } from './scenes/Battle.js';
 import { Practice } from './scenes/Practice.js';
 import { Survivor } from './scenes/Survivor.js';
+import { Bracket } from './scenes/Bracket.js';
 import { Wipe, go, wipe } from './transition.js';
 import { net } from './net.js';
 import { before } from './modes.js';
@@ -36,7 +37,7 @@ const game = new Phaser.Game({
   roundPixels: true,
   backgroundColor: '#000000',
   scale: { mode: Phaser.Scale.NONE, zoom: zoomFor() },
-  scene: [ClientBoot, Title, Dream, Hub, CrewPick, StageDraw, Battle, Practice, Survivor, Wipe], // Wipe last: it draws over the others
+  scene: [ClientBoot, Title, Dream, Hub, CrewPick, StageDraw, Battle, Practice, Survivor, Bracket, Wipe], // Wipe last: it draws over the others
 });
 const resize = () => {
   const zoom = zoomFor();
@@ -59,7 +60,7 @@ let match = null;
 net.on('match', (msg) => { match = msg.battle; });
 game.events.on('step', () => {
   if (!match || wipe.busy) return;
-  const scene = ['hub', 'dream', 'title', 'crew', 'draw', 'battle'].map((key) => game.scene.getScene(key)).find((s) => s.scene.isActive());
+  const scene = ['hub', 'dream', 'title', 'crew', 'draw', 'battle', 'bracket'].map((key) => game.scene.getScene(key)).find((s) => s.scene.isActive());
   if (!scene) return;
   go(scene, before(match), { battle: match });
   match = null;
